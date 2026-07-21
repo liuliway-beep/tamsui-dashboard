@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新北市淡水區災害應變中心 - 智慧戰情室 (即時連動版)</title>
+    <style>
+        html, body { 
+            background-color: #0b0e14; 
+            color: #c9d1d9; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            margin: 0; 
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden; 
+            box-sizing: border-box;
+        }
+        .wrapper { display: flex; flex-direction: column; height: 100vh; padding: 10px; box-sizing: border-box; gap: 10px; }
+        .header { background: linear-gradient(90deg, #1f242c, #0d1117, #1f242c); border: 1px solid #30363d; text-align: center; color: #00f2fe; font-size: 18px; font-weight: bold; padding: 6px; border-radius: 4px; text-shadow: 0 0 8px rgba(0, 242, 254, 0.4); flex-shrink: 0; }
+        .top-layout { display: grid; grid-template-columns: 1.3fr 2fr 1.3fr; gap: 10px; flex: 1; min-height: 0; }
+        .panel { background-color: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 10px; display: flex; flex-direction: column; min-height: 0; }
+        .panel-title { color: #00f2fe; font-size: 13px; font-weight: bold; margin-bottom: 8px; border-left: 3px solid #00f2fe; padding-left: 6px; flex-shrink: 0; }
+        .window-box { flex: 1; background-color: #000; border: 2px solid #30363d; border-radius: 4px; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; text-align: center; margin-bottom: 8px; min-height: 0; }
+        .window-box:last-child { margin-bottom: 0; }
+        .window-label { position: absolute; top: 4px; left: 4px; background-color: rgba(0,0,0,0.8); color: #ffdd67; padding: 1px 6px; font-size: 10px; font-weight: bold; border-radius: 2px; border-left: 2px solid #ffdd67; z-index: 5; }
+        .window-tag { position: absolute; bottom: 4px; right: 4px; padding: 1px 5px; font-size: 9px; border-radius: 2px; font-weight: bold; color: #fff; }
+        .img-preview { width: 100%; height: 100%; object-fit: contain; }
+        .map-box { flex: 1; background-color: #05070a; border-radius: 4px; position: relative; border: 1px solid #21262d; min-height: 0; }
+        .map-grid { position: absolute; width: 100%; height: 100%; background-image: linear-gradient(rgba(33,38,45,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(33,38,45,0.15) 1px, transparent 1px); background-size: 15px 15px; }
+        .map-lbl { position: absolute; color: #21262d; font-size: 28px; font-weight: bold; top: 40%; left: 32%; letter-spacing: 5px; }
+        .pin { position: absolute; width: 18px; height: 18px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; box-shadow: 0 0 6px rgba(0,0,0,0.6); transition: transform 0.2s; }
+        .pin:hover { transform: scale(1.3); z-index: 10; }
+        .pin-new { background-color: #ff4d4d; }
+        .pin-ing { background-color: #ff9f43; }
+        .pin-done { background-color: #2ed573; }
+        .bottom-layout { background-color: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 10px; height: 220px; box-sizing: border-box; flex-shrink: 0; display: flex; flex-direction: column; }
+        .table-section { display: grid; grid-template-columns: 100px 1fr; gap: 10px; flex: 1; min-height: 0; }
+        .stats-strip { display: flex; flex-direction: column; justify-content: space-between; background-color: #0d1117; padding: 8px; border-radius: 4px; border: 1px solid #21262d; height: 100%; box-sizing: border-box; }
+        .stat-item { text-align: center; }
+        .stat-item h4 { margin: 0; font-size: 18px; line-height: 1.1; }
+        .stat-item p { margin: 1px 0 0 0; font-size: 10px; color: #8b949e; }
+        .table-wrap { flex: 1; overflow-y: auto; border: 1px solid #30363d; border-radius: 4px; height: 100%; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 11px; }
+        th, td { padding: 6px 8px; border-bottom: 1px solid #30363d; line-height: 1.4; vertical-align: top; }
+        th { background-color: #21262d; color: #f0f6fc; position: sticky; top: 0; z-index: 2; }
+        .history-text { font-family: monospace; font-size: 11px; color: #ffdd67; white-space: pre-line; }
+        .badge { padding: 1px 4px; border-radius: 2px; font-size: 9px; font-weight: bold; }
+        .badge-new { background-color: rgba(255,77,77,0.15); color: #ff4d4d; border: 1px solid #ff4d4d; }
+        .badge-ing { background-color: rgba(255,159,67,0.15); color: #ff9f43; border: 1px solid #ff9f43; }
+        .badge-done { background-color: rgba(46,213,115,0.15); color: #2ed573; border: 1px solid #2ed573; }
+        tr.selected { background-color: rgba(0, 242, 254, 0.08); }
+        .ticker { background-color: #161b22; border: 1px solid #30363d; padding: 6px 10px; border-radius: 4px; color: #f0f6fc; font-weight: bold; display: flex; align-items: center; font-size: 11px; flex-shrink: 0; justify-content: space-between; }
+        .ticker-title { background-color: #00f2fe; color: #0b0e14; padding: 1px 5px; border-radius: 2px; margin-right: 10px; font-size: 10px; flex-shrink: 0; }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <div class="header">🌀 新北市淡水區災害應變智慧戰情室</div>
+
+    <div class="top-layout">
+        <div class="panel">
+            <div class="panel-title">📸 現場調度影像 (隨點選案件動態載入照片)</div>
+            <div class="window-box" id="incident-screen">
+                <div class="window-label" id="incident-title">等待地圖指揮調度...</div>
+                <div class="window-tag" id="incident-tag" style="background-color: #30363d;">無相片</div>
+                <div style="padding: 10px; font-size:11px; color:#8b949e;" id="incident-desc">
+                    請點選下方表格案件，系統將自動提取該案 LINE 照片。
+                </div>
+            </div>
+
+            <div class="panel-title" style="margin-top: 6px;">🎥 轄區動態監控</div>
+            <div class="window-box" style="background-image: radial-gradient(#30363d 1px, transparent 0); background-size: 5px 5px;">
+                <div class="window-label">系統連線狀態</div>
+                <div style="padding: 10px; font-size:12px; color: #2ed573; font-weight:bold;">● 雲端資料庫同步中</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">🗺️ 淡水區微觀災害地圖 (依據通報里別自動落點)</div>
+            <div class="map-box" id="map-container">
+                <div class="map-grid"></div>
+                <div class="map-lbl">淡水區</div>
+                <!-- 地圖圓點由 JS 動態生成 -->
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">📡 應變中心環境參數</div>
+            <div class="window-box" style="background: #05070a;">
+                <div style="padding: 5px; text-align: center;">
+                    <span style="color:#00f2fe; font-size:11px; font-weight:bold;">🕒 系統最後更新時間</span>
+                    <p style="color:#f0f6fc; font-size:14px; font-weight:bold; margin:8px 0;" id="last-sync-time">讀取中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-layout">
+        <div class="panel-title" style="margin-bottom: 6px;">📋 轄區災情統計與管制大表 (連動 Google 試算表)</div>
+        <div class="table-section">
+            <div class="stats-strip">
+                <div class="stat-item"><h4 style="color:#ff4d4d;" id="count-new">0</h4><p>🚨 新通報</p></div>
+                <div class="stat-item"><h4 style="color:#ff9f43;" id="count-ing">0</h4><p>⏳ 處理中</p></div>
+                <div class="stat-item"><h4 style="color:#2ed573;" id="count-done">0</h4><p>✅ 已結案</p></div>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 12%">⏱️ 受理時間</th>
+                            <th style="width: 10%">案件類別</th>
+                            <th style="width: 10%">權責單位</th>
+                            <th style="width: 15%">地點</th>
+                            <th style="width: 45%">現場狀況與完整歷史進程</th>
+                            <th style="width: 8%">狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <tr><td colspan="6" style="text-align:center; padding:20px; color:#8b949e;">正在連線 Google 試算表獲取最新災情...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="ticker">
+        <div style="display: flex; align-items: center; min-width: 0;">
+            <div class="ticker-title">📢 系統提示</div>
+            <div id="ticker-text">戰情室運作正常，即時監控淡水區 44 里災情數據。</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 已嵌入已部署的 Google Apps Script 網頁應用程式 URL
+    const API_URL = "https://script.google.com/macros/s/AKfycbzOqZZeFalUQiGwr36j3M8O2x-8S1ijZL29ToYbldviZ6FMGic32pXjwHqvsy0OR3p0/exec"; 
+
+    let globalData = [];
+
+    // 模擬淡水區各里坐標百分比，用於地圖動態落點
+    const neighborhoodCoords = {
+        "坪頂里": {top: 60, left: 70}, "新春里": {top: 30, left: 40}, "中山里": {top: 45, left: 35},
+        "清文里": {top: 50, left: 30}, "水碓里": {top: 40, left: 45}, "民安里": {top: 55, left: 25},
+        "未知": {top: 20, left: 20}
+    };
+
+    async function fetchDisasterData() {
+        try {
+            const response = await fetch(API_URL);
+            const data = await response.json();
+            globalData = data;
+            renderStatsAndTable(data);
+            renderMapPins(data);
+            if(data.length > 0) {
+                document.getElementById('last-sync-time').innerText = data[0]["最後更新時間"] || "剛剛";
+            }
+        } catch (error) {
+            console.error("讀取試算表失敗:", error);
+            document.getElementById('table-body').innerHTML = `<tr><td colspan="6" style="text-align:center; color:#ff4d4d;">資料連線錯誤，請檢查 Apps Script 部署權限是否已設定為「任何人」。</td></tr>`;
+        }
+    }
+
+    function renderStatsAndTable(data) {
+        let countNew = 0, countIng = 0, countDone = 0;
+        let tableHtml = "";
+
+        data.forEach((item, index) => {
+            let statusClass = "badge-new";
+            if (item["狀態"] === "新通報") { countNew++; statusClass = "badge-new"; }
+            else if (item["狀態"] === "處理中") { countIng++; statusClass = "badge-ing"; }
+            else if (item["狀態"] === "已結案") { countDone++; statusClass = "badge-done"; }
+
+            tableHtml += `
+                <tr id="row-${index}" style="cursor:pointer;" onclick="selectIncident(${index})">
+                    <td style="color:#00f2fe; font-weight:bold;">${item["受理時間"] || ''}</td>
+                    <td>${item["案件類別"] || ''}</td>
+                    <td>${item["權責單位"] || ''}</td>
+                    <td>${item["地點"] || ''}</td>
+                    <td><div class="history-text">${item["現場狀況與完整歷史進程"] || ''}</div></td>
+                    <td><span class="badge ${statusClass}">${item["狀態"] || '新通報'}</span></td>
+                </tr>
+            `;
+        });
+
+        document.getElementById('count-new').innerText = countNew;
+        document.getElementById('count-ing').innerText = countIng;
+        document.getElementById('count-done').innerText = countDone;
+        document.getElementById('table-body').innerHTML = tableHtml || `<tr><td colspan="6" style="text-align:center; color:#8b949e;">目前試算表中無任何災情資料。</td></tr>`;
+    }
+
+    function renderMapPins(data) {
+        const mapContainer = document.getElementById('map-container');
+        const pins = mapContainer.querySelectorAll('.pin');
+        pins.forEach(p => p.remove());
+
+        data.forEach((item, index) => {
+            const village = item["通報里別"] || "未知";
+            const coord = neighborhoodCoords[village] || {top: Math.random()*50 + 20, left: Math.random()*50 + 20};
+            
+            let pinColorClass = "pin-new";
+            if (item["狀態"] === "處理中") pinColorClass = "pin-ing";
+            if (item["狀態"] === "已結案") pinColorClass = "pin-done";
+
+            const pin = document.createElement('div');
+            pin.className = `pin ${pinColorClass}`;
+            pin.style.top = `${coord.top}%`;
+            pin.style.left = `${coord.left}%`;
+            pin.title = `${village} - ${item["案件類別"]}`;
+            pin.onclick = (e) => { e.stopPropagation(); selectIncident(index); };
+            mapContainer.appendChild(pin);
+        });
+    }
+
+    function selectIncident(index) {
+        document.querySelectorAll('tr').forEach(r => r.classList.remove('selected'));
+        const row = document.getElementById(`row-${index}`);
+        if(row) row.classList.add('selected');
+
+        const item = globalData[index];
+        document.getElementById('incident-title').innerText = `${item["通報里別"] || ''} - ${item["地點"] || ''}`;
+        
+        let statusColor = "#ff4d4d";
+        let photoUrl = item["最新進度照片網址"] || item["案件首張通報照片網址"];
+        
+        if (item["狀態"] === "處理中") statusColor = "#ff9f43";
+        if (item["狀態"] === "已結案") statusColor = "#2ed573";
+        
+        const tagEl = document.getElementById('incident-tag');
+        tagEl.innerText = item["狀態"];
+        tagEl.style.backgroundColor = statusColor;
+
+        const descEl = document.getElementById('incident-desc');
+        if (photoUrl && String(photoUrl).startsWith("http")) {
+            descEl.innerHTML = `<img src="${photoUrl}" class="img-preview" alt="現場照片">`;
+        } else {
+            descEl.innerHTML = `<div style="padding:20px; color:#8b949e;">[此案件未附通報照片]<br><br>現場狀況：${item["現場狀況與完整歷史進程"]}</div>`;
+        }
+    }
+
+    // 初始化讀取，並設定每 30 秒自動向試算表更新一次
+    fetchDisasterData();
+    setInterval(fetchDisasterData, 30000);
+</script>
+</body>
+</html>

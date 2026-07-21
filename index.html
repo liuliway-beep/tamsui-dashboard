@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新北市淡水區災害應變中心 - 智慧戰情室 (即時連動版)</title>
+    <title>新北市淡水區災害應變中心 - 智慧戰情室 (即時地圖版)</title>
+    <!-- 載入 Leaflet 地圖套件 CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         html, body { 
             background-color: #0b0e14; 
@@ -22,18 +24,13 @@
         .panel { background-color: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 10px; display: flex; flex-direction: column; min-height: 0; }
         .panel-title { color: #00f2fe; font-size: 13px; font-weight: bold; margin-bottom: 8px; border-left: 3px solid #00f2fe; padding-left: 6px; flex-shrink: 0; }
         .window-box { flex: 1; background-color: #000; border: 2px solid #30363d; border-radius: 4px; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; text-align: center; margin-bottom: 8px; min-height: 0; }
-        .window-box:last-child { margin-bottom: 0; }
-        .window-label { position: absolute; top: 4px; left: 4px; background-color: rgba(0,0,0,0.8); color: #ffdd67; padding: 1px 6px; font-size: 10px; font-weight: bold; border-radius: 2px; border-left: 2px solid #ffdd67; z-index: 5; }
-        .window-tag { position: absolute; bottom: 4px; right: 4px; padding: 1px 5px; font-size: 9px; border-radius: 2px; font-weight: bold; color: #fff; }
+        .window-label { position: absolute; top: 4px; left: 4px; background-color: rgba(0,0,0,0.8); color: #ffdd67; padding: 1px 6px; font-size: 10px; font-weight: bold; border-radius: 2px; border-left: 2px solid #ffdd67; z-index: 500; }
+        .window-tag { position: absolute; bottom: 4px; right: 4px; padding: 1px 5px; font-size: 9px; border-radius: 2px; font-weight: bold; color: #fff; z-index: 500; }
         .img-preview { width: 100%; height: 100%; object-fit: contain; }
-        .map-box { flex: 1; background-color: #05070a; border-radius: 4px; position: relative; border: 1px solid #21262d; min-height: 0; }
-        .map-grid { position: absolute; width: 100%; height: 100%; background-image: linear-gradient(rgba(33,38,45,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(33,38,45,0.15) 1px, transparent 1px); background-size: 15px 15px; }
-        .map-lbl { position: absolute; color: #21262d; font-size: 28px; font-weight: bold; top: 40%; left: 32%; letter-spacing: 5px; }
-        .pin { position: absolute; width: 18px; height: 18px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; box-shadow: 0 0 6px rgba(0,0,0,0.6); transition: transform 0.2s; }
-        .pin:hover { transform: scale(1.3); z-index: 10; }
-        .pin-new { background-color: #ff4d4d; }
-        .pin-ing { background-color: #ff9f43; }
-        .pin-done { background-color: #2ed573; }
+        
+        /* 真實地圖容器 */
+        #map { width: 100%; height: 100%; border-radius: 4px; z-index: 1; background-color: #111; }
+
         .bottom-layout { background-color: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 10px; height: 220px; box-sizing: border-box; flex-shrink: 0; display: flex; flex-direction: column; }
         .table-section { display: grid; grid-template-columns: 100px 1fr; gap: 10px; flex: 1; min-height: 0; }
         .stats-strip { display: flex; flex-direction: column; justify-content: space-between; background-color: #0d1117; padding: 8px; border-radius: 4px; border: 1px solid #21262d; height: 100%; box-sizing: border-box; }
@@ -49,9 +46,13 @@
         .badge-new { background-color: rgba(255,77,77,0.15); color: #ff4d4d; border: 1px solid #ff4d4d; }
         .badge-ing { background-color: rgba(255,159,67,0.15); color: #ff9f43; border: 1px solid #ff9f43; }
         .badge-done { background-color: rgba(46,213,115,0.15); color: #2ed573; border: 1px solid #2ed573; }
-        tr.selected { background-color: rgba(0, 242, 254, 0.08); }
+        tr.selected { background-color: rgba(0, 242, 254, 0.15) !important; border-left: 3px solid #00f2fe; }
         .ticker { background-color: #161b22; border: 1px solid #30363d; padding: 6px 10px; border-radius: 4px; color: #f0f6fc; font-weight: bold; display: flex; align-items: center; font-size: 11px; flex-shrink: 0; justify-content: space-between; }
         .ticker-title { background-color: #00f2fe; color: #0b0e14; padding: 1px 5px; border-radius: 2px; margin-right: 10px; font-size: 10px; flex-shrink: 0; }
+        
+        /* 地圖彈出視窗樣式 */
+        .leaflet-popup-content-wrapper { background: #161b22; color: #c9d1d9; border: 1px solid #30363d; }
+        .leaflet-popup-tip { background: #161b22; }
     </style>
 </head>
 <body>
@@ -66,23 +67,21 @@
                 <div class="window-label" id="incident-title">等待地圖指揮調度...</div>
                 <div class="window-tag" id="incident-tag" style="background-color: #30363d;">無相片</div>
                 <div style="padding: 10px; font-size:11px; color:#8b949e;" id="incident-desc">
-                    請點選下方表格案件，系統將自動提取該案 LINE 照片。
+                    請點選下方表格案件或地圖圖標，系統將自動提取現場資訊。
                 </div>
             </div>
 
             <div class="panel-title" style="margin-top: 6px;">🎥 轄區動態監控</div>
             <div class="window-box" style="background-image: radial-gradient(#30363d 1px, transparent 0); background-size: 5px 5px;">
                 <div class="window-label">系統連線狀態</div>
-                <div style="padding: 10px; font-size:12px; color: #2ed573; font-weight:bold;">● 雲端資料庫同步中</div>
+                <div style="padding: 10px; font-size:12px; color: #2ed573; font-weight:bold;">● 雲端資料庫同步中 (每30秒)</div>
             </div>
         </div>
 
         <div class="panel">
-            <div class="panel-title">🗺️ 淡水區微觀災害地圖 (依據通報里別自動落點)</div>
-            <div class="map-box" id="map-container">
-                <div class="map-grid"></div>
-                <div class="map-lbl">淡水區</div>
-                <!-- 地圖圓點由 JS 動態生成 -->
+            <div class="panel-title">🗺️ 淡水區微觀災害地圖 (真實 GIS 地圖落點)</div>
+            <div style="flex: 1; position: relative; min-height: 0;">
+                <div id="map"></div>
             </div>
         </div>
 
@@ -91,7 +90,7 @@
             <div class="window-box" style="background: #05070a;">
                 <div style="padding: 5px; text-align: center;">
                     <span style="color:#00f2fe; font-size:11px; font-weight:bold;">🕒 系統最後更新時間</span>
-                    <p style="color:#f0f6fc; font-size:14px; font-weight:bold; margin:8px 0;" id="last-sync-time">讀取中...</p>
+                    <p style="color:#f0f6fc; font-size:13px; font-weight:bold; margin:8px 0;" id="last-sync-time">讀取中...</p>
                 </div>
             </div>
         </div>
@@ -134,18 +133,43 @@
     </div>
 </div>
 
+<!-- 載入 Leaflet 地圖套件 JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <script>
-    // 已嵌入已部署的 Google Apps Script 網頁應用程式 URL
     const API_URL = "https://script.google.com/macros/s/AKfycbzOqZZeFalUQiGwr36j3M8O2x-8S1ijZL29ToYbldviZ6FMGic32pXjwHqvsy0OR3p0/exec"; 
 
     let globalData = [];
+    let map, markersGroup;
 
-    // 模擬淡水區各里坐標百分比，用於地圖動態落點
-    const neighborhoodCoords = {
-        "坪頂里": {top: 60, left: 70}, "新春里": {top: 30, left: 40}, "中山里": {top: 45, left: 35},
-        "清文里": {top: 50, left: 30}, "水碓里": {top: 40, left: 45}, "民安里": {top: 55, left: 25},
-        "未知": {top: 20, left: 20}
+    // 淡水區主要里別的真實經緯度座標預設表
+    const tamsuiLocations = {
+        "中山路": [25.1725, 121.4442],
+        "學府路": [25.1695, 121.4480],
+        "淡水老街": [25.1698, 121.4390],
+        "捷運站": [25.1678, 121.4455],
+        "新春里": [25.1810, 121.4420],
+        "水碓里": [25.1780, 121.4460],
+        "坪頂里": [25.1630, 121.4810],
+        "竹圍": [25.1365, 121.4595],
+        "紅樹林": [25.1540, 121.4580],
+        "沙崙": [25.1840, 121.4220],
+        "淡海新市鎮": [25.1950, 121.4330]
     };
+
+    // 初始化 Leaflet 暗色風格地圖
+    function initMap() {
+        // 以淡水區公所（淡水中心）為地圖中心點
+        map = L.map('map').setView([25.1755, 121.4430], 13);
+
+        // 使用 CartoDB 深色地圖底圖，符合戰情室科技感
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            maxZoom: 19
+        }).addTo(map);
+
+        markersGroup = L.layerGroup().addTo(map);
+    }
 
     async function fetchDisasterData() {
         try {
@@ -153,13 +177,15 @@
             const data = await response.json();
             globalData = data;
             renderStatsAndTable(data);
-            renderMapPins(data);
+            renderMapMarkers(data);
             if(data.length > 0) {
-                document.getElementById('last-sync-time').innerText = data[0]["最後更新時間"] || "剛剛";
+                let timeStr = data[0]["最後更新時間"] || "";
+                if (timeStr.includes("T")) timeStr = timeStr.replace("T", " ").substring(0, 16);
+                document.getElementById('last-sync-time').innerText = timeStr || "剛剛";
             }
         } catch (error) {
             console.error("讀取試算表失敗:", error);
-            document.getElementById('table-body').innerHTML = `<tr><td colspan="6" style="text-align:center; color:#ff4d4d;">資料連線錯誤，請檢查 Apps Script 部署權限是否已設定為「任何人」。</td></tr>`;
+            document.getElementById('table-body').innerHTML = `<tr><td colspan="6" style="text-align:center; color:#ff4d4d;">資料連線錯誤，請檢查 Apps Script 部署權限。</td></tr>`;
         }
     }
 
@@ -173,9 +199,12 @@
             else if (item["狀態"] === "處理中") { countIng++; statusClass = "badge-ing"; }
             else if (item["狀態"] === "已結案") { countDone++; statusClass = "badge-done"; }
 
+            let timeStr = item["受理時間"] || '';
+            if (timeStr.includes("T")) timeStr = timeStr.replace("T", " ").substring(0, 16);
+
             tableHtml += `
                 <tr id="row-${index}" style="cursor:pointer;" onclick="selectIncident(${index})">
-                    <td style="color:#00f2fe; font-weight:bold;">${item["受理時間"] || ''}</td>
+                    <td style="color:#00f2fe; font-weight:bold;">${timeStr}</td>
                     <td>${item["案件類別"] || ''}</td>
                     <td>${item["權責單位"] || ''}</td>
                     <td>${item["地點"] || ''}</td>
@@ -191,26 +220,37 @@
         document.getElementById('table-body').innerHTML = tableHtml || `<tr><td colspan="6" style="text-align:center; color:#8b949e;">目前試算表中無任何災情資料。</td></tr>`;
     }
 
-    function renderMapPins(data) {
-        const mapContainer = document.getElementById('map-container');
-        const pins = mapContainer.querySelectorAll('.pin');
-        pins.forEach(p => p.remove());
+    function renderMapMarkers(data) {
+        markersGroup.clearLayers();
 
         data.forEach((item, index) => {
-            const village = item["通報里別"] || "未知";
-            const coord = neighborhoodCoords[village] || {top: Math.random()*50 + 20, left: Math.random()*50 + 20};
-            
-            let pinColorClass = "pin-new";
-            if (item["狀態"] === "處理中") pinColorClass = "pin-ing";
-            if (item["狀態"] === "已結案") pinColorClass = "pin-done";
+            const locationText = (item["地點"] || "") + (item["通報里別"] || "");
+            let latlng = [25.1755 + (Math.random() - 0.5) * 0.02, 121.4430 + (Math.random() - 0.5) * 0.02];
 
-            const pin = document.createElement('div');
-            pin.className = `pin ${pinColorClass}`;
-            pin.style.top = `${coord.top}%`;
-            pin.style.left = `${coord.left}%`;
-            pin.title = `${village} - ${item["案件類別"]}`;
-            pin.onclick = (e) => { e.stopPropagation(); selectIncident(index); };
-            mapContainer.appendChild(pin);
+            // 依關鍵字進行淡水實際地點比對
+            for (let key in tamsuiLocations) {
+                if (locationText.includes(key)) {
+                    latlng = tamsuiLocations[key];
+                    break;
+                }
+            }
+
+            let color = "#ff4d4d"; // 新通報 紅色
+            if (item["狀態"] === "處理中") color = "#ff9f43"; // 橙色
+            if (item["狀態"] === "已結案") color = "#2ed573"; // 綠色
+
+            const marker = L.circleMarker(latlng, {
+                radius: 8,
+                fillColor: color,
+                color: "#fff",
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.9
+            });
+
+            marker.bindPopup(`<b>${item["案件類別"] || "災情"}</b><br>${item["地點"] || ""}<br>狀態：${item["狀態"] || "新通報"}`);
+            marker.on('click', () => { selectIncident(index); });
+            markersGroup.addLayer(marker);
         });
     }
 
@@ -229,20 +269,23 @@
         if (item["狀態"] === "已結案") statusColor = "#2ed573";
         
         const tagEl = document.getElementById('incident-tag');
-        tagEl.innerText = item["狀態"];
+        tagEl.innerText = item["狀態"] || "新通報";
         tagEl.style.backgroundColor = statusColor;
 
         const descEl = document.getElementById('incident-desc');
         if (photoUrl && String(photoUrl).startsWith("http")) {
             descEl.innerHTML = `<img src="${photoUrl}" class="img-preview" alt="現場照片">`;
         } else {
-            descEl.innerHTML = `<div style="padding:20px; color:#8b949e;">[此案件未附通報照片]<br><br>現場狀況：${item["現場狀況與完整歷史進程"]}</div>`;
+            descEl.innerHTML = `<div style="padding:15px; color:#8b949e; text-align:left;">[此案件未附通報照片]<br><br><b>現場狀況：</b><br>${item["現場狀況與完整歷史進程"] || '暫無進程描述'}</div>`;
         }
     }
 
-    // 初始化讀取，並設定每 30 秒自動向試算表更新一次
-    fetchDisasterData();
-    setInterval(fetchDisasterData, 30000);
+    // 頁面載入完成後初始化地圖與讀取資料
+    window.onload = () => {
+        initMap();
+        fetchDisasterData();
+        setInterval(fetchDisasterData, 30000);
+    };
 </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新北市淡水區災害應變中心 - 智慧戰情室 (TGOS門牌引擎版)</title>
+    <title>新北市淡水區災害應變中心 - 智慧戰情室 (欄位相容終極校正版)</title>
     <!-- 載入 Leaflet 地圖套件 CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -77,7 +77,7 @@
         </div>
 
         <div class="panel">
-            <div class="panel-title">🗺️ 淡水區微觀災害地圖 [TGOS門牌引擎版]</div>
+            <div class="panel-title">🗺️ 淡水區微觀災害地圖 [欄位相容終極校正版]</div>
             <div style="flex: 1; position: relative; min-height: 0;">
                 <div id="map"></div>
             </div>
@@ -139,19 +139,21 @@
     let globalData = [];
     let map, markersGroup;
 
-    // 淡水區重要門牌精準校正字典（完全以真實地理座標點釘死）
-    const fixedAddressMap = {
-        "學府路102號": [25.16629, 121.44855], // 鄧公國小正門門牌
-        "學府路102": [25.16629, 121.44855],
-        "中山路2段10號": [25.18021, 121.44282],
-        "中山路二段10號": [25.18021, 121.44282],
-        "中山路2段": [25.18000, 121.44300],
-        "中山路二段": [25.18000, 121.44300],
-        "中山路1段": [25.17200, 121.44450],
-        "中山路一段": [25.17200, 121.44450],
-        "中山路": [25.17450, 121.44350],
-        "學府路": [25.16780, 121.44750]
-    };
+    // 門牌座標資料庫（由長至短精準比對）
+    const fixedAddressMap = [
+        { keys: ["學府路102號", "學府路102"], lat: 25.16629, lng: 121.44855 }, // 鄧公國小正門
+        { keys: ["中山路2段10號", "中山路二段10號"], lat: 25.18021, lng: 121.44282 },
+        { keys: ["中山路2段", "中山路二段"], lat: 25.18000, lng: 121.44300 },
+        { keys: ["中山路1段", "中山路一段"], lat: 25.17200, lng: 121.44450 },
+        { keys: ["中山路"], lat: 25.17450, lng: 121.44350 },
+        { keys: ["學府路"], lat: 25.16780, lng: 121.44750 },
+        { keys: ["英專路"], lat: 25.16880, lng: 121.44620 },
+        { keys: ["水源街"], lat: 25.17320, lng: 121.45050 },
+        { keys: ["北新路"], lat: 25.18050, lng: 121.45200 },
+        { keys: ["淡金路"], lat: 25.18600, lng: 121.45100 },
+        { keys: ["中正東路"], lat: 25.15500, lng: 121.45850 },
+        { keys: ["中正路"], lat: 25.17100, lng: 121.43750 }
+    ];
 
     function initMap() {
         map = L.map('map').setView([25.1720, 121.4450], 14);
@@ -162,6 +164,25 @@
         }).addTo(map);
 
         markersGroup = L.layerGroup().addTo(map);
+    }
+
+    // 聰明提取地點欄位（防止試算表欄位名稱不符）
+    function extractLocationText(item) {
+        if (!item) return "";
+        let rawLoc = item["地點"] || item["災情地點"] || item["通報地點"] || item["地址"] || item["通報里別"] || "";
+        
+        // 如果依然沒有，掃描所有 key，只要 key 包含 "地" 或 "址" 就抓取
+        if (!rawLoc) {
+            for (let k in item) {
+                if (k.includes("地") || k.includes("址")) {
+                    rawLoc = item[k];
+                    break;
+                }
+            }
+        }
+        
+        // 轉為字串並洗掉空白與斷行
+        return String(rawLoc).replace(/\s+/g, "");
     }
 
     async function fetchDisasterData() {
@@ -194,13 +215,14 @@
 
             let timeStr = item["受理時間"] || '';
             if (timeStr.includes("T")) timeStr = timeStr.replace("T", " ").substring(0, 16);
+            let locShow = extractLocationText(item);
 
             tableHtml += `
                 <tr id="row-${index}" style="cursor:pointer;" onclick="selectIncident(${index})">
                     <td style="color:#00f2fe; font-weight:bold;">${timeStr}</td>
                     <td>${item["案件類別"] || ''}</td>
                     <td>${item["權責單位"] || ''}</td>
-                    <td>${item["地點"] || ''}</td>
+                    <td>${locShow}</td>
                     <td><div class="history-text">${item["現場狀況與完整歷史進程"] || ''}</div></td>
                     <td><span class="badge ${statusClass}">${item["狀態"] || '新通報'}</span></td>
                 </tr>
@@ -213,20 +235,20 @@
         document.getElementById('table-body').innerHTML = tableHtml || `<tr><td colspan="6" style="text-align:center; color:#8b949e;">目前試算表中無任何災情資料。</td></tr>`;
     }
 
-    // 動態門牌解算引擎
-    async function resolveLocation(locationText) {
-        if (!locationText) return [25.1720, 121.4450];
-        
-        let cleanText = locationText.trim();
+    // 地理解析比對
+    async function resolveLocation(cleanText) {
+        if (!cleanText) return [25.1680, 121.4450];
 
-        // 1. 優先比對寫死的重點門牌清單
-        for (let key in fixedAddressMap) {
-            if (cleanText.includes(key)) {
-                return fixedAddressMap[key];
+        // 1. 本地重點門牌字典優先比對
+        for (let target of fixedAddressMap) {
+            for (let key of target.keys) {
+                if (cleanText.includes(key)) {
+                    return [target.lat, target.lng];
+                }
             }
         }
 
-        // 2. 自動補充「新北市淡水區」前綴進行線上記錄檢索
+        // 2. 本地沒有才進行線上 Nominatim 查詢
         let fullAddr = cleanText;
         if (!fullAddr.includes("淡水")) fullAddr = "新北市淡水區" + fullAddr;
 
@@ -240,7 +262,7 @@
             console.warn("線上記錄比對失敗：", fullAddr);
         }
 
-        // 3. 備用定位點：淡水捷運站/行政中心周邊（絕不飛往中正東路山坡）
+        // 3. 預設備用點：淡水捷運站周邊
         return [25.1680, 121.4450];
     }
 
@@ -249,14 +271,14 @@
 
         for (let index = 0; index < data.length; index++) {
             const item = data[index];
-            const locText = item["地點"] || item["通報里別"] || "";
+            const locText = extractLocationText(item);
             
             let baseLatlng = await resolveLocation(locText);
             
-            // 多筆案件重疊時，微幅錯開 5 公尺
+            // 多筆案件微幅錯開 3 公尺
             let latlng = [
-                baseLatlng[0] + (index * 0.00004),
-                baseLatlng[1] + (index * 0.00004)
+                baseLatlng[0] + (index * 0.00003),
+                baseLatlng[1] + (index * 0.00003)
             ];
 
             let color = "#ff4d4d";
@@ -272,7 +294,7 @@
                 fillOpacity: 0.95
             });
 
-            marker.bindPopup(`<b>${item["案件類別"] || "災情"}</b><br>${item["地點"] || ""}<br>狀態：${item["狀態"] || "新通報"}`);
+            marker.bindPopup(`<b>${item["案件類別"] || "災情"}</b><br>${locText}<br>狀態：${item["狀態"] || "新通報"}`);
             marker.on('click', () => { selectIncident(index); });
             markersGroup.addLayer(marker);
         }
@@ -284,7 +306,8 @@
         if(row) row.classList.add('selected');
 
         const item = globalData[index];
-        document.getElementById('incident-title').innerText = `${item["通報里別"] || ''} - ${item["地點"] || ''}`;
+        const locShow = extractLocationText(item);
+        document.getElementById('incident-title').innerText = `${item["通報里別"] || ''} - ${locShow}`;
         
         let statusColor = "#ff4d4d";
         let photoUrl = item["最新進度照片網址"] || item["案件首張通報照片網址"];

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新北市淡水區災害應變中心 - 智慧戰情室 (即時地圖版)</title>
+    <title>新北市淡水區災害應變中心 - 智慧戰情室 (精準定位版)</title>
     <!-- 載入 Leaflet 地圖套件 CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -28,7 +28,6 @@
         .window-tag { position: absolute; bottom: 4px; right: 4px; padding: 1px 5px; font-size: 9px; border-radius: 2px; font-weight: bold; color: #fff; z-index: 500; }
         .img-preview { width: 100%; height: 100%; object-fit: contain; }
         
-        /* 真實地圖容器 */
         #map { width: 100%; height: 100%; border-radius: 4px; z-index: 1; background-color: #111; }
 
         .bottom-layout { background-color: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 10px; height: 220px; box-sizing: border-box; flex-shrink: 0; display: flex; flex-direction: column; }
@@ -50,7 +49,6 @@
         .ticker { background-color: #161b22; border: 1px solid #30363d; padding: 6px 10px; border-radius: 4px; color: #f0f6fc; font-weight: bold; display: flex; align-items: center; font-size: 11px; flex-shrink: 0; justify-content: space-between; }
         .ticker-title { background-color: #00f2fe; color: #0b0e14; padding: 1px 5px; border-radius: 2px; margin-right: 10px; font-size: 10px; flex-shrink: 0; }
         
-        /* 地圖彈出視窗樣式 */
         .leaflet-popup-content-wrapper { background: #161b22; color: #c9d1d9; border: 1px solid #30363d; }
         .leaflet-popup-tip { background: #161b22; }
     </style>
@@ -142,14 +140,26 @@
     let globalData = [];
     let map, markersGroup;
 
-    // 淡水區主要里別的真實經緯度座標預設表
+    // 淡水區真實路段與里別座標對照表（擴充）
     const tamsuiLocations = {
-        "中山路": [25.1725, 121.4442],
+        "中山路2段": [25.1802, 121.4428],
+        "中山路二段": [25.1802, 121.4428],
+        "中山路1段": [25.1718, 121.4448],
+        "中山路一段": [25.1718, 121.4448],
+        "中山路": [25.1745, 121.4435],
         "學府路": [25.1695, 121.4480],
+        "英專路": [25.1688, 121.4462],
+        "水源街": [25.1732, 121.4505],
+        "北新路": [25.1805, 121.4520],
+        "淡金路": [25.1860, 121.4510],
+        "中正東路": [25.1550, 121.4585],
         "淡水老街": [25.1698, 121.4390],
+        "中正路": [25.1710, 121.4375],
         "捷運站": [25.1678, 121.4455],
         "新春里": [25.1810, 121.4420],
         "水碓里": [25.1780, 121.4460],
+        "中山里": [25.1740, 121.4430],
+        "清文里": [25.1715, 121.4400],
         "坪頂里": [25.1630, 121.4810],
         "竹圍": [25.1365, 121.4595],
         "紅樹林": [25.1540, 121.4580],
@@ -157,12 +167,10 @@
         "淡海新市鎮": [25.1950, 121.4330]
     };
 
-    // 初始化 Leaflet 暗色風格地圖
     function initMap() {
-        // 以淡水區公所（淡水中心）為地圖中心點
-        map = L.map('map').setView([25.1755, 121.4430], 13);
+        // 以淡水區公所為中心，縮放層級設為 14 級（更靠近市區）
+        map = L.map('map').setView([25.1755, 121.4430], 14);
 
-        // 使用 CartoDB 深色地圖底圖，符合戰情室科技感
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; OpenStreetMap &copy; CARTO',
             maxZoom: 19
@@ -225,12 +233,20 @@
 
         data.forEach((item, index) => {
             const locationText = (item["地點"] || "") + (item["通報里別"] || "");
-            let latlng = [25.1755 + (Math.random() - 0.5) * 0.02, 121.4430 + (Math.random() - 0.5) * 0.02];
+            
+            // 預設以淡水區公所周邊微幅交錯，避免堆疊
+            let latlng = [25.1755 + (index * 0.0008), 121.4430 + (index * 0.0008)];
+            let matched = false;
 
-            // 依關鍵字進行淡水實際地點比對
+            // 依關鍵字進行淡水實際地點精準比對
             for (let key in tamsuiLocations) {
                 if (locationText.includes(key)) {
-                    latlng = tamsuiLocations[key];
+                    // 找到對應路段，微幅分散點位避開重疊
+                    latlng = [
+                        tamsuiLocations[key][0] + ((index % 3) * 0.0003),
+                        tamsuiLocations[key][1] + (Math.floor(index / 3) * 0.0003)
+                    ];
+                    matched = true;
                     break;
                 }
             }
@@ -280,7 +296,6 @@
         }
     }
 
-    // 頁面載入完成後初始化地圖與讀取資料
     window.onload = () => {
         initMap();
         fetchDisasterData();

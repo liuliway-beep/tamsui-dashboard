@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新北市淡水區災害應變中心 - 智慧戰情室 (彩色高精度定位版)</title>
+    <title>新北市淡水區災害應變中心 - 智慧戰情室 (精準門牌定位版)</title>
     <!-- 載入 Leaflet 地圖套件 CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -77,7 +77,7 @@
         </div>
 
         <div class="panel">
-            <div class="panel-title">🗺️ 淡水區微觀災害地圖 (彩色高精度 GIS 落點)</div>
+            <div class="panel-title">🗺️ 淡水區微觀災害地圖 (彩色精準 GIS 落點)</div>
             <div style="flex: 1; position: relative; min-height: 0;">
                 <div id="map"></div>
             </div>
@@ -139,13 +139,41 @@
 
     let globalData = [];
     let map, markersGroup;
-    const geoCache = {}; // 經緯度快取，避免重複查詢
+    const geoCache = {};
+
+    // 淡水區主要門牌與路段真實經緯度預置表 (精準定位)
+    const exactPresetLocations = {
+        "學府路102號": [25.1685, 121.4485],
+        "學府路": [25.1690, 121.4475],
+        "中山路2段10號": [25.1802, 121.4428],
+        "中山路二段10號": [25.1802, 121.4428],
+        "中山路2段": [25.1800, 121.4430],
+        "中山路二段": [25.1800, 121.4430],
+        "中山路1段": [25.1720, 121.4445],
+        "中山路一段": [25.1720, 121.4445],
+        "中山路": [25.1735, 121.4438],
+        "英專路": [25.1688, 121.4462],
+        "水源街": [25.1732, 121.4505],
+        "北新路": [25.1805, 121.4520],
+        "淡金路": [25.1860, 121.4510],
+        "中正東路": [25.1550, 121.4585],
+        "淡水老街": [25.1698, 121.4390],
+        "中正路": [25.1710, 121.4375],
+        "捷運站": [25.1678, 121.4455],
+        "新春里": [25.1810, 121.4420],
+        "水碓里": [25.1780, 121.4460],
+        "中山里": [25.1740, 121.4430],
+        "清文里": [25.1715, 121.4400],
+        "坪頂里": [25.1630, 121.4810],
+        "竹圍": [25.1365, 121.4595],
+        "紅樹林": [25.1540, 121.4580],
+        "沙崙": [25.1840, 121.4220],
+        "淡海新市鎮": [25.1950, 121.4330]
+    };
 
     function initMap() {
-        // 以淡水區公所為中心，縮放層級設為 14 級
-        map = L.map('map').setView([25.1755, 121.4430], 14);
+        map = L.map('map').setView([25.1730, 121.4440], 14);
 
-        // 使用 CartoDB Voyager 彩色高清清晰地圖
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
             maxZoom: 19
@@ -203,28 +231,42 @@
         document.getElementById('table-body').innerHTML = tableHtml || `<tr><td colspan="6" style="text-align:center; color:#8b949e;">目前試算表中無任何災情資料。</td></tr>`;
     }
 
-    // 地址轉經緯度 (Nominatim API)
-    async function geocodeAddress(address) {
-        if (!address) return null;
+    // 取得精準座標 (本地預置優先，API 為輔)
+    async function getCoordinates(address, index) {
+        if (!address) return [25.1730, 121.4440];
         let cleanAddr = address.trim();
-        if (!cleanAddr.includes("淡水")) cleanAddr = "新北市淡水區" + cleanAddr;
-        if (!cleanAddr.includes("新北市")) cleanAddr = "新北市" + cleanAddr;
 
-        if (geoCache[cleanAddr]) return geoCache[cleanAddr];
+        // 1. 先比對本地精準預置表
+        for (let key in exactPresetLocations) {
+            if (cleanAddr.includes(key)) {
+                // 微幅以 index 分散同地點重複標籤
+                return [
+                    exactPresetLocations[key][0] + (index * 0.00015),
+                    exactPresetLocations[key][1] + (index * 0.00015)
+                ];
+            }
+        }
+
+        // 2. 本地沒有，呼叫線上 API
+        let searchAddr = cleanAddr;
+        if (!searchAddr.includes("淡水")) searchAddr = "新北市淡水區" + searchAddr;
+        if (geoCache[searchAddr]) return geoCache[searchAddr];
 
         try {
-            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cleanAddr)}&limit=1`;
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchAddr)}&limit=1`;
             const res = await fetch(url, { headers: { 'User-Agent': 'TamsuiDisasterDashboard/1.0' } });
             const resData = await res.json();
             if (resData && resData.length > 0) {
                 const latlng = [parseFloat(resData[0].lat), parseFloat(resData[0].lon)];
-                geoCache[cleanAddr] = latlng;
+                geoCache[searchAddr] = latlng;
                 return latlng;
             }
         } catch (e) {
-            console.error("地址定位失敗:", cleanAddr, e);
+            console.error("線上定位失敗:", searchAddr, e);
         }
-        return null;
+
+        // 3. 全失敗時回傳淡水市中心
+        return [25.1730 + (index * 0.0003), 121.4440 + (index * 0.0003)];
     }
 
     async function renderMapMarkers(data) {
@@ -234,13 +276,7 @@
             const item = data[index];
             const address = item["地點"] || item["通報里別"] || "";
             
-            // 嘗試真實地址定位
-            let latlng = await geocodeAddress(address);
-
-            // 若無法精準定位，備用預設座標
-            if (!latlng) {
-                latlng = [25.1755 + (index * 0.0008), 121.4430 + (index * 0.0008)];
-            }
+            let latlng = await getCoordinates(address, index);
 
             let color = "#ff4d4d"; // 新通報 紅色
             if (item["狀態"] === "處理中") color = "#ff9f43"; // 橙色

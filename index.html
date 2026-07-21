@@ -139,9 +139,9 @@
     let globalData = [];
     let map, markersGroup;
 
-    // 從 Google Maps 實測提取的淡水區真真實實門牌座標對照表
+    // 精準地理座標表
     const exactGpsTable = [
-        { key: "學府路102號", lat: 25.1695, lng: 121.4480 },
+        { key: "學府路102號", lat: 25.1685, lng: 121.4485 },
         { key: "中山路2段10號", lat: 25.1802, lng: 121.4428 },
         { key: "中山路二段10號", lat: 25.1802, lng: 121.4428 },
         { key: "中山路2段", lat: 25.1800, lng: 121.4430 },
@@ -223,7 +223,6 @@
     function getExactPoint(locText) {
         if (!locText) return [25.1720, 121.4450];
 
-        // 依關鍵字長度比對，確保「學府路102號」優先於「學府路」
         for (let item of exactGpsTable) {
             if (locText.includes(item.key)) {
                 return [item.lat, item.lng];

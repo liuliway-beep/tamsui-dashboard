@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新北市淡水區災害應變中心 - 智慧戰情室 (Google 官方高精度定位版)</title>
+    <title>新北市淡水區災害應變中心 - 智慧戰情室 (雲端座標同步版)</title>
     <!-- 載入 Leaflet 地圖套件 CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -77,7 +77,7 @@
         </div>
 
         <div class="panel">
-            <div class="panel-title">🗺️ 淡水區微觀災害地圖 [Google 官方高精度定位版]</div>
+            <div class="panel-title">🗺️ 淡水區微觀災害地圖 [雲端座標同步版]</div>
             <div style="flex: 1; position: relative; min-height: 0;">
                 <div id="map"></div>
             </div>
@@ -220,17 +220,25 @@
         data.forEach((item, index) => {
             const locText = extractLocationText(item);
             
-            // 優先直接使用 Apps Script 自動填寫的經緯度
-            let lat = parseFloat(item["緯度"]);
-            let lng = parseFloat(item["經度"]);
+            // 靈活抓取試算表中的緯度與經度欄位 (相容全半形與 key 差異)
+            let lat = parseFloat(item["緯度"] || item["Lat"] || item["lat"]);
+            let lng = parseFloat(item["經度"] || item["Lng"] || item["lng"] || item["Lon"]);
 
-            // 若尚無經緯度，預設落在淡水中心點
+            // 備用搜尋：如果 key key名稱被改變，自動尋找帶有 "緯" 或 "經" 的欄位值
+            if (isNaN(lat) || isNaN(lng)) {
+                for (let k in item) {
+                    if (k.includes("緯")) lat = parseFloat(item[k]);
+                    if (k.includes("經")) lng = parseFloat(item[k]);
+                }
+            }
+
+            // 如果試算表依然沒有數字，降級預設值
             if (isNaN(lat) || isNaN(lng)) {
                 lat = 25.17200;
                 lng = 121.44500;
             }
 
-            // 多筆案件重疊時微幅錯開 3 公尺
+            // 多筆案件完全同點位時，微幅擴張 3 公尺避免重疊壓死
             let latlng = [
                 lat + (index * 0.00003),
                 lng + (index * 0.00003)

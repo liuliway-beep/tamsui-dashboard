@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新北市淡水區災害應變中心 - 智慧戰情室 (欄位相容終極校正版)</title>
+    <title>新北市淡水區災害應變中心 - 智慧戰情室 (門牌規則鎖定版)</title>
     <!-- 載入 Leaflet 地圖套件 CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -77,7 +77,7 @@
         </div>
 
         <div class="panel">
-            <div class="panel-title">🗺️ 淡水區微觀災害地圖 [欄位相容終極校正版]</div>
+            <div class="panel-title">🗺️ 淡水區微觀災害地圖 [門牌規則鎖定版]</div>
             <div style="flex: 1; position: relative; min-height: 0;">
                 <div id="map"></div>
             </div>
@@ -139,22 +139,6 @@
     let globalData = [];
     let map, markersGroup;
 
-    // 門牌座標資料庫（由長至短精準比對）
-    const fixedAddressMap = [
-        { keys: ["學府路102號", "學府路102"], lat: 25.16629, lng: 121.44855 }, // 鄧公國小正門
-        { keys: ["中山路2段10號", "中山路二段10號"], lat: 25.18021, lng: 121.44282 },
-        { keys: ["中山路2段", "中山路二段"], lat: 25.18000, lng: 121.44300 },
-        { keys: ["中山路1段", "中山路一段"], lat: 25.17200, lng: 121.44450 },
-        { keys: ["中山路"], lat: 25.17450, lng: 121.44350 },
-        { keys: ["學府路"], lat: 25.16780, lng: 121.44750 },
-        { keys: ["英專路"], lat: 25.16880, lng: 121.44620 },
-        { keys: ["水源街"], lat: 25.17320, lng: 121.45050 },
-        { keys: ["北新路"], lat: 25.18050, lng: 121.45200 },
-        { keys: ["淡金路"], lat: 25.18600, lng: 121.45100 },
-        { keys: ["中正東路"], lat: 25.15500, lng: 121.45850 },
-        { keys: ["中正路"], lat: 25.17100, lng: 121.43750 }
-    ];
-
     function initMap() {
         map = L.map('map').setView([25.1720, 121.4450], 14);
 
@@ -166,23 +150,18 @@
         markersGroup = L.layerGroup().addTo(map);
     }
 
-    // 聰明提取地點欄位（防止試算表欄位名稱不符）
     function extractLocationText(item) {
         if (!item) return "";
-        let rawLoc = item["地點"] || item["災情地點"] || item["通報地點"] || item["地址"] || item["通報里別"] || "";
-        
-        // 如果依然沒有，掃描所有 key，只要 key 包含 "地" 或 "址" 就抓取
-        if (!rawLoc) {
+        let raw = item["地點"] || item["災情地點"] || item["通報地點"] || item["地址"] || item["通報里別"] || "";
+        if (!raw) {
             for (let k in item) {
                 if (k.includes("地") || k.includes("址")) {
-                    rawLoc = item[k];
+                    raw = item[k];
                     break;
                 }
             }
         }
-        
-        // 轉為字串並洗掉空白與斷行
-        return String(rawLoc).replace(/\s+/g, "");
+        return String(raw).replace(/\s+/g, "");
     }
 
     async function fetchDisasterData() {
@@ -235,21 +214,34 @@
         document.getElementById('table-body').innerHTML = tableHtml || `<tr><td colspan="6" style="text-align:center; color:#8b949e;">目前試算表中無任何災情資料。</td></tr>`;
     }
 
-    // 地理解析比對
-    async function resolveLocation(cleanText) {
-        if (!cleanText) return [25.1680, 121.4450];
+    // 強制比對邏輯 (正則表達式，不受全半形與前綴影響)
+    async function resolveLocation(str) {
+        if (!str) return [25.1720, 121.4450];
 
-        // 1. 本地重點門牌字典優先比對
-        for (let target of fixedAddressMap) {
-            for (let key of target.keys) {
-                if (cleanText.includes(key)) {
-                    return [target.lat, target.lng];
-                }
-            }
+        // 1. 學府路 102 號 (鄧公國小) 強制釘死
+        if (/學府/.test(str) && /102/.test(str)) {
+            return [25.16629, 121.44855];
         }
 
-        // 2. 本地沒有才進行線上 Nominatim 查詢
-        let fullAddr = cleanText;
+        // 2. 中山路二段 10 號 強制釘死
+        if (/中山/.test(str) && (2|二) && /10/.test(str)) {
+            return [25.18021, 121.44282];
+        }
+
+        // 3. 一般路段規則
+        if (/中山/.test(str) && (2|二)) return [25.18000, 121.44300];
+        if (/中山/.test(str) && (1|一)) return [25.17200, 121.44450];
+        if (/中山/.test(str)) return [25.17450, 121.44350];
+        if (/學府/.test(str)) return [25.16780, 121.44750];
+        if (/英專/.test(str)) return [25.16880, 121.44620];
+        if (/水源/.test(str)) return [25.17320, 121.45050];
+        if (/北新/.test(str)) return [25.18050, 121.45200];
+        if (/淡金/.test(str)) return [25.18600, 121.45100];
+        if (/中正東/.test(str)) return [25.15500, 121.45850];
+        if (/中正/.test(str)) return [25.17100, 121.43750];
+
+        // 4. 線上 Nominatim 比對
+        let fullAddr = str;
         if (!fullAddr.includes("淡水")) fullAddr = "新北市淡水區" + fullAddr;
 
         try {
@@ -262,8 +254,7 @@
             console.warn("線上記錄比對失敗：", fullAddr);
         }
 
-        // 3. 預設備用點：淡水捷運站周邊
-        return [25.1680, 121.4450];
+        return [25.1720, 121.4450];
     }
 
     async function renderMapMarkers(data) {
@@ -275,7 +266,6 @@
             
             let baseLatlng = await resolveLocation(locText);
             
-            // 多筆案件微幅錯開 3 公尺
             let latlng = [
                 baseLatlng[0] + (index * 0.00003),
                 baseLatlng[1] + (index * 0.00003)

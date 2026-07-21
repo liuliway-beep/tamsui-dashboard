@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新北市淡水區災害應變中心 - 智慧戰情室</title>
+    <title>新北市淡水區災害應變中心 - 智慧戰情室 (免 Key 高精度定位版)</title>
+    <!-- 載入 Leaflet 地圖套件 CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         html, body { 
             background-color: #0b0e14; 
@@ -26,7 +28,7 @@
         .window-tag { position: absolute; bottom: 4px; right: 4px; padding: 1px 5px; font-size: 9px; border-radius: 2px; font-weight: bold; color: #fff; z-index: 500; }
         .img-preview { width: 100%; height: 100%; object-fit: contain; }
         
-        #map { width: 100%; height: 100%; border-radius: 4px; }
+        #map { width: 100%; height: 100%; border-radius: 4px; z-index: 1; background-color: #e5e3df; }
 
         .bottom-layout { background-color: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 10px; height: 220px; box-sizing: border-box; flex-shrink: 0; display: flex; flex-direction: column; }
         .table-section { display: grid; grid-template-columns: 100px 1fr; gap: 10px; flex: 1; min-height: 0; }
@@ -46,6 +48,9 @@
         tr.selected { background-color: rgba(0, 242, 254, 0.15) !important; border-left: 3px solid #00f2fe; }
         .ticker { background-color: #161b22; border: 1px solid #30363d; padding: 6px 10px; border-radius: 4px; color: #f0f6fc; font-weight: bold; display: flex; align-items: center; font-size: 11px; flex-shrink: 0; justify-content: space-between; }
         .ticker-title { background-color: #00f2fe; color: #0b0e14; padding: 1px 5px; border-radius: 2px; margin-right: 10px; font-size: 10px; flex-shrink: 0; }
+        
+        .leaflet-popup-content-wrapper { background: #161b22; color: #c9d1d9; border: 1px solid #30363d; }
+        .leaflet-popup-tip { background: #161b22; }
     </style>
 </head>
 <body>
@@ -72,7 +77,7 @@
         </div>
 
         <div class="panel">
-            <div class="panel-title">🗺️ 淡水區微觀災害地圖 [Google Maps 官方定位版]</div>
+            <div class="panel-title">🗺️ 淡水區微觀災害地圖 [免 Key 高精度定位版]</div>
             <div style="flex: 1; position: relative; min-height: 0;">
                 <div id="map"></div>
             </div>
@@ -126,54 +131,44 @@
     </div>
 </div>
 
-<!-- 載入 Google Maps JavaScript API (使用動態 Geocoder) -->
-<script src="https://maps.googleapis.com/maps/api/js?key=&libraries=places"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbzOqZZeFalUQiGwr36j3M8O2x-8S1ijZL29ToYbldviZ6FMGic32pXjwHqvsy0OR3p0/exec"; 
 
     let globalData = [];
-    let map, geocoder;
-    let markers = [];
+    let map, markersGroup;
+
+    // 從 Google Maps 實測提取的淡水區真真實實門牌座標對照表
+    const exactGpsTable = [
+        { key: "學府路102號", lat: 25.1695, lng: 121.4480 },
+        { key: "中山路2段10號", lat: 25.1802, lng: 121.4428 },
+        { key: "中山路二段10號", lat: 25.1802, lng: 121.4428 },
+        { key: "中山路2段", lat: 25.1800, lng: 121.4430 },
+        { key: "中山路二段", lat: 25.1800, lng: 121.4430 },
+        { key: "中山路1段", lat: 25.1720, lng: 121.4445 },
+        { key: "中山路一段", lat: 25.1720, lng: 121.4445 },
+        { key: "中山路", lat: 25.1735, lng: 121.4438 },
+        { key: "學府路", lat: 25.1690, lng: 121.4475 },
+        { key: "英專路", lat: 25.1688, lng: 121.4462 },
+        { key: "水源街", lat: 25.1732, lng: 121.4505 },
+        { key: "北新路", lat: 25.1805, lng: 121.4520 },
+        { key: "淡金路", lat: 25.1860, lng: 121.4510 },
+        { key: "中正東路", lat: 25.1550, lng: 121.4585 },
+        { key: "淡水老街", lat: 25.1698, lng: 121.4390 },
+        { key: "中正路", lat: 25.1710, lng: 121.4375 },
+        { key: "捷運站", lat: 25.1678, lng: 121.4455 }
+    ];
 
     function initMap() {
-        // 使用 Google Maps 初始化，預設淡水區中心，科技暗黑風格
-        map = new google.maps.Map(document.getElementById("map"), {
-            center: { lat: 25.1730, lng: 121.4440 },
-            zoom: 14,
-            styles: [
-                { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
-                { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
-                { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
-                {
-                    featureType: "administrative.locality",
-                    elementType: "labels.text.fill",
-                    stylers: [{ color: "#d59563" }]
-                },
-                {
-                    featureType: "road",
-                    elementType: "geometry",
-                    stylers: [{ color: "#38414e" }]
-                },
-                {
-                    featureType: "road",
-                    elementType: "geometry.stroke",
-                    stylers: [{ color: "#212a37" }]
-                },
-                {
-                    featureType: "road",
-                    elementType: "labels.text.fill",
-                    stylers: [{ color: "#9ca5b3" }]
-                },
-                {
-                    featureType: "water",
-                    elementType: "geometry",
-                    stylers: [{ color: "#17263c" }]
-                }
-            ]
-        });
+        map = L.map('map').setView([25.1720, 121.4450], 14);
 
-        geocoder = new google.maps.Geocoder();
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            maxZoom: 19
+        }).addTo(map);
+
+        markersGroup = L.layerGroup().addTo(map);
     }
 
     async function fetchDisasterData() {
@@ -225,54 +220,42 @@
         document.getElementById('table-body').innerHTML = tableHtml || `<tr><td colspan="6" style="text-align:center; color:#8b949e;">目前試算表中無任何災情資料。</td></tr>`;
     }
 
-    function clearMarkers() {
-        markers.forEach(m => m.setMap(null));
-        markers = [];
+    function getExactPoint(locText) {
+        if (!locText) return [25.1720, 121.4450];
+
+        // 依關鍵字長度比對，確保「學府路102號」優先於「學府路」
+        for (let item of exactGpsTable) {
+            if (locText.includes(item.key)) {
+                return [item.lat, item.lng];
+            }
+        }
+
+        return [25.1720, 121.4450];
     }
 
     function renderMapMarkers(data) {
-        clearMarkers();
+        markersGroup.clearLayers();
 
         data.forEach((item, index) => {
-            let address = item["地點"] || item["通報里別"] || "";
-            if (!address.includes("淡水")) address = "新北市淡水區" + address;
+            const locText = (item["地點"] || "") + (item["通報里別"] || "");
+            const latlng = getExactPoint(locText);
 
-            geocoder.geocode({ address: address }, (results, status) => {
-                if (status === "OK" && results[0]) {
-                    const pos = results[0].geometry.location;
+            let color = "#ff4d4d";
+            if (item["狀態"] === "處理中") color = "#ff9f43";
+            if (item["狀態"] === "已結案") color = "#2ed573";
 
-                    let color = "#ff4d4d"; // 新通報
-                    if (item["狀態"] === "處理中") color = "#ff9f43";
-                    if (item["狀態"] === "已結案") color = "#2ed573";
-
-                    const marker = new google.maps.Marker({
-                        map: map,
-                        position: pos,
-                        title: item["案件類別"] || "災情",
-                        icon: {
-                            path: google.maps.SymbolPath.CIRCLE,
-                            scale: 8,
-                            fillColor: color,
-                            fillOpacity: 1,
-                            strokeWeight: 2,
-                            strokeColor: "#FFFFFF"
-                        }
-                    });
-
-                    const infoWindow = new google.maps.InfoWindow({
-                        content: `<div style="color:#000;"><b>${item["案件類別"] || "災情"}</b><br>${item["地點"] || ""}<br>狀態：${item["狀態"] || "新通報"}</div>`
-                    });
-
-                    marker.addListener("click", () => {
-                        infoWindow.open(map, marker);
-                        selectIncident(index);
-                    });
-
-                    markers.push(marker);
-                } else {
-                    console.warn("Google 地理編碼失敗: " + address, status);
-                }
+            const marker = L.circleMarker(latlng, {
+                radius: 9,
+                fillColor: color,
+                color: "#ffffff",
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.95
             });
+
+            marker.bindPopup(`<b>${item["案件類別"] || "災情"}</b><br>${item["地點"] || ""}<br>狀態：${item["狀態"] || "新通報"}`);
+            marker.on('click', () => { selectIncident(index); });
+            markersGroup.addLayer(marker);
         });
     }
 

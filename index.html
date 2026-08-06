@@ -592,6 +592,25 @@
         }
     ];
 
+    // 已串接您的 Google Apps Script 正式 API 網址
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxZwp-RkEQaa8FZCFDTaVZv_PohoxHZNin_-WWzgBD5l2S4hn2ZbXtOCtbUxTthv5mI/exec";
+
+    async function loadRealtimeData() {
+        try {
+            const response = await fetch(GAS_API_URL);
+            const result = await response.json();
+            if (result && result.length > 0) {
+                globalData = result; // 自動套用 Google 試算表（氣象署即時資料）
+            } else {
+                globalData = initialDemoData;
+            }
+        } catch (error) {
+            console.error("即時資料同步發生異常，載入預設快取", error);
+            globalData = initialDemoData;
+        }
+        sortAndRenderAll();
+    }
+
     function initMap() {
         map = L.map('map').setView([25.1720, 121.4450], 13);
 
@@ -816,8 +835,10 @@
 
     window.onload = () => {
         initMap();
-        globalData = JSON.parse(JSON.stringify(initialDemoData));
-        sortAndRenderAll();
+        loadRealtimeData(); // 自動讀取 Google 試算表（即時氣象與災情資料）
+        
+        // 每 30 秒自動向 Google 試算表同步一次最新資料
+        setInterval(loadRealtimeData, 30000);
     };
 </script>
 </body>

@@ -139,7 +139,6 @@
         let markersLayer = L.layerGroup();
 
         function initMap() {
-            // 初始化地圖中心點設在淡水區
             map = L.map('map', { zoomControl: true }).setView([25.1720, 121.4450], 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
@@ -148,7 +147,6 @@
             markersLayer.addTo(map);
         }
 
-        // 從 Google Apps Script 讀取即時資料
         async function loadRealtimeData() {
             try {
                 const response = await fetch(API_URL);
@@ -185,10 +183,9 @@
                 }
 
                 const tr = document.createElement('tr');
-                
-                let statusBg = '#d9534f'; // 新通報 紅色
-                if (item.status === '處理中') statusBg = '#f0ad4e'; // 黃色
-                if (item.status === '已結案') statusBg = '#5cb85c'; // 綠色
+                let statusBg = '#d9534f';
+                if (item.status === '處理中') statusBg = '#f0ad4e';
+                if (item.status === '已結案') statusBg = '#5cb85c';
 
                 tr.innerHTML = `
                     <td>${item.time || ''}</td>
@@ -229,8 +226,7 @@
 
         window.onload = () => {
             initMap();
-            loadRealtimeData(); // 立即讀取一次
-            // 每 30 秒自動向 Google 試算表同步一次最新資料
+            loadRealtimeData();
             setInterval(loadRealtimeData, 30000);
         };
     </script>

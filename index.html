@@ -4,231 +4,760 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>新北市淡水區災害應變智慧戰情中心</title>
-    <!-- Leaflet CSS -->
+    <!-- 載入 Leaflet 地圖套件 CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root {
-            --primary-color: #0d1b2a;
-            --panel-bg: #1b263b;
-            --accent-color: #e63946;
-            --bg-color: #0b0f19;
-            --text-color: #e0e1dd;
-            --border-color: #415a77;
+        html, body { 
+            background-color: #0b0e14; 
+            color: #c9d1d9; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            margin: 0; 
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden; 
+            box-sizing: border-box;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Microsoft JhengHei", Arial, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        .wrapper { display: flex; flex-direction: column; height: 100vh; padding: 6px; box-sizing: border-box; gap: 6px; }
         
-        /* 頂部導覽列 */
-        header { background-color: var(--primary-color); border-bottom: 1px solid var(--border-color); padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; height: 50px; }
-        header h1 { font-size: 1.15rem; font-weight: bold; color: #fff; letter-spacing: 1px; }
-        .ticker { background: #111; color: #ffcc00; padding: 4px 12px; border-radius: 4px; font-size: 0.85rem; border: 1px solid #333; flex: 1; margin: 0 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* 上方區域（占整體高度 11%） */
+        .header-section {
+            height: 11vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            flex-shrink: 0;
+            gap: 4px;
+        }
 
-        /* 主體佈局 */
-        .main-layout { display: flex; flex: 1; gap: 8px; padding: 8px; overflow: hidden; height: calc(100vh - 180px); }
+        .header { 
+            background: linear-gradient(90deg, #1f242c, #0d1117, #1f242c); 
+            border: 1px solid #30363d; 
+            text-align: center; 
+            color: #00f2fe; 
+            font-size: 14px; 
+            font-weight: bold; 
+            border-radius: 4px; 
+            text-shadow: 0 0 8px rgba(0, 242, 254, 0.4); 
+            height: 52%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
         
-        /* 左右欄位 */
-        .side-panel { width: 28%; display: flex; flex-direction: column; gap: 8px; }
-        .center-panel { flex: 42%; display: flex; flex-direction: column; }
-        
-        .card { background-color: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 4px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-        .card-header { background: rgba(0,0,0,0.2); padding: 6px 10px; font-size: 0.85rem; font-weight: bold; color: #a5c4d4; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-        .card-body { flex: 1; position: relative; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center; }
-        .card-body img { width: 100%; height: 100%; object-fit: cover; }
+        .ticker { 
+            background-color: #161b22; 
+            border: 1px solid #30363d; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            color: #f0f6fc; 
+            font-weight: bold; 
+            display: flex; 
+            align-items: center; 
+            font-size: 10px; 
+            flex-shrink: 0; 
+            height: 40%;
+            justify-content: flex-start; 
+            transition: all 0.3s ease;
+            overflow: hidden;
+            position: relative;
+            box-sizing: border-box;
+        }
+        .ticker.emergency {
+            background-color: rgba(255, 77, 77, 0.15);
+            border: 1px solid #ff4d4d;
+            animation: pulse-border 1.5s infinite;
+        }
+        @keyframes pulse-border {
+            0% { border-color: rgba(255, 77, 77, 0.3); box-shadow: 0 0 5px rgba(255, 77, 77, 0.2); }
+            50% { border-color: rgba(255, 77, 77, 1); box-shadow: 0 0 15px rgba(255, 77, 77, 0.6); }
+            100% { border-color: rgba(255, 77, 77, 0.3); box-shadow: 0 0 5px rgba(255, 77, 77, 0.2); }
+        }
+        .ticker-title { 
+            background-color: #00f2fe; 
+            color: #0b0e14; 
+            padding: 1px 5px; 
+            border-radius: 2px; 
+            margin-right: 6px; 
+            font-size: 9px; 
+            flex-shrink: 0; 
+            z-index: 10;
+        }
+        .ticker.emergency .ticker-title { background-color: #ff4d4d; color: #fff; }
 
-        #map { width: 100%; height: 100%; }
+        .ticker-marquee-wrap {
+            flex: 1;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .ticker-marquee-content {
+            display: inline-block;
+            white-space: nowrap;
+            padding-left: 100%;
+            animation: marquee-anim 20s linear infinite;
+        }
+        .ticker-marquee-wrap:hover .ticker-marquee-content {
+            animation-play-state: paused;
+        }
+        @keyframes marquee-anim {
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(-100%, 0, 0); }
+        }
 
-        /* 底部管制大表 */
-        .bottom-panel { height: 120px; background-color: var(--panel-bg); border-top: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 6px 10px; }
-        .bottom-header { display: flex; gap: 15px; font-size: 0.85rem; margin-bottom: 4px; align-items: center; }
-        .badge-count { background: #d9534f; color: white; padding: 1px 6px; border-radius: 10px; font-size: 0.75rem; }
+        /* 三欄配置：27% : 45% : 27% */
+        .top-layout { 
+            display: grid; 
+            grid-template-columns: 27% 45% 27%; 
+            justify-content: space-between;
+            gap: 6px; 
+            flex: 1; 
+            min-height: 0; 
+        }
+        .panel { 
+            background-color: #161b22; 
+            border: 1px solid #30363d; 
+            border-radius: 4px; 
+            padding: 6px; 
+            display: flex; 
+            flex-direction: column; 
+            min-height: 0; 
+            gap: 6px;
+        }
         
-        .table-container { flex: 1; overflow-y: auto; background: #111; border: 1px solid var(--border-color); }
-        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left; color: #ddd; }
-        th, td { padding: 5px 8px; border-bottom: 1px solid #222; }
-        th { background: #222; color: #a5c4d4; position: sticky; top: 0; z-index: 10; }
-        tr:hover { background: rgba(255,255,255,0.05); }
+        .sub-block {
+            height: 50%;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .panel-title { 
+            color: #00f2fe; 
+            font-size: 11px; 
+            font-weight: bold; 
+            margin-bottom: 4px; 
+            border-left: 3px solid #00f2fe; 
+            padding-left: 5px; 
+            flex-shrink: 0; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            height: 16px;
+        }
+        
+        .box-container { 
+            flex: 1; 
+            height: 0; 
+            width: 100%;
+            background-color: #000; 
+            border: 1px solid #30363d; 
+            border-radius: 4px; 
+            position: relative; 
+            display: flex; 
+            overflow: hidden; 
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .box-container:hover {
+            border-color: #00f2fe;
+        }
+
+        .window-label { position: absolute; top: 4px; left: 4px; background-color: rgba(0,0,0,0.85); color: #ffdd67; padding: 1px 5px; font-size: 9px; font-weight: bold; border-radius: 2px; border-left: 2px solid #ffdd67; z-index: 500; }
+        .window-tag { position: absolute; bottom: 4px; right: 4px; padding: 1px 4px; font-size: 8px; border-radius: 2px; font-weight: bold; color: #fff; z-index: 500; background: #da3633; }
+
+        .cctv-osd-top {
+            position: absolute;
+            top: 4px;
+            left: 6px;
+            color: #ffffff;
+            font-family: monospace;
+            font-size: 9px;
+            text-shadow: 1px 1px 3px #000;
+            z-index: 400;
+            text-align: left;
+            line-height: 1.2;
+        }
+        .cctv-osd-right {
+            position: absolute;
+            top: 4px;
+            right: 6px;
+            color: #ffffff;
+            font-family: monospace;
+            font-size: 8px;
+            text-shadow: 1px 1px 3px #000;
+            z-index: 400;
+        }
+
+        .full-fit-img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover !important; 
+            display: block;
+        }
+
+        .weather-zoom-img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover;
+            transform: scale(1.6);
+            transform-origin: center center;
+            display: block;
+        }
+
+        .cctv-select {
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            z-index: 600;
+            width: calc(100% - 8px);
+            background: rgba(13, 17, 23, 0.9);
+            color: #00f2fe;
+            border: 1px solid #30363d;
+            font-size: 9px;
+            padding: 2px 4px;
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        #map { width: 100%; height: 100%; border-radius: 4px; z-index: 1; background-color: #05070a; }
+
+        .center-projection-wrap {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        #center-projection-box {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 800;
+            background-color: #000;
+            display: none;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .projection-close-btn {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            z-index: 900;
+            background: rgba(218, 54, 51, 0.85);
+            color: #fff;
+            border: 1px solid #ff4d4d;
+            border-radius: 3px;
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .projection-title-tag {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            z-index: 900;
+            background: rgba(0, 0, 0, 0.85);
+            color: #00f2fe;
+            border-left: 3px solid #00f2fe;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 2px;
+        }
+
+        /* 下方區域 (大表 + 左側小計按鈕區) */
+        .bottom-layout { 
+            background-color: #161b22; 
+            border: 1px solid #30363d; 
+            border-radius: 4px; 
+            padding: 6px; 
+            height: 155px; 
+            box-sizing: border-box; 
+            flex-shrink: 0; 
+            display: flex; 
+            gap: 8px;
+        }
+
+        .stat-sidebar {
+            width: 105px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .stat-btn {
+            flex: 1;
+            border-radius: 4px;
+            padding: 4px 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            box-sizing: border-box;
+            border: 1px solid transparent;
+        }
+        .stat-btn:hover { filter: brightness(1.2); }
+        .stat-btn.active { box-shadow: 0 0 8px rgba(0, 242, 254, 0.8); border-color: #00f2fe !important; }
+
+        .btn-new-style { background-color: rgba(255, 77, 77, 0.15); border: 1px solid #ff4d4d; color: #ff4d4d; }
+        .btn-ing-style { background-color: rgba(255, 159, 67, 0.15); border: 1px solid #ff9f43; color: #ff9f43; }
+        .btn-done-style { background-color: rgba(46, 213, 115, 0.15); border: 1px solid #2ed573; color: #2ed573; }
+
+        .stat-btn-left { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: bold; }
+        .stat-checkbox { width: 10px; height: 10px; border: 1px solid currentColor; display: flex; align-items: center; justify-content: center; font-size: 8px; }
+        .stat-btn-num { font-size: 14px; font-weight: 900; }
+
+        .table-wrap { flex: 1; overflow-y: auto; border: 1px solid #30363d; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 10px; }
+        th, td { padding: 4px 6px; border-bottom: 1px solid #30363d; line-height: 1.2; vertical-align: middle; }
+        th { background-color: #21262d; color: #f0f6fc; position: sticky; top: 0; z-index: 2; }
+        
+        .history-text { font-family: monospace; font-size: 10px; color: #ffdd67; white-space: pre-line; }
+        .badge { padding: 1px 3px; border-radius: 2px; font-size: 8px; font-weight: bold; }
+        .badge-new { background-color: rgba(255,77,77,0.2); color: #ff4d4d; border: 1px solid #ff4d4d; }
+        .badge-ing { background-color: rgba(255,159,67,0.2); color: #ff9f43; border: 1px solid #ff9f43; }
+        .badge-done { background-color: rgba(46,213,115,0.2); color: #2ed573; border: 1px solid #2ed573; }
+        tr.selected { background-color: rgba(0, 242, 254, 0.15) !important; border-left: 3px solid #00f2fe; }
+
+        .toast-alert {
+            position: fixed;
+            top: 45px;
+            right: 15px;
+            width: 320px;
+            background: #161b22;
+            border: 2px solid #ff4d4d;
+            border-radius: 6px;
+            box-shadow: 0 4px 25px rgba(255, 77, 77, 0.7);
+            z-index: 9999;
+            padding: 10px;
+            display: none;
+            animation: slideInRight 0.4s ease;
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .toast-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #30363d; padding-bottom: 4px; margin-bottom: 6px; color: #ff4d4d; font-weight: bold; font-size: 11px; }
+        .toast-close { background: transparent; border: none; color: #8b949e; cursor: pointer; font-size: 12px; }
+
+        .line-preview-box {
+            background-color: #7294c2;
+            border-radius: 4px;
+            padding: 8px;
+            margin-top: 6px;
+            font-size: 10px;
+        }
+        .line-msg-bubble {
+            background: #ffffff;
+            color: #000;
+            padding: 8px;
+            border-radius: 6px;
+            line-height: 1.4;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
     </style>
 </head>
 <body>
 
-    <header>
-        <div style="font-size: 0.85rem; background: #2b4c7e; padding: 3px 8px; border-radius: 3px;">系統提示</div>
-        <h1>新北市淡水區災害應變智慧戰情中心</h1>
-        <div class="ticker" id="latestTicker">【最新案件通知】系統連線中，正在載入即時資料...</div>
-    </header>
+<div class="wrapper">
+    <!-- 上方區域 -->
+    <div class="header-section">
+        <div class="header">新北市淡水區災害應變智慧戰情中心</div>
 
-    <div class="main-layout">
-        <!-- 左側氣象與雷達 -->
-        <div class="side-panel">
-            <div class="card" style="flex: 1;">
-                <div class="card-header">氣象署颱風路徑</div>
-                <div class="card-body">
-                    <img src="https://www.cwa.gov.tw/Data/tyw/tyw.gif" alt="颱風路徑" onerror="this.src='https://placehold.co/400x300?text=No+Radar+Data'">
-                </div>
-            </div>
-            <div class="card" style="flex: 1;">
-                <div class="card-header">雷達回波 / 雨量監測</div>
-                <div class="card-body">
-                    <img src="https://www.cwa.gov.tw/Data/radar/CV1_3640.png" alt="雷達回波" onerror="this.src='https://placehold.co/400x300?text=No+Radar+Data'">
-                </div>
-            </div>
-        </div>
-
-        <!-- 中間地圖 -->
-        <div class="center-panel">
-            <div class="card" style="height: 100%;">
-                <div class="card-header">淡水區災害地圖</div>
-                <div class="card-body" style="padding: 0;">
-                    <div id="map"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 右側監控影像 -->
-        <div class="side-panel">
-            <div class="card" style="flex: 1;">
-                <div class="card-header">現場照片</div>
-                <div class="card-body">
-                    <div style="color: #666; font-size: 0.8rem;">即時影像串流連線中</div>
-                </div>
-            </div>
-            <div class="card" style="flex: 1;">
-                <div class="card-header">轄區 CCTV 視訊監控</div>
-                <div class="card-body">
-                    <div style="color: #666; font-size: 0.8rem;">CCTV 點位待命</div>
+        <div class="ticker" id="ticker-box">
+            <div class="ticker-title" id="ticker-badge">📢 系統提示</div>
+            <div class="ticker-marquee-wrap">
+                <div class="ticker-marquee-content" id="ticker-text">
+                    淡水區災害應變智慧戰情中心運作正常，正向 Google 試算表同步即時資料...
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 底部管制與災情大表 -->
-    <div class="bottom-panel">
-        <div class="bottom-header">
-            <span><b>災情管制大表</b></span>
-            <span>新通報 <span class="badge-count" id="countNew">0</span> 件</span>
-            <span>處理中 <span class="badge-count" id="countProcess" style="background:#f0ad4e;">0</span> 件</span>
-            <span>已結案 <span class="badge-count" id="countClosed" style="background:#5cb85c;">0</span> 件</span>
-            <span id="syncStatus" style="margin-left: auto; font-size: 0.75rem; color: #aaa;">最後同步：未連線</span>
+    <!-- 中間主要內容區 -->
+    <div class="top-layout">
+        <!-- 左欄 -->
+        <div class="panel">
+            <div class="sub-block">
+                <div class="panel-title">🌀 氣象署颱風路徑</div>
+                <div class="box-container" onclick="projectToCenter('氣象署颱風路徑', 'https://www.cwa.gov.tw/Data/radar/CV1_3600.png', true)">
+                    <img src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" class="weather-zoom-img" alt="颱風路徑">
+                </div>
+            </div>
+
+            <div class="sub-block">
+                <div class="panel-title">📡 雷達回波 / 雨量監測</div>
+                <div class="box-container" onclick="projectToCenter('📡 雷達回波 / 雨量監測', 'https://www.cwa.gov.tw/Data/radar/CV1_3600.png', true)">
+                    <img id="radar-img" src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" class="weather-zoom-img" alt="雷達回波圖">
+                </div>
+            </div>
         </div>
-        <div class="table-container">
+
+        <!-- 中央主畫面 -->
+        <div class="panel">
+            <div class="panel-title" id="center-panel-title">🗺️ 淡水區災害地圖</div>
+            <div style="flex: 1; position: relative; min-height: 0;" class="center-projection-wrap">
+                <div id="map"></div>
+                <div id="center-projection-box">
+                    <div class="projection-title-tag" id="projection-title-tag">🎥 投影連動監控</div>
+                    <button class="projection-close-btn" onclick="closeCenterProjection()">✖ 返回地圖</button>
+                    <div id="projection-content" style="width:100%; height:100%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右欄 -->
+        <div class="panel">
+            <div class="sub-block">
+                <div class="panel-title">
+                    <span>📹 現場照片</span>
+                    <span style="color: #ffdd67; font-size: 8px;">[連動調閱]</span>
+                </div>
+                <div class="box-container" id="incident-photo-box" onclick="projectCurrentIncidentToCenter()">
+                    <div class="cctv-osd-top" id="incident-osd">
+                        07-27-2026 Mon 19:44:06 C09017B 淡水區<br>淡水區文化路、新生街口
+                    </div>
+                    <div class="cctv-osd-right">TWIPCAM.COM</div>
+                    <img src="https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80" id="incident-img" class="full-fit-img" alt="夜間路口CCTV">
+                </div>
+            </div>
+
+            <div class="sub-block">
+                <div class="panel-title">
+                    <span>🎥 轄區 CCTV 巡邏監控</span>
+                    <span style="color: #ff4d4d; font-size: 8px; font-weight: bold;">(⚠️常態輪播不斷訊)</span>
+                </div>
+                <div class="box-container" onclick="projectCCTVToCenter()">
+                    <div class="window-label" id="cctv-label">淡水區 中山路路樹現場</div>
+                    <div class="window-tag">巡邏監控</div>
+                    <img src="https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80" id="cctv-img" class="full-fit-img" alt="路樹倒塌防災現場">
+                    
+                    <select class="cctv-select" id="cctv-dropdown" onclick="event.stopPropagation();" onchange="changeCCTVLocation(this.value)">
+                        <option value="淡水區 中山路路樹現場">📍 淡水區 中山路路樹現場 (常態輪播)</option>
+                        <option value="淡水老街金色水岸">📍 淡水老街金色水岸</option>
+                        <option value="漁人碼頭情人橋">📍 漁人碼頭情人橋海岸</option>
+                        <option value="淡水捷運站前廣場">📍 淡水捷運站前廣場</option>
+                        <option value="關渡大橋淡水端">📍 關渡大橋淡水端交通樞紐</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 下方管制大表與左側小計按鈕區 -->
+    <div class="bottom-layout">
+        <div class="stat-sidebar">
+            <div class="stat-btn btn-new-style" id="btn-filter-new" onclick="filterByStatus('新通報')">
+                <div class="stat-btn-left">
+                    <div class="stat-checkbox" id="chk-new">🚨</div>
+                    <span>新通報</span>
+                </div>
+                <div class="stat-btn-num" id="cnt-new">0件</div>
+            </div>
+
+            <div class="stat-btn btn-ing-style" id="btn-filter-ing" onclick="filterByStatus('處理中')">
+                <div class="stat-btn-left">
+                    <div class="stat-checkbox" id="chk-ing">⏳</div>
+                    <span>處理中</span>
+                </div>
+                <div class="stat-btn-num" id="cnt-ing">0件</div>
+            </div>
+
+            <div class="stat-btn btn-done-style" id="btn-filter-done" onclick="filterByStatus('已結案')">
+                <div class="stat-btn-left">
+                    <div class="stat-checkbox" id="chk-done">✔</div>
+                    <span>已結案</span>
+                </div>
+                <div class="stat-btn-num" id="cnt-done">0件</div>
+            </div>
+        </div>
+
+        <div class="table-wrap">
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 120px;">受理時間</th>
-                        <th style="width: 100px;">案件類別</th>
-                        <th style="width: 90px;">權責單位</th>
-                        <th>地點</th>
-                        <th>現場狀況與完整歷史進程</th>
-                        <th style="width: 80px;">狀態</th>
+                        <th style="width: 14%">⏱️ 受理時間</th>
+                        <th style="width: 11%">案件類別</th>
+                        <th style="width: 10%">權責單位</th>
+                        <th style="width: 15%">地點</th>
+                        <th style="width: 42%">現場狀況與完整歷史進程</th>
+                        <th style="width: 8%">狀態</th>
                     </tr>
                 </thead>
-                <tbody id="dataTableBody">
+                <tbody id="table-body">
                     <tr><td colspan="6" style="text-align: center; color: #888;">正在從 Google 試算表同步資料...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
+</div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        // 設定更新後的 Google Apps Script 部署網址
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzRJbXgz_fYh-cxTKJ3FaFxD0oa1H2jYDj7k9ZzVD85b25zvcDy1_4PT67xM_hFmwfA/exec';
+<div id="earthquake-toast" class="toast-alert">
+    <div class="toast-header">
+        <span>🚨 地震速報與 LINE 自動通報</span>
+        <button class="toast-close" onclick="closeToast()">✕</button>
+    </div>
+    <div id="toast-body" style="font-size: 10px; color: #c9d1d9; line-height: 1.3;"></div>
+    
+    <div class="line-preview-box">
+        <div style="color:#fff; font-size:9px; font-weight:bold; margin-bottom:3px;">📱 防災 LINE 群組 (Make.com 0秒自動發送)</div>
+        <div class="line-msg-bubble">
+            <b style="color: #00b900;">役災課-雅倫課長</b><br>
+            <span style="color:#d63031; font-weight:bold;">@All</span> 本市發生有感地震，EOC已進行相關災情查通報聯繫事宜。<br><br>
+            請各編組針對所轄區域設施進行巡檢，如有災情請上傳 EMIS。
+        </div>
+    </div>
+</div>
 
-        let map;
-        let markersLayer = L.layerGroup();
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-        function initMap() {
-            map = L.map('map', { zoomControl: true }).setView([25.1720, 121.4450], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '© OpenStreetMap'
-            }).addTo(map);
-            markersLayer.addTo(map);
-        }
+<script>
+    // 串接您最新的 Google Apps Script 部署網址
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzRJbXgz_fYh-cxTKJ3FaFxD0oa1H2jYDj7k9ZzVD85b25zvcDy1_4PT67xM_hFmwfA/exec';
 
-        async function loadRealtimeData() {
-            try {
-                const response = await fetch(API_URL);
-                const result = await response.json();
-                
-                if (result && result.data) {
-                    renderTable(result.data);
-                    renderMarkers(result.data);
-                    updateStats(result.data);
-                    
-                    const now = new Date();
-                    document.getElementById('syncStatus').textContent = `最後同步：${now.toLocaleTimeString()}`;
-                }
-            } catch (error) {
-                console.error('讀取資料失敗:', error);
-                document.getElementById('syncStatus').textContent = '同步異常（將自動重試）';
-            }
-        }
+    let globalData = [];
+    let map, markersGroup;
+    let currentFilterStatus = null;
+    let currentSelectedIncident = null;
+    const officialEqReportImgUrl = "https://img.ltn.com.tw/Upload/news/600/2026/07/26/php66dE9S.jpg";
 
-        function renderTable(data) {
-            const tbody = document.getElementById('dataTableBody');
-            tbody.innerHTML = '';
+    function initMap() {
+        map = L.map('map').setView([25.1720, 121.4450], 13);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap',
+            maxZoom: 19
+        }).addTo(map);
+        markersGroup = L.layerGroup().addTo(map);
+    }
+
+    // 從 Google Apps Script 抓取即時資料
+    async function loadRealtimeData() {
+        try {
+            const response = await fetch(API_URL);
+            const result = await response.json();
             
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #888;">目前無災情資料</td></tr>';
-                return;
+            if (result && result.data && result.data.length > 0) {
+                globalData = result.data;
+                sortAndRenderAll();
             }
+        } catch (error) {
+            console.error('從 Google 試算表同步資料失敗:', error);
+        }
+    }
 
-            let latestText = "【系統正常】目前無最新動態通報";
+    function projectToCenter(title, imgUrl, isWeather = false) {
+        const box = document.getElementById('center-projection-box');
+        const titleTag = document.getElementById('projection-title-tag');
+        const content = document.getElementById('projection-content');
 
-            data.forEach((item, index) => {
-                if (index === 0 && item.description) {
-                    latestText = `【最新案件通報】[${item.time || ''}] ${item.location || ''}：${item.description}`;
-                }
+        titleTag.innerText = `🚨 中央緊急投影：${title}`;
+        let imgStyle = "width:100%; height:100%; object-fit:contain; background:#ffffff;";
+        if (isWeather) {
+            imgStyle = "width:100%; height:100%; object-fit:cover; transform:scale(1.3); transform-origin:center center;";
+        }
+        content.innerHTML = `<img src="${imgUrl}" style="${imgStyle}" alt="投影畫面">`;
+        box.style.display = 'block';
+    }
 
-                const tr = document.createElement('tr');
-                let statusBg = '#d9534f';
-                if (item.status === '處理中') statusBg = '#f0ad4e';
-                if (item.status === '已結案') statusBg = '#5cb85c';
+    function projectCurrentIncidentToCenter() {
+        const photoBox = document.getElementById('incident-photo-box');
+        const imgEl = photoBox.querySelector('img');
+        if (imgEl) {
+            let label = currentSelectedIncident ? `現場照片 - ${currentSelectedIncident["地點"] || ''}` : "現場照片連動";
+            projectToCenter(label, imgEl.src, false);
+        }
+    }
 
-                tr.innerHTML = `
-                    <td>${item.time || ''}</td>
-                    <td>${item.type || ''}</td>
-                    <td>${item.unit || ''}</td>
-                    <td>${item.location || ''}</td>
-                    <td>${item.description || ''}</td>
-                    <td><span style="background:${statusBg}; color:#fff; padding:2px 6px; border-radius:3px; font-size:0.75rem;">${item.status || '新通報'}</span></td>
+    function projectCCTVToCenter() {
+        const cctvLabel = document.getElementById('cctv-label').innerText;
+        const imgEl = document.getElementById('cctv-img');
+        if (imgEl) {
+            projectToCenter(`轄區 CCTV - ${cctvLabel}`, imgEl.src, false);
+        }
+    }
+
+    function closeCenterProjection() {
+        document.getElementById('center-projection-box').style.display = 'none';
+    }
+
+    function changeCCTVLocation(locationName) {
+        document.getElementById('cctv-label').innerText = locationName;
+        const imgEl = document.getElementById('cctv-img');
+        if(locationName.includes("老街")) {
+            imgEl.src = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80";
+        } else {
+            imgEl.src = "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80";
+        }
+    }
+
+    function filterByStatus(statusTarget) {
+        currentFilterStatus = (currentFilterStatus === statusTarget) ? null : statusTarget;
+        sortAndRenderAll();
+    }
+
+    function sortAndRenderAll() {
+        globalData.sort((a, b) => new Date(b["受理時間"] || 0) - new Date(a["受理時間"] || 0));
+
+        let countNew = 0, countIng = 0, countDone = 0;
+        globalData.forEach(item => {
+            let st = String(item["狀態"] || "").trim();
+            if (st === "新通報" || st === "") countNew++;
+            else if (st === "處理中") countIng++;
+            else if (st === "已結案") countDone++;
+        });
+
+        document.getElementById('cnt-new').innerText = countNew + "件";
+        document.getElementById('cnt-ing').innerText = countIng + "件";
+        document.getElementById('cnt-done').innerText = countDone + "件";
+
+        document.getElementById('btn-filter-new').classList.toggle('active', currentFilterStatus === '新通報');
+        document.getElementById('btn-filter-ing').classList.toggle('active', currentFilterStatus === '處理中');
+        document.getElementById('btn-filter-done').classList.toggle('active', currentFilterStatus === '已結案');
+
+        let displayData = globalData;
+        if (currentFilterStatus) {
+            displayData = globalData.filter(item => {
+                let st = String(item["狀態"] || "").trim();
+                if (currentFilterStatus === '新通報') return st === '新通報' || st === '';
+                return st === currentFilterStatus;
+            });
+        }
+
+        renderStatsAndTable(displayData);
+        renderMapMarkers(displayData);
+        checkEmergencyAndTicker(globalData);
+        
+        if (displayData.length > 0) {
+            selectIncident(0, displayData);
+        }
+    }
+
+    function renderStatsAndTable(data) {
+        let tableHtml = "";
+        data.forEach((item, index) => {
+            let status = String(item["狀態"] || "新通報").trim();
+            let statusClass = "badge-new";
+            if (status === "處理中") statusClass = "badge-ing";
+            if (status === "已結案") statusClass = "badge-done";
+
+            tableHtml += `
+                <tr id="row-${index}" style="cursor:pointer;" onclick="selectIncident(${index}, displayDataGlobal)">
+                    <td style="color:#00f2fe; font-weight:bold;">${item["受理時間"] || ''}</td>
+                    <td>${item["案件類別"] || ''}</td>
+                    <td>${item["權責單位"] || ''}</td>
+                    <td>${item["地點"] || ''}</td>
+                    <td><div class="history-text">${item["現場狀況與完整歷史進程"] || ''}</div></td>
+                    <td><span class="badge ${statusClass}">${status}</span></td>
+                </tr>
+            `;
+        });
+
+        window.displayDataGlobal = data;
+        document.getElementById('table-body').innerHTML = tableHtml || '<tr><td colspan="6" style="text-align: center; color: #888;">目前無符合條件的災情資料</td></tr>';
+    }
+
+    function renderMapMarkers(data) {
+        markersGroup.clearLayers();
+        data.forEach((item, index) => {
+            let category = String(item["案件類別"] || "").trim();
+            if (category === "地震快訊") return;
+
+            let lat = parseFloat(item["緯度"]) || 25.1720;
+            let lng = parseFloat(item["經度"]) || 121.4450;
+            let latlng = [ lat + (index * 0.00003), lng + (index * 0.00003) ];
+
+            let status = String(item["狀態"] || "").trim();
+            let color = "#ff4d4d";
+            if (status === "處理中") color = "#ff9f43";
+            if (status === "已結案") color = "#2ed573";
+
+            const marker = L.circleMarker(latlng, {
+                radius: 8, fillColor: color, color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.95
+            });
+
+            marker.bindPopup(`<b>${item["案件類別"]}</b><br>${item["地點"]}<br>狀態：${status}`);
+            marker.on('click', () => { selectIncident(index, data); });
+            markersGroup.addLayer(marker);
+        });
+    }
+
+    function checkEmergencyAndTicker(data) {
+        if (data && data.length > 0) {
+            let latest = data[0];
+            let category = String(latest["案件類別"] || "").trim();
+            let box = document.getElementById('ticker-box');
+            let badge = document.getElementById('ticker-badge');
+            let text = document.getElementById('ticker-text');
+
+            if (category === "地震快訊" || category === "緊急通報") {
+                box.classList.add('emergency');
+                badge.innerText = "🚨 緊急地震告警";
+                text.innerHTML = `<span style="color: #ff4d4d; font-weight: bold;">[${latest["受理時間"]}] ${latest["地點"]} - ${latest["現場狀況與完整歷史進程"]}</span>`;
+                
+                document.getElementById('earthquake-toast').style.display = 'block';
+                document.getElementById('toast-body').innerHTML = `
+                    <b style="color:#ffdd67;">【即時災情告警】</b><br>
+                    • <b>地點：</b>${latest["地點"]}<br>
+                    • <b>狀況：</b>${latest["現場狀況與完整歷史進程"]}
                 `;
-                tbody.appendChild(tr);
-            });
+            } else {
+                box.classList.remove('emergency');
+                badge.innerText = "📢 系統提示";
+                closeToast();
 
-            document.getElementById('latestTicker').textContent = latestText;
-        }
-
-        function renderMarkers(data) {
-            markersLayer.clearLayers();
-            data.forEach(item => {
-                if (item.lat && item.lng) {
-                    const marker = L.marker([item.lat, item.lng]);
-                    marker.bindPopup(`<b>[${item.type}]</b><br>地點：${item.location}<br>狀況：${item.description}<br>狀態：${item.status}`);
-                    markersLayer.addLayer(marker);
+                if (latest["狀態"] === "新通報" || !latest["狀態"]) {
+                    let timeStr = latest["受理時間"] ? (latest["受理時間"].split(" ")[1] || latest["受理時間"]) : "";
+                    text.innerText = `【📢 最新案件通報】[${timeStr}] ${latest["地點"] || ''}（${latest["案件類別"] || ''}）：${latest["現場狀況與完整歷史進程"] || ''}，權責單位：${latest["權責單位"] || ''} 處理中。`;
+                } else {
+                    text.innerText = "淡水區災害應變智慧戰情中心運作正常，已與 Google 試算表完成即時自動同步。";
                 }
-            });
+            }
         }
+    }
 
-        function updateStats(data) {
-            let newCount = 0, processCount = 0, closedCount = 0;
-            data.forEach(item => {
-                if (item.status === '處理中') processCount++;
-                else if (item.status === '已結案') closedCount++;
-                else newCount++;
-            });
-            document.getElementById('countNew').textContent = newCount;
-            document.getElementById('countProcess').textContent = processCount;
-            document.getElementById('countClosed').textContent = closedCount;
-        }
+    function closeToast() { document.getElementById('earthquake-toast').style.display = 'none'; }
 
-        window.onload = () => {
-            initMap();
-            loadRealtimeData();
-            setInterval(loadRealtimeData, 30000);
-        };
-    </script>
+    function selectIncident(index, currentList) {
+        let list = currentList || globalData;
+        document.querySelectorAll('tr').forEach(r => r.classList.remove('selected'));
+        const row = document.getElementById(`row-${index}`);
+        if(row) row.classList.add('selected');
+
+        const item = list[index];
+        if(!item) return;
+        currentSelectedIncident = item;
+
+        const photoBox = document.getElementById('incident-photo-box');
+        let imgUrl = item["照片網址"] || "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80";
+        
+        photoBox.innerHTML = `
+            <div class="cctv-osd-top">
+                07-27-2026 Mon 19:44:06 C09017B 淡水區<br>${item["地點"] || '淡水區文化路、新生街口'}
+            </div>
+            <div class="cctv-osd-right">TWIPCAM.COM</div>
+            <img src="${imgUrl}" class="full-fit-img" alt="現場照片">
+        `;
+    }
+
+    window.onload = () => {
+        initMap();
+        loadRealtimeData(); // 立即向 GAS 載入資料
+        setInterval(loadRealtimeData, 30000); // 每 30 秒自動同步
+    };
+</script>
 </body>
 </html>

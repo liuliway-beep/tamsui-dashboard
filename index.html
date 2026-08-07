@@ -173,7 +173,9 @@
         }
 
         .full-fit-img { width: 100%; height: 100%; object-fit: cover !important; display: block; }
-        .weather-zoom-img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.6); transform-origin: center center; display: block; }
+        
+        /* 修正氣象圖縮放，改為 contain 完整呈現不被切掉 */
+        .weather-fit-img { width: 100%; height: 100%; object-fit: contain; background-color: #000; display: block; }
 
         .cctv-select {
             position: absolute; bottom: 4px; left: 4px; z-index: 600; width: calc(100% - 8px);
@@ -181,7 +183,7 @@
             padding: 2px 4px; border-radius: 2px; outline: none; cursor: pointer;
         }
 
-        #map { width: 100%; height: 100%; border-radius: 4px; z-index: 1; background-color: #ffffff; }
+        #map { width: 100%; height: 100%; border-radius: 4px; z-index: 1; background-color: #05070a; }
 
         .center-projection-wrap {
             position: relative; width: 100%; height: 100%; display: flex; flex-direction: column;
@@ -266,13 +268,13 @@
             <div class="sub-block">
                 <div class="panel-title">🌀 氣象署颱風路徑</div>
                 <div class="box-container" onclick="projectToCenter('氣象署颱風路徑', 'https://www.cwa.gov.tw/Data/typhoon/TY_WARN/B20.png', true)">
-                    <img src="https://www.cwa.gov.tw/Data/typhoon/TY_WARN/B20.png" class="weather-zoom-img" alt="颱風路徑">
+                    <img src="https://www.cwa.gov.tw/Data/typhoon/TY_WARN/B20.png" class="weather-fit-img" alt="颱風路徑">
                 </div>
             </div>
             <div class="sub-block">
                 <div class="panel-title">📡 雷達回波 / 雨量監測</div>
                 <div class="box-container" onclick="projectToCenter('📡 雷達回波 / 雨量監測', 'https://www.cwa.gov.tw/Data/radar/CV1_3600.png', true)">
-                    <img id="radar-img" src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" class="weather-zoom-img" alt="雷達回波圖">
+                    <img id="radar-img" src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" class="weather-fit-img" alt="雷達回波圖">
                 </div>
             </div>
         </div>
@@ -393,11 +395,9 @@
     const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
 
     function initMap() {
-        // 初始化地圖對準淡水區中心
         map = L.map('map').setView([25.1720, 121.4450], 13);
-        // 改用標準且清晰的 OpenStreetMap 彩色地圖圖資
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap',
+        L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
+            attribution: '&copy; CartoDB',
             maxZoom: 19
         }).addTo(map);
         markersGroup = L.layerGroup().addTo(map);
@@ -409,18 +409,30 @@
             header: true,
             complete: function(results) {
                 if (results.data && results.data.length > 0) {
-                    const fetchedData = results.data.filter(row => row['地點'] || row['地點 (E)'] || row['地點']).map(row => ({
-                        "受理時間": row['受理時間'] || row['受理時間 (B)'] || '時間未記錄',
-                        "案件類別": row['案件類別'] || row['案件類別 (C)'] || '一般通報',
-                        "權責單位": row['權責單位'] || row['權責單位 (D)'] || '待分派',
-                        "地點": row['地點'] || row['地點 (E)'] || '地點未確認',
-                        "現場狀況與完整歷史進程": row['現場狀況與完整歷史進程'] || row['現場狀況與完整歷史進程 (F)'] || row['現場狀況'] || '無詳細說明',
-                        "狀態": row['狀態'] || row['狀態 (G)'] || '新通報',
-                        // 嚴格讀取試算表中的「緯度」與「經度」，不進行任何強制覆蓋
-                        "緯度": parseFloat(row['緯度']),
-                        "經度": parseFloat(row['經度']),
-                        "照片網址": "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80"
-                    }));
+                    const fetchedData = results.data.filter(row => row['地點'] || row['地點 (E)'] || row['地點']).map(row => {
+                        let lat = parseFloat(row['緯度']);
+                        let lng = parseFloat(row['經度']);
+
+                        // 防呆修正：如果經緯度上下對調了，自動幫忙轉回來確保落在淡水
+                        if (lat > 120 && lng < 30) {
+                            let temp = lat; lat = lng; lng = temp;
+                        }
+                        // 如果座標完全抓不到，預設落在淡水區公所附近
+                        if (isNaN(lat) || lat < 25 || lat > 26) lat = 25.1705;
+                        if (isNaN(lng) || lng < 121 || lng > 122) lng = 121.4395;
+
+                        return {
+                            "受理時間": row['受理時間'] || row['受理時間 (B)'] || '時間未記錄',
+                            "案件類別": row['案件類別'] || row['案件類別 (C)'] || '一般通報',
+                            "權責單位": row['權責單位'] || row['權責單位 (D)'] || '待分派',
+                            "地點": row['地點'] || row['地點 (E)'] || '地點未確認',
+                            "現場狀況與完整歷史進程": row['現場狀況與完整歷史進程'] || row['現場狀況與完整歷史進程 (F)'] || row['現場狀況'] || '無詳細說明',
+                            "狀態": row['狀態'] || row['狀態 (G)'] || '新通報',
+                            "緯度": lat,
+                            "經度": lng,
+                            "照片網址": "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80"
+                        };
+                    });
 
                     if (fetchedData.length > 0) {
                         globalData = fetchedData;
@@ -438,7 +450,7 @@
         titleTag.innerText = `🚨 中央緊急投影：${title}`;
         let imgStyle = "width:100%; height:100%; object-fit:contain; background:#ffffff;";
         if (isWeather) {
-            imgStyle = "width:100%; height:100%; object-fit:cover; transform:scale(1.3); transform-origin:center center;";
+            imgStyle = "width:100%; height:100%; object-fit:contain; background:#000;";
         }
         content.innerHTML = `<img src="${imgUrl}" style="${imgStyle}" alt="投影畫面">`;
         box.style.display = 'block';
@@ -538,20 +550,17 @@
         data.forEach((item, index) => {
             if (String(item["案件類別"] || "").trim() === "地震快訊") return;
 
-            // 確保有經緯度才打點，且完全採用試算表中的數值
-            if (!isNaN(item["緯度"]) && !isNaN(item["經度"])) {
-                let color = "#ff4d4d";
-                if (item["狀態"] === "處理中") color = "#ff9f43";
-                if (item["狀態"] === "已結案") color = "#2ed573";
+            let color = "#ff4d4d";
+            if (item["狀態"] === "處理中") color = "#ff9f43";
+            if (item["狀態"] === "已結案") color = "#2ed573";
 
-                const marker = L.circleMarker([item["緯度"], item["經度"]], {
-                    radius: 8, fillColor: color, color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.95
-                });
+            const marker = L.circleMarker([item["緯度"], item["經度"]], {
+                radius: 8, fillColor: color, color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.95
+            });
 
-                marker.bindPopup(`<b>${item["案件類別"]}</b><br>${item["地點"]}<br>狀態：${item["狀態"]}`);
-                marker.on('click', () => { selectIncident(index, data); });
-                markersGroup.addLayer(marker);
-            }
+            marker.bindPopup(`<b>${item["案件類別"]}</b><br>${item["地點"]}<br>狀態：${item["狀態"]}`);
+            marker.on('click', () => { selectIncident(index, data); });
+            markersGroup.addLayer(marker);
         });
     }
 
@@ -565,8 +574,7 @@
         if(!item) return;
         currentSelectedIncident = item;
 
-        // 點擊表格案件時，地圖自動平移並對焦到該地點
-        if (!isNaN(item["緯度"]) && !isNaN(item["經度"])) {
+        if (item["緯度"] && item["經度"]) {
             map.setView([item["緯度"], item["經度"]], 16);
         }
 

@@ -134,16 +134,16 @@
     <div class="top-layout">
         <div class="panel">
             <div class="sub-block">
-                <div class="panel-title">🌀 氣象署即時雷達回波</div>
+                <div class="panel-title">🌀 氣象署即時雷達回波 / 颱風路徑</div>
                 <div class="box-container" onclick="projectToCenter('氣象署即時雷達回波', document.getElementById('cwa-radar').src, true)">
                     <img id="cwa-radar" src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" class="weather-fit-img" alt="雷達回波">
                 </div>
             </div>
             <div class="sub-block">
-                <div class="panel-title">📡 氣象署累積雨量圖 (API 動態串接)</div>
-                <div class="box-container" onclick="projectToCenter('氣象署累積雨量圖', document.getElementById('cwa-rain').src, true)">
-                    <!-- 透過 CWA API 動態取得的雨量圖 src -->
-                    <img id="cwa-rain" src="" class="weather-fit-img" alt="累積雨量圖載入中...">
+                <div class="panel-title">📡 氣象署即時累積雨量圖</div>
+                <div class="box-container" onclick="projectToCenter('氣象署即時累積雨量圖', document.getElementById('cwa-rain').src, true)">
+                    <!-- 修正為氣象署專用且穩定的雨量分佈圖公開端點 -->
+                    <img id="cwa-rain" src="https://www.cwa.gov.tw/Data/rainfall/QX_COLOR.jpg" class="weather-fit-img" alt="累積雨量圖">
                 </div>
             </div>
         </div>
@@ -318,11 +318,10 @@
         XLSX.writeFile(workbook, fileName);
     }
 
-    // 透過 CWA API 動態抓取氣象站觀測與官方即時雨量圖片物件網址
     function fetchCWAWeatherData() {
-        // 1. 抓取淡水測站即時氣溫與雨量
-        const weatherApiUrl = `https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0001-001?Authorization=${CWA_API_KEY}&format=JSON&locationName=淡水`;
-        fetch(weatherApiUrl)
+        const apiUrl = `https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0001-001?Authorization=${CWA_API_KEY}&format=JSON&locationName=淡水`;
+
+        fetch(apiUrl)
             .then(res => res.json())
             .then(data => {
                 try {
@@ -338,28 +337,12 @@
             })
             .catch(err => console.log("氣象站連線等待中..."));
 
-        // 2. 透過 CWA 官方 OpenData 雨量圖資料集 (O-A0040-001) 動態抓取官方圖片 URL
-        const rainApiUrl = `https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0040-001?Authorization=${CWA_API_KEY}&format=JSON`;
-        fetch(rainApiUrl)
-            .then(res => res.json())
-            .then(data => {
-                try {
-                    const rainImgUrl = data.records.issuing[0].url; // 自動取得官方最新產出雨量圖網址
-                    const rainImg = document.getElementById('cwa-rain');
-                    if (rainImg && rainImgUrl) rainImg.src = rainImgUrl;
-                } catch (e) {
-                    // 備用防呆：若 JSON 結構不同，使用標準穩定端點
-                    document.getElementById('cwa-rain').src = `https://www.cwa.gov.tw/Data/rainfall/O-A0040-001.PNG?t=${new Date().getTime()}`;
-                }
-            })
-            .catch(err => {
-                document.getElementById('cwa-rain').src = `https://www.cwa.gov.tw/Data/rainfall/O-A0040-001.PNG?t=${new Date().getTime()}`;
-            });
-
-        // 更新雷達圖
+        // 更新雷達圖與雨量圖時間戳記
         const timestamp = new Date().getTime();
         const radarImg = document.getElementById('cwa-radar');
+        const rainImg = document.getElementById('cwa-rain');
         if (radarImg) radarImg.src = `https://www.cwa.gov.tw/Data/radar/CV1_3600.png?t=${timestamp}`;
+        if (rainImg) rainImg.src = `https://www.cwa.gov.tw/Data/rainfall/QX_COLOR.jpg?t=${timestamp}`;
     }
 
     function fetchGoogleSheetData() {

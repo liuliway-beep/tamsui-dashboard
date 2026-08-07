@@ -65,6 +65,8 @@
         }
         .weather-card-title { color: #00f2fe; font-weight: bold; font-size: 12px; border-bottom: 1px solid #30363d; padding-bottom: 3px; display: flex; justify-content: space-between; }
 
+        .full-fit-img { width: 100%; height: 100%; object-fit: cover !important; display: block; }
+
         .cctv-select {
             position: absolute; bottom: 4px; left: 4px; z-index: 600; width: calc(100% - 8px);
             background: rgba(13, 17, 23, 0.9); color: #00f2fe; border: 1px solid #30363d; font-size: 9px;
@@ -181,7 +183,7 @@
             </div>
         </div>
 
-        <!-- 右側面板：上(氣象預報) 下(YouTube 官方高畫質淡水即時實景直播) -->
+        <!-- 右側面板：上(氣象預報) 下(淡水區官方 CCTV 監控) -->
         <div class="panel">
             <div class="sub-block">
                 <div class="panel-title">
@@ -200,17 +202,16 @@
             </div>
             <div class="sub-block">
                 <div class="panel-title">
-                    <span>🎥 轄區即時視訊監控 (YouTube 實景直播)</span>
-                    <span style="font-size:8px; color:#ff4d4d; font-weight: bold;" id="cctv-status-tag">(🔴 現場直播中)</span>
+                    <span>🎥 轄區官定 CCTV (淡水區民權路口)</span>
+                    <span style="font-size:8px; color:#2ed573; font-weight: bold;">(🟢 官方資料鎖定)</span>
                 </div>
                 <div class="box-container" onclick="projectCCTVToCenter()">
                     <div class="iframe-click-overlay"></div>
-                    <!-- 採用 YouTube 官方高畫質淡水河口/金色水岸 24H 實景直播串流，保證絕對能看且零死角 -->
-                    <iframe id="cctv-iframe" src="https://www.youtube.com/embed/live_stream?channel=UC-lH_LZvD4p2A8E1Gq8pQ8Q&autoplay=1&mute=1&controls=0" style="width:100%; height:100%; border:none; pointer-events:none;" frameborder="0" allow="autoplay"></iframe>
+                    <div class="window-label" id="cctv-label" style="position: absolute; top: 4px; left: 6px; z-index: 20; color: #fff; font-family: monospace; font-size: 9px; text-shadow: 1px 1px 3px #000;">淡水區 民權路、187巷前200公尺 (ID: 7)</div>
+                    <!-- 採用您提供的正式官方資料庫 CCTV ID 7 (淡水區民權路) 圖片串流來源 -->
+                    <img src="https://td.ntpc.gov.tw/image/cctv/7.jpg" id="cctv-img" class="full-fit-img" alt="淡水區CCTV" referrerpolicy="no-referrer">
                     <select class="cctv-select" id="cctv-dropdown" onclick="event.stopPropagation();" onchange="changeCCTVLocation(this.value)">
-                        <option value="0">🎥 淡水老街 / 黃金水岸即時動態</option>
-                        <option value="1">🎥 關渡大橋即時交通監控</option>
-                        <option value="2">🎥 漁人碼頭情人橋即時影像</option>
+                        <option value="7">📍 淡水區 民權路、187巷前200公尺 (ID: 7)</option>
                     </select>
                 </div>
             </div>
@@ -293,14 +294,11 @@
     const CWA_API_KEY = "CWA-3CF372A5-0801-4819-ADE1-7DE3D1F3010B"; 
     const BASE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
 
-    // 採用穩定且支援嵌入的 YouTube 淡水即時直播來源清單
+    // 官方提供的淡水區 CCTV 站點清單[cite: 2]
     const cctvStations = [
-        { name: "淡水老街 / 黃金水岸即時動態", url: "https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=1&controls=0" },
-        { name: "關渡大橋即時交通監控", url: "https://www.youtube.com/embed/5qap5aO4i9A?autoplay=1&mute=1&controls=0" },
-        { name: "漁人碼頭情人橋即時影像", url: "https://www.youtube.com/embed/live_stream?channel=UC-lH_LZvD4p2A8E1Gq8pQ8Q&autoplay=1&mute=1&controls=0" }
+        { id: "7", name: "淡水區 民權路、187巷前200公尺", lat: 25.132069, lng: 121.458524 }
     ];
-    let currentCCTVIndex = 0;
-    let cctvPatrolTimer = null;
+    let currentCCTVId = "7";
 
     // 精準對照淡水區主要路段座標
     const tamsuiLocations = [
@@ -326,7 +324,7 @@
     ];
 
     function initMap() {
-        map = L.map('map').setView([25.1720, 121.4450], 14);
+        map = L.map('map').setView([25.132069, 121.458524], 14); // 初始視角對準淡水民權路 CCTV 點位[cite: 2]
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap',
             maxZoom: 19
@@ -334,40 +332,24 @@
         markersGroup = L.layerGroup().addTo(map);
     }
 
-    // 啟動 CCTV 自動巡邏輪播引擎
-    function startCCTVPatrol() {
-        if (cctvPatrolTimer) clearInterval(cctvPatrolTimer);
-        cctvPatrolTimer = setInterval(() => {
-            currentCCTVIndex = (currentCCTVIndex + 1) % cctvStations.length;
-            updateCCTVDisplay(currentCCTVIndex);
-        }, 15000); 
-    }
-
-    function updateCCTVDisplay(index) {
-        const station = cctvStations[index];
-        document.getElementById('cctv-iframe').src = station.url;
-        document.getElementById('cctv-dropdown').value = index;
+    function updateCCTVImage() {
+        const timestamp = new Date().getTime();
+        const imageUrl = `https://td.ntpc.gov.tw/image/cctv/${currentCCTVId}.jpg?t=${timestamp}`;
+        const imgEl = document.getElementById('cctv-img');
+        if (imgEl) imgEl.src = imageUrl;
 
         const box = document.getElementById('center-projection-box');
         if (box.style.display === 'block') {
             const content = document.getElementById('projection-content');
             if (content.dataset.type === 'cctv') {
-                content.innerHTML = `<iframe src="${station.url}" style="width:100%; height:100%; border:none;" frameborder="0" allow="autoplay"></iframe>`;
-                document.getElementById('projection-title-tag').innerText = `🎥 互動投影：轄區 CCTV - ${station.name}`;
+                content.innerHTML = `<img src="${imageUrl}" referrerpolicy="no-referrer" style="width:100%; height:100%; object-fit:contain; background:#000;" alt="CCTV投影">`;
             }
         }
     }
 
     function changeCCTVLocation(val) {
-        currentCCTVIndex = parseInt(val);
-        updateCCTVDisplay(currentCCTVIndex);
-        
-        if (cctvPatrolTimer) clearInterval(cctvPatrolTimer);
-        document.getElementById('cctv-status-tag').innerText = "(⏸️ 手動檢視中)";
-        setTimeout(() => {
-            startCCTVPatrol();
-            document.getElementById('cctv-status-tag').innerText = "(🔴 現場直播中)";
-        }, 20000);
+        currentCCTVId = val;
+        updateCCTVImage();
     }
 
     // 一鍵匯出 Excel 報表
@@ -530,13 +512,14 @@
     }
 
     function projectCCTVToCenter() {
-        const station = cctvStations[currentCCTVIndex];
+        const timestamp = new Date().getTime();
+        const imageUrl = `https://td.ntpc.gov.tw/image/cctv/${currentCCTVId}.jpg?t=${timestamp}`;
         const box = document.getElementById('center-projection-box');
         const titleTag = document.getElementById('projection-title-tag');
         const content = document.getElementById('projection-content');
-        titleTag.innerText = `🎥 互動投影：轄區 CCTV - ${station.name}`;
+        titleTag.innerText = `🎥 互動投影：淡水區 民權路、187巷前200公尺 (ID: ${currentCCTVId})`;
         content.dataset.type = 'cctv';
-        content.innerHTML = `<iframe src="${station.url}" style="width:100%; height:100%; border:none;" frameborder="0" allow="autoplay"></iframe>`;
+        content.innerHTML = `<img src="${imageUrl}" referrerpolicy="no-referrer" style="width:100%; height:100%; object-fit:contain; background:#000;" alt="CCTV投影">`;
         box.style.display = 'block';
     }
 
@@ -630,6 +613,13 @@
             marker.on('click', () => { selectIncident(index, data); });
             markersGroup.addLayer(marker);
         });
+
+        // 同時在 Leaflet 地圖上加上淡水官方 CCTV 點位 (ID: 7)[cite: 2]
+        const cctvMarker = L.circleMarker([25.132069, 121.458524], {
+            radius: 9, fillColor: "#00f2fe", color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 1
+        });
+        cctvMarker.bindPopup(`<b>🎥 官方即時監控點</b><br>淡水區 民權路、187巷前200公尺 (ID: 7)[cite: 2]`);
+        markersGroup.addLayer(cctvMarker);
     }
 
     function selectIncident(index, currentList) {
@@ -653,10 +643,11 @@
         initMap();
         fetchGoogleSheetData();
         fetchCWAWeatherData();
-        startCCTVPatrol(); // 啟動 CCTV 自動巡邏輪播
+        updateCCTVImage(); // 初始化載入官方 CCTV 影像
 
         setInterval(fetchGoogleSheetData, 15000);         
         setInterval(fetchCWAWeatherData, 300000);         
+        setInterval(updateCCTVImage, 10000); // 每 10 秒自動更新即時道路畫面
     };
 </script>
 </body>

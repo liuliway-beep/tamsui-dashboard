@@ -173,8 +173,6 @@
         }
 
         .full-fit-img { width: 100%; height: 100%; object-fit: cover !important; display: block; }
-        
-        /* 修正氣象圖縮放，改為 contain 完整呈現不被切掉 */
         .weather-fit-img { width: 100%; height: 100%; object-fit: contain; background-color: #000; display: block; }
 
         .cctv-select {
@@ -410,16 +408,24 @@
             complete: function(results) {
                 if (results.data && results.data.length > 0) {
                     const fetchedData = results.data.filter(row => row['地點'] || row['地點 (E)'] || row['地點']).map(row => {
-                        let lat = parseFloat(row['緯度']);
-                        let lng = parseFloat(row['經度']);
+                        let rawLat = parseFloat(row['緯度']);
+                        let rawLng = parseFloat(row['經度']);
 
-                        // 防呆修正：如果經緯度上下對調了，自動幫忙轉回來確保落在淡水
-                        if (lat > 120 && lng < 30) {
-                            let temp = lat; lat = lng; lng = temp;
+                        let lat = rawLat;
+                        let lng = rawLng;
+
+                        // 【智慧防呆校正】
+                        // 1. 如果經緯度數值顛倒了（例如緯度帶到 121.x、經度帶到 25.x），自動對調
+                        if (!isNaN(rawLat) && !isNaN(rawLng)) {
+                            if (rawLat > 100 && rawLng < 30) {
+                                lat = rawLng;
+                                lng = rawLat;
+                            }
                         }
-                        // 如果座標完全抓不到，預設落在淡水區公所附近
-                        if (isNaN(lat) || lat < 25 || lat > 26) lat = 25.1705;
-                        if (isNaN(lng) || lng < 121 || lng > 122) lng = 121.4395;
+
+                        // 2. 如果經緯度完全空白或不在淡水合理範圍內，提供淡水區公所預設值
+                        if (isNaN(lat) || lat < 25.10 || lat > 25.25) lat = 25.1705;
+                        if (isNaN(lng) || lng < 121.38 || lng > 121.50) lng = 121.4395;
 
                         return {
                             "受理時間": row['受理時間'] || row['受理時間 (B)'] || '時間未記錄',

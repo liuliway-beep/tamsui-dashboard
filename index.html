@@ -142,17 +142,17 @@
     <div class="top-layout">
         <div class="panel">
             <div class="sub-block">
-                <div class="panel-title">🌀 Windy 即時動態氣象與颱風環流監控</div>
-                <!-- 左上角：採用國際標準 Windy 內嵌動態地圖，具備流暢動態風場與雲系動畫，絕不破圖 -->
+                <div class="panel-title">🌀 Windy 即時動態氣象與風場環流監控</div>
+                <!-- 左上角：Windy 互動風場動態大圖 -->
                 <div class="box-container" style="background:#000;">
                     <iframe src="https://embed.windy.com/embed2.5.0.html?lat=25.172&lon=121.445&zoom=6&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>
                 </div>
             </div>
             <div class="sub-block">
-                <div class="panel-title">📡 氣象署氣象觀測與衛星動態</div>
-                <!-- 左下角：改為氣象署官方高畫質衛星雲圖，點擊可放大投影 -->
-                <div class="box-container" onclick="projectToCenter('氣象署即時衛星雲圖', document.getElementById('cwa-sat').src, true)">
-                    <img id="cwa-sat" src="https://www.cwa.gov.tw/Data/satellite/LCC_CH_FC_250/LCC_CH_FC_250-000-00.jpg" referrerpolicy="no-referrer" class="weather-fit-img" alt="衛星雲圖">
+                <div class="panel-title">📡 CWA 氣象署即時動態雷達回波 (自動迴圈)</div>
+                <!-- 左下角：修復為氣象署官方標準的動態雷達迴圈 GIF，具備順暢動畫且支援點擊放大投影 -->
+                <div class="box-container" onclick="projectToCenter('氣象署即時動態雷達回波', document.getElementById('cwa-radar').src, true)">
+                    <img id="cwa-radar" src="https://www.cwa.gov.tw/Data/radar/CV1_LG_1000.gif" referrerpolicy="no-referrer" class="weather-fit-img" alt="動態雷達回波">
                 </div>
             </div>
         </div>
@@ -176,7 +176,7 @@
                     <span style="color: #ffdd67; font-size: 8px;">[連動調閱]</span>
                 </div>
                 <div class="box-container" id="incident-photo-box" onclick="projectCurrentIncidentToCenter()">
-                    <div class="cctv-osd-top" id="incident-osd">08-08-2026 Sat 04:08:00 C09017B 淡水區<br>淡水區文化路、新生街口</div>
+                    <div class="cctv-osd-top" id="incident-osd">08-08-2026 Sat 04:37:00 C09017B 淡水區<br>淡水區文化路、新生街口</div>
                     <div class="cctv-osd-right">TWIPCAM.COM</div>
                     <img src="https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80" id="incident-img" class="full-fit-img" alt="現場">
                 </div>
@@ -359,10 +359,10 @@
             })
             .catch(err => console.log("氣象站連線等待中..."));
 
-        // 定時更新衛星雲圖
+        // 定時更新動態雷達迴圈 GIF 圖檔 (附加時間戳記防快取)
         const timestamp = new Date().getTime();
-        const satImg = document.getElementById('cwa-sat');
-        if (satImg) satImg.src = `https://www.cwa.gov.tw/Data/satellite/LCC_CH_FC_250/LCC_CH_FC_250-000-00.jpg?t=${timestamp}`;
+        const radarImg = document.getElementById('cwa-radar');
+        if (radarImg) radarImg.src = `https://www.cwa.gov.tw/Data/radar/CV1_LG_1000.gif?t=${timestamp}`;
     }
 
     function fetchGoogleSheetData() {
@@ -591,7 +591,7 @@
         fetchCWAWeatherData();
 
         setInterval(fetchGoogleSheetData, 15000);         
-        setInterval(fetchCWAWeatherData, 300000);         
+        setInterval(fetchCWAWeatherData, 60000); // 每 60 秒自動更新雷達回波 GIF         
     };
 </script>
 </body>

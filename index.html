@@ -8,9 +8,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         html, body { 
-            background-color: #0b0e14; 
-            color: #c9d1d9; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background-color: #0b0e14; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; box-sizing: border-box;
         }
         .wrapper { display: flex; flex-direction: column; height: 100vh; padding: 6px; box-sizing: border-box; gap: 6px; }
@@ -65,7 +63,6 @@
             padding: 2px 4px; border-radius: 2px; outline: none; cursor: pointer;
         }
 
-        /* 恢復明亮清晰的標準彩色地圖 */
         #map { width: 100%; height: 100%; border-radius: 4px; z-index: 1; background-color: #e5e3df; }
 
         .center-projection-wrap { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
@@ -258,10 +255,19 @@
     const officialEqReportImgUrl = "https://img.ltn.com.tw/Upload/news/600/2026/07/26/php66dE9S.jpg";
     const BASE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
 
+    const tamsuiLocations = {
+        "學府路": { lat: 25.1720, lng: 121.4485 },
+        "中山北路": { lat: 25.1802, lng: 121.4428 },
+        "中山路": { lat: 25.1709, lng: 121.4418 },
+        "中正路": { lat: 25.1755, lng: 121.4380 },
+        "文化路": { lat: 25.1725, lng: 121.4390 },
+        "英專路": { lat: 25.1715, lng: 121.4430 },
+        "水源街": { lat: 25.1750, lng: 121.4500 },
+        "淡金路": { lat: 25.1900, lng: 121.4550 }
+    };
+
     function initMap() {
-        // 初始化對準淡水區中心
-        map = L.map('map').setView([25.1720, 121.4450], 13);
-        // 改用明亮清晰的 OpenStreetMap 彩色標準圖資，地圖絕不再黑漆漆
+        map = L.map('map').setView([25.1720, 121.4450], 14);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap',
             maxZoom: 19
@@ -277,31 +283,47 @@
             header: true,
             complete: function(results) {
                 if (results.data && results.data.length > 0) {
-                    const fetchedData = results.data.filter(row => row['地點'] || row['地點 (E)'] || row['地點']).map(row => {
-                        let latVal = row['緯度'] || row['latitude'] || row['Lat'];
-                        let lngVal = row['經度'] || row['longitude'] || row['Lng'];
+                    const fetchedData = results.data.filter(row => row['地點'] || row['地點 (E)'] || row['地點']).map((row, index) => {
+                        let address = row['地點'] || row['地點 (E)'] || '';
+                        let historyText = row['現場狀況與完整歷史進程'] || row['現場狀況與完整歷史進程 (F)'] || row['現場狀況'] || '無詳細說明';
+                        let rawStatus = row['狀態'] || row['狀態 (G)'] || '';
 
-                        let lat = parseFloat(latVal);
-                        let lng = parseFloat(lngVal);
-
-                        // 防呆對調
-                        if (!isNaN(lat) && !isNaN(lng)) {
-                            if (lat > 100 && lng < 30) {
-                                let temp = lat; lat = lng; lng = temp;
-                            }
+                        // 【智慧狀態判定】：若狀態或歷史進程文字內包含「已結案」，則強制判定為已結案；若包含「處理中」則為處理中
+                        let status = "新通報";
+                        if (rawStatus.includes("已結案") || historyText.includes("已結案")) {
+                            status = "已結案";
+                        } else if (rawStatus.includes("處理中") || historyText.includes("處理中")) {
+                            status = "處理中";
+                        } else if (rawStatus.includes("新通報") || rawStatus.includes("未處理") || rawStatus === "") {
+                            status = "新通報";
                         }
 
-                        // 如果試算表沒填經緯度，自動給予淡水區公所附近的不同微幅偏移量，避免完全疊在一起
-                        if (isNaN(lat) || lat < 25.10 || lat > 25.25) lat = 25.1705 + (Math.random() * 0.005);
-                        if (isNaN(lng) || lng < 121.38 || lng > 121.50) lng = 121.4395 + (Math.random() * 0.005);
+                        let lat = parseFloat(row['緯度'] || row['latitude']);
+                        let lng = parseFloat(row['經度'] || row['longitude']);
+
+                        if (isNaN(lat) || isNaN(lng) || lat < 25.10 || lat > 25.25) {
+                            let matched = false;
+                            for (let key in tamsuiLocations) {
+                                if (address.includes(key)) {
+                                    lat = tamsuiLocations[key].lat + (index * 0.0008);
+                                    lng = tamsuiLocations[key].lng + (index * 0.0008);
+                                    matched = true;
+                                    break;
+                                }
+                            }
+                            if (!matched) {
+                                lat = 25.1705 + (index * 0.001);
+                                lng = 121.4395 + (index * 0.001);
+                            }
+                        }
 
                         return {
                             "受理時間": row['受理時間'] || row['受理時間 (B)'] || '時間未記錄',
                             "案件類別": row['案件類別'] || row['案件類別 (C)'] || '一般通報',
                             "權責單位": row['權責單位'] || row['權責單位 (D)'] || '待分派',
-                            "地點": row['地點'] || row['地點 (E)'] || '地點未確認',
-                            "現場狀況與完整歷史進程": row['現場狀況與完整歷史進程'] || row['現場狀況與完整歷史進程 (F)'] || row['現場狀況'] || '無詳細說明',
-                            "狀態": row['狀態'] || row['狀態 (G)'] || '新通報',
+                            "地點": address || '地點未確認',
+                            "現場狀況與完整歷史進程": historyText,
+                            "狀態": status,
                             "緯度": lat,
                             "經度": lng,
                             "照片網址": "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80"
@@ -369,7 +391,7 @@
 
         let countNew = 0, countIng = 0, countDone = 0;
         globalData.forEach(item => {
-            if (item["狀態"] === "新通報" || item["狀態"] === "未處理") countNew++;
+            if (item["狀態"] === "新通報") countNew++;
             else if (item["狀態"] === "處理中") countIng++;
             else if (item["狀態"] === "已結案") countDone++;
         });
@@ -384,7 +406,7 @@
 
         let displayData = globalData;
         if (currentFilterStatus) {
-            displayData = globalData.filter(item => item["狀態"] === currentFilterStatus || (currentFilterStatus === '新通報' && item["狀態"] === '未處理'));
+            displayData = globalData.filter(item => item["狀態"] === currentFilterStatus);
         }
 
         renderStatsAndTable(displayData);
@@ -424,16 +446,15 @@
         data.forEach((item, index) => {
             if (String(item["案件類別"] || "").trim() === "地震快訊") return;
 
-            let color = "#ff4d4d";
-            if (item["狀態"] === "處理中") color = "#ff9f43";
-            if (item["狀態"] === "已結案") color = "#2ed573";
+            let color = "#ff4d4d"; // 新通報為紅色
+            if (item["狀態"] === "處理中") color = "#ff9f43"; // 處理中為橘色
+            if (item["狀態"] === "已結案") color = "#2ed573"; // 已結案為綠色
 
             const marker = L.circleMarker([item["緯度"], item["經度"]], {
                 radius: 8, fillColor: color, color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.95
             });
 
-            // 彈出視窗直接顯示經緯度與地址，方便你一眼看出有沒有抓對座標
-            marker.bindPopup(`<b>${item["案件類別"]}</b><br>${item["地點"]}<br><small>座標: ${item["緯度"].toFixed(4)}, ${item["經度"].toFixed(4)}</small><br>狀態：${item["狀態"]}`);
+            marker.bindPopup(`<b>${item["案件類別"]}</b><br>${item["地點"]}<br>狀態：${item["狀態"]}`);
             marker.on('click', () => { selectIncident(index, data); });
             markersGroup.addLayer(marker);
         });

@@ -164,59 +164,30 @@
         .box-container:hover { border-color: #00f2fe; }
 
         .cctv-osd-top {
-            position: absolute;
-            top: 4px;
-            left: 6px;
-            color: #ffffff;
-            font-family: monospace;
-            font-size: 9px;
-            text-shadow: 1px 1px 3px #000;
-            z-index: 400;
-            text-align: left;
-            line-height: 1.2;
+            position: absolute; top: 4px; left: 6px; color: #ffffff; font-family: monospace; font-size: 9px;
+            text-shadow: 1px 1px 3px #000; z-index: 400; text-align: left; line-height: 1.2;
         }
         .cctv-osd-right {
-            position: absolute;
-            top: 4px;
-            right: 6px;
-            color: #ffffff;
-            font-family: monospace;
-            font-size: 8px;
-            text-shadow: 1px 1px 3px #000;
-            z-index: 400;
+            position: absolute; top: 4px; right: 6px; color: #ffffff; font-family: monospace; font-size: 8px;
+            text-shadow: 1px 1px 3px #000; z-index: 400;
         }
 
         .full-fit-img { width: 100%; height: 100%; object-fit: cover !important; display: block; }
         .weather-zoom-img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.6); transform-origin: center center; display: block; }
 
         .cctv-select {
-            position: absolute;
-            bottom: 4px;
-            left: 4px;
-            z-index: 600;
-            width: calc(100% - 8px);
-            background: rgba(13, 17, 23, 0.9);
-            color: #00f2fe;
-            border: 1px solid #30363d;
-            font-size: 9px;
-            padding: 2px 4px;
-            border-radius: 2px;
-            outline: none;
-            cursor: pointer;
+            position: absolute; bottom: 4px; left: 4px; z-index: 600; width: calc(100% - 8px);
+            background: rgba(13, 17, 23, 0.9); color: #00f2fe; border: 1px solid #30363d; font-size: 9px;
+            padding: 2px 4px; border-radius: 2px; outline: none; cursor: pointer;
         }
 
-        #map { width: 100%; height: 100%; border-radius: 4px; z-index: 1; background-color: #05070a; }
+        #map { width: 100%; height: 100%; border-radius: 4px; z-index: 1; background-color: #ffffff; }
 
         .center-projection-wrap {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
+            position: relative; width: 100%; height: 100%; display: flex; flex-direction: column;
         }
         #center-projection-box {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 800; background-color: #000; display: none; border-radius: 4px; overflow: hidden;
         }
         .projection-close-btn {
@@ -422,9 +393,11 @@
     const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
 
     function initMap() {
+        // 初始化地圖對準淡水區中心
         map = L.map('map').setView([25.1720, 121.4450], 13);
-        L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
-            attribution: '&copy; CartoDB',
+        // 改用標準且清晰的 OpenStreetMap 彩色地圖圖資
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap',
             maxZoom: 19
         }).addTo(map);
         markersGroup = L.layerGroup().addTo(map);
@@ -443,9 +416,9 @@
                         "地點": row['地點'] || row['地點 (E)'] || '地點未確認',
                         "現場狀況與完整歷史進程": row['現場狀況與完整歷史進程'] || row['現場狀況與完整歷史進程 (F)'] || row['現場狀況'] || '無詳細說明',
                         "狀態": row['狀態'] || row['狀態 (G)'] || '新通報',
-                        // 直接抓取 Google 試算表裡的緯度與經度
-                        "緯度": parseFloat(row['緯度']) || 25.1705,
-                        "经度": parseFloat(row['經度']) || 121.4395,
+                        // 嚴格讀取試算表中的「緯度」與「經度」，不進行任何強制覆蓋
+                        "緯度": parseFloat(row['緯度']),
+                        "經度": parseFloat(row['經度']),
                         "照片網址": "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80"
                     }));
 
@@ -565,21 +538,20 @@
         data.forEach((item, index) => {
             if (String(item["案件類別"] || "").trim() === "地震快訊") return;
 
-            // 直接讀取試算表中的經緯度數值
-            let lat = item["緯度"];
-            let lng = item["经度"];
+            // 確保有經緯度才打點，且完全採用試算表中的數值
+            if (!isNaN(item["緯度"]) && !isNaN(item["經度"])) {
+                let color = "#ff4d4d";
+                if (item["狀態"] === "處理中") color = "#ff9f43";
+                if (item["狀態"] === "已結案") color = "#2ed573";
 
-            let color = "#ff4d4d";
-            if (item["狀態"] === "處理中") color = "#ff9f43";
-            if (item["狀態"] === "已結案") color = "#2ed573";
+                const marker = L.circleMarker([item["緯度"], item["經度"]], {
+                    radius: 8, fillColor: color, color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.95
+                });
 
-            const marker = L.circleMarker([lat, lng], {
-                radius: 8, fillColor: color, color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.95
-            });
-
-            marker.bindPopup(`<b>${item["案件類別"]}</b><br>${item["地點"]}<br>狀態：${item["狀態"]}`);
-            marker.on('click', () => { selectIncident(index, data); });
-            markersGroup.addLayer(marker);
+                marker.bindPopup(`<b>${item["案件類別"]}</b><br>${item["地點"]}<br>狀態：${item["狀態"]}`);
+                marker.on('click', () => { selectIncident(index, data); });
+                markersGroup.addLayer(marker);
+            }
         });
     }
 
@@ -593,9 +565,9 @@
         if(!item) return;
         currentSelectedIncident = item;
 
-        // 點擊表格案件時，地圖自動平移並精準對焦到該地點
-        if (item["緯度"] && item["经度"]) {
-            map.setView([item["緯度"], item["经度"]], 15);
+        // 點擊表格案件時，地圖自動平移並對焦到該地點
+        if (!isNaN(item["緯度"]) && !isNaN(item["經度"])) {
+            map.setView([item["緯度"], item["經度"]], 16);
         }
 
         const photoBox = document.getElementById('incident-photo-box');

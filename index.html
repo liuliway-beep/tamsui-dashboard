@@ -142,17 +142,17 @@
     <div class="top-layout">
         <div class="panel">
             <div class="sub-block">
-                <div class="panel-title">🌀 CWA 氣象署即時動態雷達回波 (自動更新)</div>
-                <!-- 左上角：採用氣象署官方動態雷達回波 GIF 連結，讓畫面持續動態演進 -->
-                <div class="box-container" onclick="projectToCenter('氣象署即時動態雷達回波', document.getElementById('cwa-radar').src, true)">
-                    <img id="cwa-radar" src="https://www.cwa.gov.tw/Data/radar/CV1_LG_1000.gif" referrerpolicy="no-referrer" class="weather-fit-img" alt="動態雷達回波">
+                <div class="panel-title">🌀 CWA 氣象署即時颱風路徑潛勢圖</div>
+                <!-- 左上角：精準對接中央氣象署標準颱風路徑潛勢預報圖，呈現完整路徑、潛勢範圍與時間標示 -->
+                <div class="box-container" onclick="projectToCenter('CWA 氣象署即時颱風路徑潛勢圖', document.getElementById('cwa-typhoon').src, true)">
+                    <img id="cwa-typhoon" src="https://www.cwa.gov.tw/Data/typhoon/TY_C.png" referrerpolicy="no-referrer" class="weather-fit-img" alt="颱風路徑潛勢圖">
                 </div>
             </div>
             <div class="sub-block">
-                <div class="panel-title">📡 CWA 氣象署衛星雲圖 / 動態降雨監測</div>
-                <!-- 左下角：採用氣象署動態衛星雲圖 GIF，讓雲層與天氣系統持續流動 -->
-                <div class="box-container" onclick="projectToCenter('氣象署動態衛星雲圖', document.getElementById('cwa-satellite').src, true)">
-                    <img id="cwa-satellite" src="https://www.cwa.gov.tw/Data/satellite/LCC_CH_FC_250/LCC_CH_FC_250-000-00.jpg" referrerpolicy="no-referrer" class="weather-fit-img" alt="動態衛星雲圖">
+                <div class="panel-title">🌀 CWA 氣象署即時雷達回波 (自動更新)</div>
+                <!-- 左下角：即時雷達回波圖 -->
+                <div class="box-container" onclick="projectToCenter('氣象署即時雷達回波', document.getElementById('cwa-radar').src, true)">
+                    <img id="cwa-radar" src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" referrerpolicy="no-referrer" class="weather-fit-img" alt="雷達回波">
                 </div>
             </div>
         </div>
@@ -176,7 +176,7 @@
                     <span style="color: #ffdd67; font-size: 8px;">[連動調閱]</span>
                 </div>
                 <div class="box-container" id="incident-photo-box" onclick="projectCurrentIncidentToCenter()">
-                    <div class="cctv-osd-top" id="incident-osd">08-08-2026 Sat 02:00:00 C09017B 淡水區<br>淡水區文化路、新生街口</div>
+                    <div class="cctv-osd-top" id="incident-osd">08-08-2026 Sat 02:15:00 C09017B 淡水區<br>淡水區文化路、新生街口</div>
                     <div class="cctv-osd-right">TWIPCAM.COM</div>
                     <img src="https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80" id="incident-img" class="full-fit-img" alt="現場">
                 </div>
@@ -273,7 +273,7 @@
     let map, markersGroup;
     let currentFilterStatus = null;
     let currentSelectedIncident = null;
-    let cwaWeatherString = "正在透過中央氣象署 API 同步淡水區即時氣象與動態戰情...";
+    let cwaWeatherString = "正在透過中央氣象署 API 同步淡水區即時氣象與戰情數據...";
 
     const CWA_API_KEY = "CWA-3CF372A5-0801-4819-ADE1-7DE3D1F3010B"; 
     const BASE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
@@ -341,7 +341,7 @@
     }
 
     function fetchCWAWeatherData() {
-        // 同步淡水測站數值 (O-A0001-001)
+        // 同步淡水測站數值提示 (O-A0001-001)
         const weatherApiUrl = `https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0001-001?Authorization=${CWA_API_KEY}&format=JSON&StationId=466900`;
         fetch(weatherApiUrl)
             .then(res => res.json())
@@ -359,12 +359,12 @@
             })
             .catch(err => console.log("氣象站連線等待中..."));
 
-        // 動態更新 GIF 圖檔避免瀏覽器快取
+        // 即時更新颱風路徑潛勢圖與雷達回波圖檔 (附加時間戳記防快取)
         const timestamp = new Date().getTime();
+        const typhoonImg = document.getElementById('cwa-typhoon');
         const radarImg = document.getElementById('cwa-radar');
-        const satImg = document.getElementById('cwa-satellite');
-        if (radarImg) radarImg.src = `https://www.cwa.gov.tw/Data/radar/CV1_LG_1000.gif?t=${timestamp}`;
-        if (satImg) satImg.src = `https://www.cwa.gov.tw/Data/satellite/LCC_CH_FC_250/LCC_CH_FC_250-000-00.jpg?t=${timestamp}`;
+        if (typhoonImg) typhoonImg.src = `https://www.cwa.gov.tw/Data/typhoon/TY_C.png?t=${timestamp}`;
+        if (radarImg) radarImg.src = `https://www.cwa.gov.tw/Data/radar/CV1_3600.png?t=${timestamp}`;
     }
 
     function fetchGoogleSheetData() {

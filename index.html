@@ -149,12 +149,10 @@
                 </div>
             </div>
             <div class="sub-block">
-                <div class="panel-title">📡 CWA 氣象署即時雨量與颱風警報專區</div>
-                <!-- 改用高質感、永不 404 的官方互動快速導覽面板 -->
-                <div class="box-container" style="background: linear-gradient(135deg, #161b22, #0d1117); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; text-align: center;" onclick="window.open('https://www.cwa.gov.tw/V8/C/W/OBS_Rain.html', '_blank')">
-                    <div style="font-size: 24px; margin-bottom: 4px;">🛰️</div>
-                    <div style="color: #00f2fe; font-size: 11px; font-weight: bold; margin-bottom: 2px;">點擊開啟氣象署雨量與警報中心</div>
-                    <div style="color: #2ed573; font-size: 9px;">[官方直連 ｜ 即時互動雨量分佈地圖]</div>
+                <div class="panel-title">📡 氣象署即時雨量分佈圖 (視窗直入)</div>
+                <!-- 採用氣象署公開支援直接檢視的即時天氣與雨量圖端點，真實放入視窗中 -->
+                <div class="box-container" onclick="projectToCenter('氣象署即時雨量分佈圖', document.getElementById('cwa-rain').src, true)">
+                    <img id="cwa-rain" src="https://www.cwa.gov.tw/Data/rainfall/QX_COLOR.jpg" class="weather-fit-img" alt="累積雨量圖">
                 </div>
             </div>
         </div>
@@ -349,10 +347,12 @@
             })
             .catch(err => console.log("氣象站連線等待中..."));
 
-        // 自動更新雷達圖快取
+        // 強制加上動態時間戳記更新雷達圖與雨量圖，絕對秒新
         const timestamp = new Date().getTime();
         const radarImg = document.getElementById('cwa-radar');
+        const rainImg = document.getElementById('cwa-rain');
         if (radarImg) radarImg.src = `https://www.cwa.gov.tw/Data/radar/CV1_3600.png?t=${timestamp}`;
+        if (rainImg) rainImg.src = `https://www.cwa.gov.tw/Data/rainfall/QX_COLOR.jpg?t=${timestamp}`;
     }
 
     function fetchGoogleSheetData() {

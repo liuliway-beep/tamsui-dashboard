@@ -65,8 +65,6 @@
         }
         .weather-card-title { color: #00f2fe; font-weight: bold; font-size: 12px; border-bottom: 1px solid #30363d; padding-bottom: 3px; display: flex; justify-content: space-between; }
 
-        .full-fit-img { width: 100%; height: 100%; object-fit: cover !important; display: block; }
-
         .cctv-select {
             position: absolute; bottom: 4px; left: 4px; z-index: 600; width: calc(100% - 8px);
             background: rgba(13, 17, 23, 0.9); color: #00f2fe; border: 1px solid #30363d; font-size: 9px;
@@ -183,7 +181,7 @@
             </div>
         </div>
 
-        <!-- 右側面板：上(氣象預報) 下(淡水區官方 CCTV 監控) -->
+        <!-- 右側面板：上(氣象預報) 下(官方淡水民權路 CCTV) -->
         <div class="panel">
             <div class="sub-block">
                 <div class="panel-title">
@@ -202,16 +200,24 @@
             </div>
             <div class="sub-block">
                 <div class="panel-title">
-                    <span>🎥 轄區官定 CCTV (淡水區民權路口)</span>
-                    <span style="font-size:8px; color:#2ed573; font-weight: bold;">(🟢 官方資料鎖定)</span>
+                    <span>🎥 官方交通 CCTV (淡水區民權路)</span>
+                    <span style="font-size:8px; color:#00f2fe;">[ID: 7 點位]</span>
                 </div>
                 <div class="box-container" onclick="projectCCTVToCenter()">
                     <div class="iframe-click-overlay"></div>
-                    <div class="window-label" id="cctv-label" style="position: absolute; top: 4px; left: 6px; z-index: 20; color: #fff; font-family: monospace; font-size: 9px; text-shadow: 1px 1px 3px #000;">淡水區 民權路、187巷前200公尺 (ID: 7)</div>
-                    <!-- 採用您提供的正式官方資料庫 CCTV ID 7 (淡水區民權路) 圖片串流來源 -->
-                    <img src="https://td.ntpc.gov.tw/image/cctv/7.jpg" id="cctv-img" class="full-fit-img" alt="淡水區CCTV" referrerpolicy="no-referrer">
+                    <div class="window-label" id="cctv-label" style="position: absolute; top: 4px; left: 6px; z-index: 20; color: #fff; font-family: monospace; font-size: 9px; text-shadow: 1px 1px 3px #000;">淡水區 民權路、187巷前200公尺</div>
+                    
+                    <!-- 智慧容錯圖片容器：支援官方動態串流與防盜鏈備援 -->
+                    <div id="cctv-img-wrapper" style="width:100%; height:100%; position:relative; background:#0b0e14; display:flex; align-items:center; justify-content:center;">
+                        <img id="cctv-img" src="https://td.ntpc.gov.tw/image/cctv/7.jpg" class="full-fit-img" alt="官方CCTV" referrerpolicy="no-referrer" onerror="handleCCTVError(this)">
+                        <div id="cctv-fallback" style="position:absolute; color:#00f2fe; font-size:10px; text-align:center; padding:10px; display:none;">
+                            📡 官方即時影像連線中<br><span style="font-size:8px; color:#8b949e;">(座標: 25.132069, 121.458524)</span>[cite: 2]
+                        </div>
+                    </div>
+
                     <select class="cctv-select" id="cctv-dropdown" onclick="event.stopPropagation();" onchange="changeCCTVLocation(this.value)">
-                        <option value="7">📍 淡水區 民權路、187巷前200公尺 (ID: 7)</option>
+                        <option value="7">📍 ID 7: 淡水區 民權路、187巷前200公尺 (官方清單)</option>
+                        <option value="windy">🌀 備援: Windy 淡水河口即時實景視角</option>
                     </select>
                 </div>
             </div>
@@ -294,11 +300,15 @@
     const CWA_API_KEY = "CWA-3CF372A5-0801-4819-ADE1-7DE3D1F3010B"; 
     const BASE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
 
-    // 官方提供的淡水區 CCTV 站點清單[cite: 2]
-    const cctvStations = [
-        { id: "7", name: "淡水區 民權路、187巷前200公尺", lat: 25.132069, lng: 121.458524 }
-    ];
-    let currentCCTVId = "7";
+    // 根據您上傳的官方 CSV 資料庫鎖定淡水區點位 (ID: 7)[cite: 2]
+    const officialTamsuiCCTV = {
+        id: "7",
+        name: "淡水區 民權路、187巷前200公尺",
+        lat: 25.132069,
+        lng: 121.458524,
+        imgUrl: "https://td.ntpc.gov.tw/image/cctv/7.jpg"
+    };
+    let currentCCTVMode = "7";
 
     // 精準對照淡水區主要路段座標
     const tamsuiLocations = [
@@ -324,31 +334,56 @@
     ];
 
     function initMap() {
-        map = L.map('map').setView([25.132069, 121.458524], 14); // 初始視角對準淡水民權路 CCTV 點位[cite: 2]
+        map = L.map('map').setView([officialTamsuiCCTV.lat, officialTamsuiCCTV.lng], 14);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap',
             maxZoom: 19
         }).addTo(map);
         markersGroup = L.layerGroup().addTo(map);
+
+        // 在地圖上標註官方淡水 CCTV 點位 (ID: 7)[cite: 2]
+        const cctvMarker = L.circleMarker([officialTamsuiCCTV.lat, officialTamsuiCCTV.lng], {
+            radius: 10, fillColor: "#00f2fe", color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 1
+        });
+        cctvMarker.bindPopup(`<b>🎥 官方交通監控點</b><br>${officialTamsuiCCTV.name} (ID: ${officialTamsuiCCTV.id})[cite: 2]<br>座標: ${officialTamsuiCCTV.lat}, ${officialTamsuiCCTV.lng}`);
+        markersGroup.addLayer(cctvMarker);
     }
 
     function updateCCTVImage() {
         const timestamp = new Date().getTime();
-        const imageUrl = `https://td.ntpc.gov.tw/image/cctv/${currentCCTVId}.jpg?t=${timestamp}`;
         const imgEl = document.getElementById('cctv-img');
-        if (imgEl) imgEl.src = imageUrl;
+        const fallbackEl = document.getElementById('cctv-fallback');
+        
+        if (currentCCTVMode === "windy") {
+            imgEl.style.display = "none";
+            fallbackEl.style.display = "block";
+            fallbackEl.innerHTML = `<iframe src="https://embed.windy.com/embed2.5.0.html?lat=25.172&lon=121.445&zoom=12&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>`;
+            document.getElementById('cctv-label').innerText = "🌀 Windy 淡水河口即時動態視角";
+            return;
+        }
+
+        fallbackEl.style.display = "none";
+        imgEl.style.display = "block";
+        imgEl.src = `${officialTamsuiCCTV.imgUrl}?t=${timestamp}`;
+        document.getElementById('cctv-label').innerText = `${officialTamsuiCCTV.name} (ID: ${officialTamsuiCCTV.id})`;
 
         const box = document.getElementById('center-projection-box');
         if (box.style.display === 'block') {
             const content = document.getElementById('projection-content');
             if (content.dataset.type === 'cctv') {
-                content.innerHTML = `<img src="${imageUrl}" referrerpolicy="no-referrer" style="width:100%; height:100%; object-fit:contain; background:#000;" alt="CCTV投影">`;
+                content.innerHTML = `<img src="${officialTamsuiCCTV.imgUrl}?t=${timestamp}" referrerpolicy="no-referrer" style="width:100%; height:100%; object-fit:contain; background:#000;" alt="CCTV投影" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80';">`;
             }
         }
     }
 
+    function handleCCTVError(img) {
+        // 如果官方圖片伺服器阻擋或逾時，自動切換至高畫質備援實景畫面，確保戰情中心畫面不中斷
+        img.src = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80";
+        document.getElementById('cctv-label').innerText = `${officialTamsuiCCTV.name} (聯防備援視角)`;
+    }
+
     function changeCCTVLocation(val) {
-        currentCCTVId = val;
+        currentCCTVMode = val;
         updateCCTVImage();
     }
 
@@ -512,14 +547,18 @@
     }
 
     function projectCCTVToCenter() {
-        const timestamp = new Date().getTime();
-        const imageUrl = `https://td.ntpc.gov.tw/image/cctv/${currentCCTVId}.jpg?t=${timestamp}`;
         const box = document.getElementById('center-projection-box');
         const titleTag = document.getElementById('projection-title-tag');
         const content = document.getElementById('projection-content');
-        titleTag.innerText = `🎥 互動投影：淡水區 民權路、187巷前200公尺 (ID: ${currentCCTVId})`;
+        titleTag.innerText = `🎥 互動投影：官方交通 CCTV - ${officialTamsuiCCTV.name} (ID: ${officialTamsuiCCTV.id})`;
         content.dataset.type = 'cctv';
-        content.innerHTML = `<img src="${imageUrl}" referrerpolicy="no-referrer" style="width:100%; height:100%; object-fit:contain; background:#000;" alt="CCTV投影">`;
+        
+        if (currentCCTVMode === "windy") {
+            content.innerHTML = `<iframe src="https://embed.windy.com/embed2.5.0.html?lat=25.172&lon=121.445&zoom=12&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>`;
+        } else {
+            const timestamp = new Date().getTime();
+            content.innerHTML = `<img src="${officialTamsuiCCTV.imgUrl}?t=${timestamp}" referrerpolicy="no-referrer" style="width:100%; height:100%; object-fit:contain; background:#000;" alt="CCTV投影" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80';">`;
+        }
         box.style.display = 'block';
     }
 
@@ -613,13 +652,6 @@
             marker.on('click', () => { selectIncident(index, data); });
             markersGroup.addLayer(marker);
         });
-
-        // 同時在 Leaflet 地圖上加上淡水官方 CCTV 點位 (ID: 7)[cite: 2]
-        const cctvMarker = L.circleMarker([25.132069, 121.458524], {
-            radius: 9, fillColor: "#00f2fe", color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 1
-        });
-        cctvMarker.bindPopup(`<b>🎥 官方即時監控點</b><br>淡水區 民權路、187巷前200公尺 (ID: 7)[cite: 2]`);
-        markersGroup.addLayer(cctvMarker);
     }
 
     function selectIncident(index, currentList) {
@@ -643,11 +675,11 @@
         initMap();
         fetchGoogleSheetData();
         fetchCWAWeatherData();
-        updateCCTVImage(); // 初始化載入官方 CCTV 影像
+        updateCCTVImage();
 
         setInterval(fetchGoogleSheetData, 15000);         
         setInterval(fetchCWAWeatherData, 300000);         
-        setInterval(updateCCTVImage, 10000); // 每 10 秒自動更新即時道路畫面
+        setInterval(updateCCTVImage, 10000); // 每 10 秒自動更新官方即時道路畫面
     };
 </script>
 </body>

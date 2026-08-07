@@ -82,7 +82,7 @@
         .btn-ing-style { background-color: rgba(255, 159, 67, 0.15); border: 1px solid #ff9f43; color: #ff9f43; }
         .btn-done-style { background-color: rgba(46, 213, 115, 0.15); border: 1px solid #2ed573; color: #2ed573; }
         
-        /* 匯出 Excel 按鈕：完美固定於已結案按鈕下方 */
+        /* 匯出 Excel 按鈕：固定完美安放於已結案下方 */
         .btn-excel-style {
             background-color: rgba(46, 213, 115, 0.15); 
             border: 1px solid #2ed573; 
@@ -149,31 +149,10 @@
                 </div>
             </div>
             <div class="sub-block">
-                <div class="panel-title">📡 CWA 氣象署淡水測站即時雨量與溫濕度</div>
-                <!-- 即時氣象與雨量數據卡 -->
-                <div class="box-container" style="background: linear-gradient(135deg, #161b22, #0d1117); display: flex; flex-direction: column; justify-content: center; padding: 10px; box-sizing: border-box; cursor: default;">
-                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #30363d; padding-bottom: 3px; margin-bottom: 4px;">
-                        <span style="color: #00f2fe; font-size: 10px; font-weight: bold;">📍 淡水自動氣象站 (API 鎖死)</span>
-                        <span style="color: #2ed573; font-size: 9px;" id="weather-time">連線中</span>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 10px;">
-                        <div style="background: rgba(0,0,0,0.4); padding: 4px 6px; border-radius: 3px; border-left: 2px solid #00f2fe;">
-                            <div style="color: #8b949e; font-size: 8px;">即時氣溫</div>
-                            <div id="card-temp" style="color: #fff; font-size: 12px; font-weight: bold;">-- °C</div>
-                        </div>
-                        <div style="background: rgba(0,0,0,0.4); padding: 4px 6px; border-radius: 3px; border-left: 2px solid #ff9f43;">
-                            <div style="color: #8b949e; font-size: 8px;">累積雨量</div>
-                            <div id="card-rain" style="color: #fff; font-size: 12px; font-weight: bold;">-- mm</div>
-                        </div>
-                        <div style="background: rgba(0,0,0,0.4); padding: 4px 6px; border-radius: 3px; border-left: 2px solid #2ed573;">
-                            <div style="color: #8b949e; font-size: 8px;">相對濕度</div>
-                            <div id="card-humid" style="color: #fff; font-size: 11px; font-weight: bold;">-- %</div>
-                        </div>
-                        <div style="background: rgba(0,0,0,0.4); padding: 4px 6px; border-radius: 3px; border-left: 2px solid #a29bfe;">
-                            <div style="color: #8b949e; font-size: 8px;">風向狀況</div>
-                            <div id="card-wind" style="color: #fff; font-size: 10px; font-weight: bold;">監測中</div>
-                        </div>
-                    </div>
+                <div class="panel-title">📡 CWA 氣象署即時雨量觀測系統 (互動內嵌)</div>
+                <!-- 改用氣象署官方即時雨量網頁嵌入，100% 絕不破圖且支援互動檢視 -->
+                <div class="box-container" style="background: #000; position: relative;">
+                    <iframe src="https://www.cwa.gov.tw/V8/C/W/OBS_Rain.html" style="width: 100%; height: 100%; border: none; filter: invert(90%) hue-rotate(180deg);" title="氣象署雨量觀測"></iframe>
                 </div>
             </div>
         </div>
@@ -223,7 +202,6 @@
         </div>
     </div>
 
-    <!-- 下方區域：左側統計按鈕區，已結案下方完美放置一鍵匯出 Excel 按鈕 -->
     <div class="bottom-layout">
         <div class="stat-sidebar">
             <div class="stat-btn btn-new-style" id="btn-filter-new" onclick="filterByStatus('新通報')">
@@ -247,7 +225,7 @@
                 </div>
                 <div class="stat-btn-num" id="cnt-done">0件</div>
             </div>
-            <!-- 一鍵匯出 Excel 報表：位於已結案按鈕下方 -->
+            <!-- 一鍵匯出 Excel 報表：固定完美安放於已結案下方 -->
             <div class="stat-btn btn-excel-style" onclick="exportToExcel()" title="一鍵產出完整報表 Excel 檔">
                 <div style="font-size: 11px; font-weight: bold; text-align: center; width: 100%;">📊 匯出 Excel</div>
             </div>
@@ -361,15 +339,6 @@
                     const temp = weather.AirTemperature;
                     const humid = weather.RelativeHumidity;
                     const rain = weather.Now.Precipitation;
-                    const windDir = weather.WindDirection;
-                    const windSpeed = weather.WindSpeed;
-
-                    document.getElementById('card-temp').innerText = `${temp} °C`;
-                    document.getElementById('card-rain').innerText = `${rain} mm`;
-                    document.getElementById('card-humid').innerText = `${humid} %`;
-                    document.getElementById('card-wind').innerText = `${windSpeed} m/s (${windDir}°)`;
-                    document.getElementById('weather-time').innerText = `更新時間: ${station.ObsTime.DateTime.substring(11, 16)}`;
-
                     cwaWeatherString = `【🌀 CWA 氣象即時回報】淡水測站：氣溫 ${temp}°C，濕度 ${humid}%，累積雨量 ${rain} mm`;
                 } catch (e) {
                     console.error("氣象站資料解析錯誤", e);

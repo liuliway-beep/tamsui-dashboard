@@ -142,15 +142,15 @@
     <div class="top-layout">
         <div class="panel">
             <div class="sub-block">
-                <div class="panel-title">🌀 NCDR 國家災害防救科技中心 - 即時颱風動態</div>
-                <!-- 左上角：直接對接 NCDR 官方即時颱風動態互動系統 -->
-                <div class="box-container" style="background:#000;">
-                    <iframe src="https://watch.ncdr.nat.gov.tw/watch_page_typhoon_v2" style="width:100%; height:100%; border:none;" scrolling="yes"></iframe>
+                <div class="panel-title">🛰️ CWA 氣象署即時衛星雲圖 (自動更新)</div>
+                <!-- 左上角：即時衛星雲圖，點擊可放大投影到中央大畫面 -->
+                <div class="box-container" onclick="projectToCenter('氣象署即時衛星雲圖', document.getElementById('cwa-sat').src, true)">
+                    <img id="cwa-sat" src="https://www.cwa.gov.tw/Data/satellite/LCC_CH_FC_250/LCC_CH_FC_250-000-00.jpg" referrerpolicy="no-referrer" class="weather-fit-img" alt="衛星雲圖">
                 </div>
             </div>
             <div class="sub-block">
                 <div class="panel-title">🌀 CWA 氣象署即時雷達回波 (自動更新)</div>
-                <!-- 左下角：即時雷達回波圖 -->
+                <!-- 左下角：即時雷達回波圖，點擊可放大投影到中央大畫面 -->
                 <div class="box-container" onclick="projectToCenter('氣象署即時雷達回波', document.getElementById('cwa-radar').src, true)">
                     <img id="cwa-radar" src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" referrerpolicy="no-referrer" class="weather-fit-img" alt="雷達回波">
                 </div>
@@ -176,7 +176,7 @@
                     <span style="color: #ffdd67; font-size: 8px;">[連動調閱]</span>
                 </div>
                 <div class="box-container" id="incident-photo-box" onclick="projectCurrentIncidentToCenter()">
-                    <div class="cctv-osd-top" id="incident-osd">08-08-2026 Sat 02:44:00 C09017B 淡水區<br>淡水區文化路、新生街口</div>
+                    <div class="cctv-osd-top" id="incident-osd">08-08-2026 Sat 02:56:00 C09017B 淡水區<br>淡水區文化路、新生街口</div>
                     <div class="cctv-osd-right">TWIPCAM.COM</div>
                     <img src="https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80" id="incident-img" class="full-fit-img" alt="現場">
                 </div>
@@ -359,9 +359,11 @@
             })
             .catch(err => console.log("氣象站連線等待中..."));
 
-        // 即時更新雷達回波圖檔 (附加時間戳記防快取)
+        // 定時更新衛星雲圖與雷達回波圖檔 (附加時間戳記防快取)
         const timestamp = new Date().getTime();
+        const satImg = document.getElementById('cwa-sat');
         const radarImg = document.getElementById('cwa-radar');
+        if (satImg) satImg.src = `https://www.cwa.gov.tw/Data/satellite/LCC_CH_FC_250/LCC_CH_FC_250-000-00.jpg?t=${timestamp}`;
         if (radarImg) radarImg.src = `https://www.cwa.gov.tw/Data/radar/CV1_3600.png?t=${timestamp}`;
     }
 
@@ -591,7 +593,7 @@
         fetchCWAWeatherData();
 
         setInterval(fetchGoogleSheetData, 15000);         
-        setInterval(fetchCWAWeatherData, 300000);         
+        setInterval(fetchCWAWeatherData, 60000); // 每 60 秒自動重新整理氣象圖檔與時間戳記         
     };
 </script>
 </body>

@@ -82,7 +82,7 @@
         .btn-ing-style { background-color: rgba(255, 159, 67, 0.15); border: 1px solid #ff9f43; color: #ff9f43; }
         .btn-done-style { background-color: rgba(46, 213, 115, 0.15); border: 1px solid #2ed573; color: #2ed573; }
         
-        /* 匯出 Excel 按鈕：完美固定於已結案下方 */
+        /* 匯出 Excel 按鈕：固定完美安放於已結案下方 */
         .btn-excel-style {
             background-color: rgba(46, 213, 115, 0.15); 
             border: 1px solid #2ed573; 
@@ -143,18 +143,16 @@
     <div class="top-layout">
         <div class="panel">
             <div class="sub-block">
-                <div class="panel-title">🌀 氣象署即時雷達回波</div>
+                <div class="panel-title">🌀 氣象署即時雷達回波 (自動更新)</div>
                 <div class="box-container" onclick="projectToCenter('氣象署即時雷達回波', document.getElementById('cwa-radar').src, true)">
                     <img id="cwa-radar" src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" class="weather-fit-img" alt="雷達回波">
                 </div>
             </div>
             <div class="sub-block">
-                <div class="panel-title">📡 CWA 氣象署即時雨量與颱風警報系統</div>
-                <!-- 採用高質感官方直連卡片，點擊即可開啟氣象署官方雨量與警報中心，永不失效 -->
-                <div class="box-container" style="background: linear-gradient(135deg, #161b22, #0d1117); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; text-align: center;" onclick="window.open('https://www.cwa.gov.tw/V8/C/W/OBS_Rain.html', '_blank')">
-                    <div style="font-size: 22px; margin-bottom: 3px;">🌧️</div>
-                    <div style="color: #00f2fe; font-size: 11px; font-weight: bold; margin-bottom: 2px;">點擊開啟氣象署雨量與警報中心</div>
-                    <div style="color: #2ed573; font-size: 9px;">[API 授權連線 ｜ 即時互動查詢]</div>
+                <div class="panel-title">📡 CWA 氣象署即時雨量與颱風動態</div>
+                <!-- 改用氣象署首頁精準嵌入，確保 100% 正常顯示且零死角 -->
+                <div class="box-container" style="background: #ffffff; position: relative;">
+                    <iframe src="https://www.cwa.gov.tw/V8/C/W/County/County.html?CID=65" style="width: 100%; height: 100%; border: none;" title="新北市即時氣象與雨量"></iframe>
                 </div>
             </div>
         </div>
@@ -349,6 +347,7 @@
             })
             .catch(err => console.log("氣象站連線等待中..."));
 
+        // 強制附加動態毫秒時間戳記更新雷達回波，避開瀏覽器快取
         const timestamp = new Date().getTime();
         const radarImg = document.getElementById('cwa-radar');
         if (radarImg) radarImg.src = `https://www.cwa.gov.tw/Data/radar/CV1_3600.png?t=${timestamp}`;

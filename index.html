@@ -155,8 +155,8 @@
     </div>
 
     <div class="top-layout">
+        <!-- 左側面板：上(衛星) 下(雨量) -->
         <div class="panel">
-            <!-- 左上角：點擊方塊直接投影覆蓋到中間地圖區塊 -->
             <div class="sub-block">
                 <div class="panel-title">🌀 Windy 颱風追蹤器與衛星雲圖 <span style="font-size:8px; color:#00f2fe;">(點擊放大至中央)</span></div>
                 <div class="box-container" style="background:#000;" onclick="projectIframeToCenter('Windy 颱風追蹤器與衛星雲圖', 'https://embed.windy.com/embed2.5.0.html?lat=25.930&lon=125.298&zoom=6&level=surface&overlay=satellite&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1')">
@@ -164,7 +164,6 @@
                     <iframe src="https://embed.windy.com/embed2.5.0.html?lat=25.930&lon=125.298&zoom=6&level=surface&overlay=satellite&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none; pointer-events:none;" frameborder="0"></iframe>
                 </div>
             </div>
-            <!-- 左下角：點擊方塊直接投影覆蓋到中間地圖區塊 -->
             <div class="sub-block">
                 <div class="panel-title">🌧️ Windy 即時動態雨量與累積降雨預報 <span style="font-size:8px; color:#00f2fe;">(點擊放大至中央)</span></div>
                 <div class="box-container" style="background:#000;" onclick="projectIframeToCenter('Windy 即時動態雨量與累積降雨預報', 'https://embed.windy.com/embed2.5.0.html?lat=25.766&lon=124.144&zoom=6&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1')">
@@ -174,7 +173,7 @@
             </div>
         </div>
 
-        <!-- 中央主地圖區塊（內含中央投影覆蓋層，點擊左上/左下會覆蓋在這裡） -->
+        <!-- 中央主地圖區塊（內含中央投影覆蓋層，點擊四個角落會覆蓋在這裡） -->
         <div class="panel">
             <div class="panel-title" id="center-panel-title">🗺️ 淡水區災害地圖</div>
             <div style="flex: 1; position: relative; min-height: 0;" class="center-projection-wrap">
@@ -187,14 +186,16 @@
             </div>
         </div>
 
+        <!-- 右側面板：上(氣象預報) 下(CCTV) -->
         <div class="panel">
             <div class="sub-block">
                 <div class="panel-title">
                     <span>⛅ 新北市淡水區即時氣象與預報情報</span>
-                    <span style="color: #ffdd67; font-size: 8px;">[CWA 氣象署]</span>
+                    <span style="font-size:8px; color:#00f2fe;">(點擊放大至中央)</span>
                 </div>
-                <div class="box-container">
-                    <div id="weather-forecast-container" class="forecast-box">
+                <div class="box-container" onclick="projectWeatherToCenter()">
+                    <div class="iframe-click-overlay"></div>
+                    <div id="weather-forecast-container" class="forecast-box" style="pointer-events: none;">
                         <div class="weather-card">
                             <div class="weather-card-title"><span>📍 淡水測站即時數據</span><span style="color:#2ed573;">● 連線正常</span></div>
                             <div id="live-weather-info" style="color:#c9d1d9; line-height: 1.4;">正在向氣象署同步淡水氣象數據...</div>
@@ -205,7 +206,7 @@
             <div class="sub-block">
                 <div class="panel-title">
                     <span>🎥 轄區 CCTV 巡邏監控</span>
-                    <span style="color: #ff4d4d; font-size: 8px; font-weight: bold;">(⚠️常態輪播不斷訊)</span>
+                    <span style="font-size:8px; color:#00f2fe;">(點擊放大至中央)</span>
                 </div>
                 <div class="box-container" onclick="projectCCTVToCenter()">
                     <div class="window-label" id="cctv-label">淡水區 中山路路樹現場</div>
@@ -377,12 +378,13 @@
                     
                     cwaWeatherString = `【🌀 CWA 氣象即時回報】淡水測站：氣溫 ${temp}°C，濕度 ${humid}%，累積雨量 ${rain} mm`;
                     
-                    document.getElementById('live-weather-info').innerHTML = `
+                    const infoHtml = `
                         🌡️ 即時氣溫：<b style="color:#00f2fe; font-size:13px;">${temp} °C</b><br>
                         💧 相對濕度：<b>${humid} %</b><br>
                         🌧️ 累積雨量：<b style="color:#ffdd67;">${rain} mm</b><br>
                         💨 風向風速：<b>風向 ${windDir}° / 風速 ${windSpeed} m/s</b>
                     `;
+                    document.getElementById('live-weather-info').innerHTML = infoHtml;
                 } catch (e) {
                     console.error("氣象站資料解析錯誤", e);
                 }
@@ -443,7 +445,7 @@
                             "權責單位": row['權責單位'] || row['權責單位 (D)'] || row[2] || rowValues[2] || '待分派',
                             "地點": address,
                             "現場狀況與完整歷史進程": historyText,
-                            "狀態": status,
+                            "Status": status,
                             "緯度": lat,
                             "經度": lng,
                             "照片網址": "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80"
@@ -468,9 +470,36 @@
         box.style.display = 'block';
     }
 
+    function projectWeatherToCenter() {
+        const box = document.getElementById('center-projection-box');
+        const titleTag = document.getElementById('projection-title-tag');
+        const content = document.getElementById('projection-content');
+        titleTag.innerText = `🎥 互動投影：新北市淡水區即時氣象與預報情報`;
+        const liveHtml = document.getElementById('weather-forecast-container').innerHTML;
+        content.innerHTML = `<div style="padding: 20px; height: 100%; box-sizing: border-box; overflow-y: auto; background: #0d1117; font-size: 14px;">
+            <h3 style="color: #00f2fe; margin-top: 0;">⛅ 新北市淡水區完整氣象與預報戰情檢視</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="weather-card" style="font-size: 14px; padding: 15px;">${liveHtml}</div>
+                <div class="weather-card" style="font-size: 14px; padding: 15px;">
+                    <div class="weather-card-title"><span>📊 氣象署開放資料狀態</span><span style="color:#2ed573;">● 聯防中</span></div>
+                    <p style="color:#c9d1d9; line-height: 1.6;">本模組直接串接中央氣象署開放資料 API，提供淡水區高精度即時氣象監測與預報，確保應變中心指揮官掌握第一手氣象動態。</p>
+                </div>
+            </div>
+        </div>`;
+        box.style.display = 'block';
+    }
+
     function projectCCTVToCenter() {
         const cctvLabel = document.getElementById('cctv-label').innerText;
-        closeCenterProjection(); // 關閉投影回歸地圖
+        const imgEl = document.getElementById('cctv-img');
+        if (imgEl) {
+            const box = document.getElementById('center-projection-box');
+            const titleTag = document.getElementById('projection-title-tag');
+            const content = document.getElementById('projection-content');
+            titleTag.innerText = `🎥 互動投影：轄區 CCTV - ${cctvLabel}`;
+            content.innerHTML = `<img src="${imgEl.src}" style="width:100%; height:100%; object-fit:contain; background:#000;" alt="CCTV投影">`;
+            box.style.display = 'block';
+        }
     }
 
     function closeCenterProjection() {
@@ -496,9 +525,10 @@
 
         let countNew = 0, countIng = 0, countDone = 0;
         globalData.forEach(item => {
-            if (item["狀態"] === "新通報") countNew++;
-            else if (item["狀態"] === "處理中") countIng++;
-            else if (item["狀態"] === "已結案") countDone++;
+            let st = item["Status"] || item["狀態"];
+            if (st === "新通報") countNew++;
+            else if (st === "處理中") countIng++;
+            else if (st === "已結案") countDone++;
         });
 
         document.getElementById('cnt-new').innerText = countNew + "件";
@@ -516,7 +546,7 @@
 
         let displayData = globalData;
         if (currentFilterStatus) {
-            displayData = globalData.filter(item => item["狀態"] === currentFilterStatus);
+            displayData = globalData.filter(item => (item["Status"] || item["狀態"]) === currentFilterStatus);
         }
 
         renderStatsAndTable(displayData);
@@ -530,9 +560,10 @@
     function renderStatsAndTable(data) {
         let tableHtml = "";
         data.forEach((item, index) => {
+            let st = item["Status"] || item["狀態"];
             let statusClass = "badge-new";
-            if (item["狀態"] === "處理中") statusClass = "badge-ing";
-            else if (item["狀態"] === "已結案") statusClass = "badge-done";
+            if (st === "處理中") statusClass = "badge-ing";
+            else if (st === "已結案") statusClass = "badge-done";
 
             tableHtml += `
                 <tr id="row-${index}" style="cursor:pointer;" onclick="selectIncident(${index}, displayDataGlobal)">
@@ -541,7 +572,7 @@
                     <td>${item["權責單位"]}</td>
                     <td>${item["地點"]}</td>
                     <td><div class="history-text">${item["現場狀況與完整歷史進程"]}</div></td>
-                    <td><span class="badge ${statusClass}">${item["狀態"]}</span></td>
+                    <td><span class="badge ${statusClass}">${st}</span></td>
                 </tr>
             `;
         });
@@ -556,15 +587,16 @@
         data.forEach((item, index) => {
             if (String(item["案件類別"] || "").trim() === "地震快訊") return;
 
+            let st = item["Status"] || item["狀態"];
             let color = "#ff4d4d";
-            if (item["狀態"] === "處理中") color = "#ff9f43";
-            if (item["狀態"] === "已結案") color = "#2ed573";
+            if (st === "處理中") color = "#ff9f43";
+            if (st === "已結案") color = "#2ed573";
 
             const marker = L.circleMarker([item["緯度"], item["經度"]], {
                 radius: 8, fillColor: color, color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.95
             });
 
-            marker.bindPopup(`<b>${item["案件類別"]}</b><br>${item["地點"]}<br>狀態：${item["狀態"]}`);
+            marker.bindPopup(`<b>${item["案件類別"]}</b><br>${item["地點"]}<br>狀態：${st}`);
             marker.on('click', () => { selectIncident(index, data); });
             markersGroup.addLayer(marker);
         });

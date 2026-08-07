@@ -53,11 +53,16 @@
         .box-container { flex: 1; height: 0; width: 100%; background-color: #000; border: 1px solid #30363d; border-radius: 4px; position: relative; display: flex; overflow: hidden; transition: border-color 0.2s; }
         .box-container:hover { border-color: #00f2fe; }
 
+        .expand-btn {
+            background: rgba(0, 242, 254, 0.2); border: 1px solid #00f2fe; color: #00f2fe; font-size: 8px; padding: 1px 4px; border-radius: 2px; cursor: pointer; font-weight: bold;
+        }
+        .expand-btn:hover { background: #00f2fe; color: #0b0e14; }
+
         .forecast-box {
-            background-color: #0d1117; padding: 8px; overflow-y: auto; font-size: 10px; color: #c9d1d9; width: 100%; height: 100%; box-sizing: border-box;
+            background-color: #0d1117; padding: 6px; overflow-y: auto; font-size: 10px; color: #c9d1d9; width: 100%; height: 100%; box-sizing: border-box;
         }
         .forecast-item {
-            background: #161b22; border: 1px solid #30363d; border-radius: 3px; padding: 6px; margin-bottom: 4px; display: flex; flex-direction: column; gap: 2px;
+            background: #161b22; border: 1px solid #30363d; border-radius: 3px; padding: 5px; margin-bottom: 4px; display: flex; flex-direction: column; gap: 2px;
         }
         .forecast-time { color: #00f2fe; font-weight: bold; font-size: 10px; }
         .forecast-desc { color: #ffdd67; }
@@ -148,15 +153,21 @@
     <div class="top-layout">
         <div class="panel">
             <div class="sub-block">
-                <div class="panel-title">🌀 Windy 颱風追蹤器與衛星雲圖</div>
+                <div class="panel-title">
+                    <span>🌀 Windy 颱風追蹤器與衛星雲圖</span>
+                    <button class="expand-btn" onclick="projectIframeToCenter('Windy 颱風追蹤器與衛星雲圖', 'https://embed.windy.com/embed2.5.0.html?lat=25.930&lon=125.298&zoom=6&level=surface&overlay=satellite&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1')">🔍 放大互動</button>
+                </div>
                 <div class="box-container" style="background:#000;">
-                    <iframe src="https://embed.windy.com/embed2.5.0.html?lat=25.930&lon=125.298&zoom=6&level=surface&overlay=satellite&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>
+                    <iframe id="windy-sat-iframe" src="https://embed.windy.com/embed2.5.0.html?lat=25.930&lon=125.298&zoom=6&level=surface&overlay=satellite&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>
                 </div>
             </div>
             <div class="sub-block">
-                <div class="panel-title">🌧️ Windy 即時動態雨量與累積降雨預報</div>
+                <div class="panel-title">
+                    <span>🌧️ Windy 即時動態雨量與累積降雨預報</span>
+                    <button class="expand-btn" onclick="projectIframeToCenter('Windy 即時動態雨量與累積降雨預報', 'https://embed.windy.com/embed2.5.0.html?lat=25.766&lon=124.144&zoom=6&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1')">🔍 放大互動</button>
+                </div>
                 <div class="box-container" style="background:#000;">
-                    <iframe src="https://embed.windy.com/embed2.5.0.html?lat=25.766&lon=124.144&zoom=6&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>
+                    <iframe id="windy-rain-iframe" src="https://embed.windy.com/embed2.5.0.html?lat=25.766&lon=124.144&zoom=6&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>
                 </div>
             </div>
         </div>
@@ -174,7 +185,6 @@
         </div>
 
         <div class="panel">
-            <!-- 右上第一格：從現場照片改為 CWA 3天未來氣象預報 (F-D0047-069) -->
             <div class="sub-block">
                 <div class="panel-title">
                     <span>⛅ 新北市淡水區未來 3 天氣象預報</span>
@@ -182,7 +192,7 @@
                 </div>
                 <div class="box-container">
                     <div id="weather-forecast-container" class="forecast-box">
-                        正在載入氣象署未來3天預報資料...
+                        正在向中央氣象署 API 請求氣象預報數據中...
                     </div>
                 </div>
             </div>
@@ -363,27 +373,46 @@
             })
             .catch(err => console.log("氣象站連線等待中..."));
 
-        // 擷取未來 3 天天氣預報 (F-D0047-069) 填入右上角面板
+        // 串接未來 3 天天氣預報 (F-D0047-069)
         const forecastUrl = `https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-069?Authorization=${CWA_API_KEY}&format=JSON&locationName=淡水區`;
         fetch(forecastUrl)
             .then(res => res.json())
             .then(data => {
                 try {
-                    const location = data.records.Locations[0].Location[0];
-                    const weatherElements = location.WeatherElement;
+                    const records = data.records || data.Records;
+                    const locations = records.Locations || records.locations;
+                    const locationArray = locations[0].Location || locations[0].location;
                     
-                    let wxElem = weatherElements.find(e => e.ElementName === "Wx");
-                    let tempElem = weatherElements.find(e => e.ElementName === "T");
-                    let popElem = weatherElements.find(e => e.ElementName === "PoP6h") || weatherElements.find(e => e.ElementName === "PoP");
+                    // 尋找淡水區
+                    let tamsuiLoc = locationArray.find(loc => (loc.LocationName || loc.locationName) === "淡水區") || locationArray[0];
+                    const weatherElements = tamsuiLoc.WeatherElement || tamsuiLoc.weatherElement;
+                    
+                    let wxElem = weatherElements.find(e => (e.ElementName || e.elementName) === "Wx");
+                    let tempElem = weatherElements.find(e => (e.ElementName || e.elementName) === "T");
+                    let popElem = weatherElements.find(e => (e.ElementName || e.elementName) === "PoP6h") || weatherElements.find(e => (e.ElementName || e.elementName) === "PoP");
 
-                    let timeSeries = wxElem.Time;
+                    let timeSeries = wxElem.Time || wxElem.time;
                     let htmlContent = "";
 
                     for (let i = 0; i < Math.min(timeSeries.length, 6); i++) {
-                        let startTime = timeSeries[i].StartTime.replace('T', ' ').substring(5, 16);
-                        let wx = timeSeries[i].ElementValue[0].Weather || "正常";
-                        let tVal = tempElem ? tempElem.Time[i].ElementValue[0].Temperature : "--";
-                        let popVal = popElem ? (popElem.Time[i].ElementValue[0].ProbabilityOfPrecipitation || popElem.Time[i].ElementValue[0].PrecipitationProbability || "0") : "0";
+                        let tObj = timeSeries[i];
+                        let startTime = (tObj.StartTime || tObj.startTime || "").replace('T', ' ').substring(5, 16);
+                        let valArr = tObj.ElementValue || tObj.elementValue;
+                        let wx = valArr[0].Weather || valArr[0].weather || valArr[0].WeatherDescription || "一般";
+                        
+                        let tVal = "--";
+                        if (tempElem) {
+                            let tTimeArr = tempElem.Time || tempElem.time;
+                            let tValArr = tTimeArr[i].ElementValue || tTimeArr[i].elementValue;
+                            tVal = tValArr[0].Temperature || tValArr[0].temperature || "--";
+                        }
+
+                        let popVal = "0";
+                        if (popElem) {
+                            let pTimeArr = popElem.Time || popElem.time;
+                            let pValArr = pTimeArr[i].ElementValue || pTimeArr[i].elementValue;
+                            popVal = pValArr[0].ProbabilityOfPrecipitation || pValArr[0].PrecipitationProbability || pValArr[0].probabilityOfPrecipitation || "0";
+                        }
 
                         htmlContent += `
                             <div class="forecast-item">
@@ -395,11 +424,12 @@
                     document.getElementById('weather-forecast-container').innerHTML = htmlContent;
                 } catch (e) {
                     console.error("預報資料解析錯誤", e);
-                    document.getElementById('weather-forecast-container').innerHTML = `<div style="padding:10px; color:#ff4d4d;">氣象預報資料載入中或格式更新...</div>`;
+                    document.getElementById('weather-forecast-container').innerHTML = `<div style="padding:10px; color:#ff4d4d;">淡水區預報資料載入中或正在同步連線...</div>`;
                 }
             })
             .catch(err => {
                 console.log("預報 API 連線等待中...");
+                document.getElementById('weather-forecast-container').innerHTML = `<div style="padding:10px; color:#ffdd67;">預報資料連線中...</div>`;
             });
     }
 
@@ -485,6 +515,15 @@
         box.style.display = 'block';
     }
 
+    function projectIframeToCenter(title, iframeUrl) {
+        const box = document.getElementById('center-projection-box');
+        const titleTag = document.getElementById('projection-title-tag');
+        const content = document.getElementById('projection-content');
+        titleTag.innerText = `🚨 互動投影檢視：${title}`;
+        content.innerHTML = `<iframe src="${iframeUrl}" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>`;
+        box.style.display = 'block';
+    }
+
     function projectCCTVToCenter() {
         const cctvLabel = document.getElementById('cctv-label').innerText;
         const imgEl = document.getElementById('cctv-img');
@@ -495,6 +534,7 @@
 
     function closeCenterProjection() {
         document.getElementById('center-projection-box').style.display = 'none';
+        document.getElementById('projection-content').innerHTML = "";
     }
 
     function changeCCTVLocation(locationName) {

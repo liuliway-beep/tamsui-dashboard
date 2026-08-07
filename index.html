@@ -142,30 +142,13 @@
     <div class="top-layout">
         <div class="panel">
             <div class="sub-block">
-                <div class="panel-title" id="typhoon-title">🌀 氣象署颱風動態監控 (API 鎖死)</div>
-                <div class="box-container" style="background: linear-gradient(135deg, #161b22, #0d1117); display: flex; flex-direction: column; justify-content: center; padding: 10px; box-sizing: border-box; cursor: default;">
-                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #30363d; padding-bottom: 3px; margin-bottom: 4px;">
-                        <span style="color: #00f2fe; font-size: 10px; font-weight: bold;" id="typhoon-name-tag">📍 當前活動熱帶氣旋</span>
-                        <span style="color: #ff9f43; font-size: 9px;" id="typhoon-time">同步中</span>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 10px;">
-                        <div style="background: rgba(0,0,0,0.4); padding: 4px 6px; border-radius: 3px; border-left: 2px solid #ff4d4d;">
-                            <div style="color: #8b949e; font-size: 8px;">中心氣壓</div>
-                            <div id="tp-pressure" style="color: #fff; font-size: 11px; font-weight: bold;">-- hPa</div>
-                        </div>
-                        <div style="background: rgba(0,0,0,0.4); padding: 4px 6px; border-radius: 3px; border-left: 2px solid #ff9f43;">
-                            <div style="color: #8b949e; font-size: 8px;">最大風速</div>
-                            <div id="tp-wind" style="color: #fff; font-size: 11px; font-weight: bold;">-- m/s</div>
-                        </div>
-                        <div style="background: rgba(0,0,0,0.4); padding: 4px 6px; border-radius: 3px; border-left: 2px solid #00f2fe; grid-column: span 2;">
-                            <div style="color: #8b949e; font-size: 8px;">移動方向與速度</div>
-                            <div id="tp-moving" style="color: #fff; font-size: 10px; font-weight: bold;">資料載入中...</div>
-                        </div>
-                    </div>
+                <div class="panel-title">🌀 氣象署即時雷達回波 (自動更新)</div>
+                <div class="box-container" onclick="projectToCenter('氣象署即時雷達回波', document.getElementById('cwa-radar').src, true)">
+                    <img id="cwa-radar" src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" referrerpolicy="no-referrer" class="weather-fit-img" alt="雷達回波">
                 </div>
             </div>
             <div class="sub-block">
-                <div class="panel-title">📡 CWA 氣象署淡水測站即時雨量與溫濕度</div>
+                <div class="panel-title">📡 CWA 氣象署即時雨量與溫濕度數據看板</div>
                 <div class="box-container" style="background: linear-gradient(135deg, #161b22, #0d1117); display: flex; flex-direction: column; justify-content: center; padding: 10px; box-sizing: border-box; cursor: default;">
                     <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #30363d; padding-bottom: 3px; margin-bottom: 4px;">
                         <span style="color: #00f2fe; font-size: 10px; font-weight: bold;">📍 淡水自動氣象站 (API 鎖死)</span>
@@ -212,7 +195,7 @@
                     <span style="color: #ffdd67; font-size: 8px;">[連動調閱]</span>
                 </div>
                 <div class="box-container" id="incident-photo-box" onclick="projectCurrentIncidentToCenter()">
-                    <div class="cctv-osd-top" id="incident-osd">08-08-2026 Sat 01:22:00 C09017B 淡水區<br>淡水區文化路、新生街口</div>
+                    <div class="cctv-osd-top" id="incident-osd">08-08-2026 Sat 01:27:00 C09017B 淡水區<br>淡水區文化路、新生街口</div>
                     <div class="cctv-osd-right">TWIPCAM.COM</div>
                     <img src="https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80" id="incident-img" class="full-fit-img" alt="現場">
                 </div>
@@ -309,12 +292,12 @@
     let map, markersGroup;
     let currentFilterStatus = null;
     let currentSelectedIncident = null;
-    let cwaWeatherString = "正在透過中央氣象署 API 同步淡水區即時氣象與颱風動態...";
+    let cwaWeatherString = "正在透過中央氣象署 API 同步淡水區即時氣象...";
 
     const CWA_API_KEY = "CWA-3CF372A5-0801-4819-ADE1-7DE3D1F3010B"; 
     const BASE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
 
-    // 精準對照淡水區主要路段座標（依長字串優先排序，徹底解決點位偏移）
+    // 精準對照淡水區主要路段座標
     const tamsuiLocations = [
         { key: "中山北路一段", lat: 25.1768, lng: 121.4435 },
         { key: "中山北路二段", lat: 25.1850, lng: 121.4422 },
@@ -376,9 +359,8 @@
         XLSX.writeFile(workbook, fileName);
     }
 
-    // 同步氣象觀測 (O-A0001-001) 與 颱風動態 (W-C0034-005)
     function fetchCWAWeatherData() {
-        // 1. 抓取淡水氣象站觀測數據[cite: 1]
+        // 1. 同步淡水測站數值 (O-A0001-001)
         const weatherApiUrl = `https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0001-001?Authorization=${CWA_API_KEY}&format=JSON&StationId=466900`;
         fetch(weatherApiUrl)
             .then(res => res.json())
@@ -397,51 +379,18 @@
                     document.getElementById('card-humid').innerText = `${humid} %`;
                     document.getElementById('card-wind').innerText = `${windSpeed} m/s (${windDir}°)`;
                     document.getElementById('weather-time').innerText = `更新時間: ${station.ObsTime.DateTime.substring(11, 16)}`;
+
+                    cwaWeatherString = `【🌀 CWA 氣象即時回報】淡水測站：氣溫 ${temp}°C，濕度 ${humid}%，累積雨量 ${rain} mm`;
                 } catch (e) {
                     console.error("氣象站資料解析錯誤", e);
                 }
             })
             .catch(err => console.log("氣象站連線等待中..."));
 
-        // 2. 抓取颱風動態數據 (W-C0034-005)[cite: 2]
-        const typhoonApiUrl = `https://opendata.cwa.gov.tw/api/v1/rest/datastore/W-C0034-005?Authorization=${CWA_API_KEY}&format=JSON`;
-        fetch(typhoonApiUrl)
-            .then(res => res.json())
-            .then(data => {
-                try {
-                    const cyclones = data.records.TropicalCyclones.TropicalCyclone;
-                    if (cyclones && cyclones.length > 0) {
-                        // 取最新活躍的一個颱風
-                        const tp = cyclones[0];
-                        const tpName = `${tp.CwaTyphoonName} (${tp.TyphoonName})`;
-                        const fixList = tp.AnalysisData.Fix;
-                        const latestFix = fixList[fixList.length - 1]; // 最新一筆現在位置
-
-                        document.getElementById('typhoon-name-tag').innerText = `📍 ${tpName}`;
-                        document.getElementById('tp-pressure').innerText = `${latestFix.Pressure} hPa`;
-                        document.getElementById('tp-wind').innerText = `${latestFix.MaxWindSpeed} m/s`;
-                        
-                        let movingDesc = "穩定進行中";
-                        if (latestFix.MovingPrediction && latestFix.MovingPrediction.length > 0) {
-                            movingDesc = latestFix.MovingPrediction[0].value;
-                        } else if (latestFix.MovingDirection) {
-                            movingDesc = `向 ${latestFix.MovingDirection} 移動，時速 ${latestFix.MovingSpeed || 0} 公里`;
-                        }
-                        document.getElementById('tp-moving').innerText = movingDesc;
-                        document.getElementById('typhoon-time').innerText = `更新: ${latestFix.DateTime.substring(5, 16)}`;
-                        
-                        cwaWeatherString = `【🌀 颱風警報】${tpName} ｜ 中心氣壓 ${latestFix.Pressure} hPa ｜ ${movingDesc}`;
-                    } else {
-                        document.getElementById('typhoon-name-tag').innerText = `📍 目前無活躍颱風`;
-                        document.getElementById('tp-pressure').innerText = `--- hPa`;
-                        document.getElementById('tp-wind').innerText = `--- m/s`;
-                        document.getElementById('tp-moving').innerText = `海域平穩，無發布海上警報`;
-                    }
-                } catch (e) {
-                    console.error("颱風資料解析錯誤", e);
-                }
-            })
-            .catch(err => console.log("颱風 API 連線等待中..."));
+        // 2. 即時更新雷達圖與颱風路徑圖檔
+        const timestamp = new Date().getTime();
+        const radarImg = document.getElementById('cwa-radar');
+        if (radarImg) radarImg.src = `https://www.cwa.gov.tw/Data/radar/CV1_3600.png?t=${timestamp}`;
     }
 
     function fetchGoogleSheetData() {

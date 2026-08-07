@@ -6,7 +6,7 @@
     <title>新北市淡水區災害應變智慧戰情中心</title>
     <!-- 載入 Leaflet 地圖套件 CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- 載入 SheetJS (xlsx) 專門用於一鍵匯出 Excel 報表 -->
+    <!-- 載入 SheetJS (xlsx) 用於一鍵匯出 Excel 報表 -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         html, body { 
@@ -82,19 +82,10 @@
         .btn-ing-style { background-color: rgba(255, 159, 67, 0.15); border: 1px solid #ff9f43; color: #ff9f43; }
         .btn-done-style { background-color: rgba(46, 213, 115, 0.15); border: 1px solid #2ed573; color: #2ed573; }
         
-        /* 置於「已結案」下方的 Excel 匯出按鈕樣式 */
         .btn-excel-style {
-            background-color: rgba(46, 213, 115, 0.15);
-            border: 1px solid #2ed573;
-            color: #2ed573;
-            justify-content: center;
-            font-weight: bold;
+            background-color: rgba(46, 213, 115, 0.15); border: 1px solid #2ed573; color: #2ed573; justify-content: center; font-weight: bold;
         }
-        .btn-excel-style:hover {
-            background-color: #2ed573;
-            color: #0b0e14;
-            box-shadow: 0 0 8px rgba(46, 213, 115, 0.8);
-        }
+        .btn-excel-style:hover { background-color: #2ed573; color: #0b0e14; box-shadow: 0 0 8px rgba(46, 213, 115, 0.8); }
 
         .stat-btn-left { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: bold; }
         .stat-checkbox { width: 10px; height: 10px; border: 1px solid currentColor; display: flex; align-items: center; justify-content: center; font-size: 8px; }
@@ -134,7 +125,7 @@
             <div class="ticker-title" id="ticker-badge">📢 CWA 氣象鎖死同步</div>
             <div class="ticker-marquee-wrap">
                 <div class="ticker-marquee-content" id="ticker-text">
-                    正在透過中央氣象署專屬授權碼即時擷取氣象與雨量圖資中...
+                    正在透過中央氣象署專屬授權碼即時擷取氣象數據中...
                 </div>
             </div>
         </div>
@@ -149,10 +140,10 @@
                 </div>
             </div>
             <div class="sub-block">
-                <div class="panel-title">📡 氣象署累積雨量圖</div>
+                <div class="panel-title">📡 氣象署累積雨量圖 (API 動態串接)</div>
                 <div class="box-container" onclick="projectToCenter('氣象署累積雨量圖', document.getElementById('cwa-rain').src, true)">
-                    <!-- 已修復為氣象署標準穩定的 24 小時累積雨量圖端點 -->
-                    <img id="cwa-rain" src="https://www.cwa.gov.tw/Data/rainfall/24hr/O-A0040-001.PNG" class="weather-fit-img" alt="累積雨量圖">
+                    <!-- 透過 CWA API 動態取得的雨量圖 src -->
+                    <img id="cwa-rain" src="" class="weather-fit-img" alt="累積雨量圖載入中...">
                 </div>
             </div>
         </div>
@@ -202,7 +193,6 @@
         </div>
     </div>
 
-    <!-- 下方區域：左側統計按鈕區，已結案下方直接放置一鍵匯出 Excel 按鈕 -->
     <div class="bottom-layout">
         <div class="stat-sidebar">
             <div class="stat-btn btn-new-style" id="btn-filter-new" onclick="filterByStatus('新通報')">
@@ -226,7 +216,7 @@
                 </div>
                 <div class="stat-btn-num" id="cnt-done">0件</div>
             </div>
-            <!-- 一鍵匯出 Excel 按鈕：完美配置於已結案下方 -->
+            <!-- 一鍵匯出 Excel 報表：固定安放於已結案下方 -->
             <div class="stat-btn btn-excel-style" onclick="exportToExcel()" title="一鍵產出完整報表 Excel 檔">
                 <div style="font-size: 11px; font-weight: bold; text-align: center; width: 100%;">📊 匯出 Excel</div>
             </div>
@@ -328,10 +318,11 @@
         XLSX.writeFile(workbook, fileName);
     }
 
+    // 透過 CWA API 動態抓取氣象站觀測與官方即時雨量圖片物件網址
     function fetchCWAWeatherData() {
-        const apiUrl = `https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0001-001?Authorization=${CWA_API_KEY}&format=JSON&locationName=淡水`;
-
-        fetch(apiUrl)
+        // 1. 抓取淡水測站即時氣溫與雨量
+        const weatherApiUrl = `https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0001-001?Authorization=${CWA_API_KEY}&format=JSON&locationName=淡水`;
+        fetch(weatherApiUrl)
             .then(res => res.json())
             .then(data => {
                 try {
@@ -347,12 +338,28 @@
             })
             .catch(err => console.log("氣象站連線等待中..."));
 
-        // 更新防快取圖資時間戳記
+        // 2. 透過 CWA 官方 OpenData 雨量圖資料集 (O-A0040-001) 動態抓取官方圖片 URL
+        const rainApiUrl = `https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0040-001?Authorization=${CWA_API_KEY}&format=JSON`;
+        fetch(rainApiUrl)
+            .then(res => res.json())
+            .then(data => {
+                try {
+                    const rainImgUrl = data.records.issuing[0].url; // 自動取得官方最新產出雨量圖網址
+                    const rainImg = document.getElementById('cwa-rain');
+                    if (rainImg && rainImgUrl) rainImg.src = rainImgUrl;
+                } catch (e) {
+                    // 備用防呆：若 JSON 結構不同，使用標準穩定端點
+                    document.getElementById('cwa-rain').src = `https://www.cwa.gov.tw/Data/rainfall/O-A0040-001.PNG?t=${new Date().getTime()}`;
+                }
+            })
+            .catch(err => {
+                document.getElementById('cwa-rain').src = `https://www.cwa.gov.tw/Data/rainfall/O-A0040-001.PNG?t=${new Date().getTime()}`;
+            });
+
+        // 更新雷達圖
         const timestamp = new Date().getTime();
         const radarImg = document.getElementById('cwa-radar');
-        const rainImg = document.getElementById('cwa-rain');
         if (radarImg) radarImg.src = `https://www.cwa.gov.tw/Data/radar/CV1_3600.png?t=${timestamp}`;
-        if (rainImg) rainImg.src = `https://www.cwa.gov.tw/Data/rainfall/24hr/O-A0040-001.PNG?t=${timestamp}`;
     }
 
     function fetchGoogleSheetData() {

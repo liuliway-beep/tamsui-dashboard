@@ -390,7 +390,8 @@
     let currentSelectedIncident = null;
 
     const officialEqReportImgUrl = "https://img.ltn.com.tw/Upload/news/600/2026/07/26/php66dE9S.jpg";
-    const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
+    // 加上時間戳記 &v=... 徹底破除 Google 試算表快取
+    const BASE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
 
     function initMap() {
         map = L.map('map').setView([25.1720, 121.4450], 13);
@@ -402,28 +403,30 @@
     }
 
     function fetchGoogleSheetData() {
-        Papa.parse(GOOGLE_SHEET_CSV_URL, {
+        // 每次抓取都加上當下毫秒數，確保抓到最新資料
+        const antiCacheUrl = `${BASE_CSV_URL}&v=${new Date().getTime()}`;
+
+        Papa.parse(antiCacheUrl, {
             download: true,
             header: true,
             complete: function(results) {
                 if (results.data && results.data.length > 0) {
                     const fetchedData = results.data.filter(row => row['地點'] || row['地點 (E)'] || row['地點']).map(row => {
-                        let rawLat = parseFloat(row['緯度']);
-                        let rawLng = parseFloat(row['經度']);
+                        // 自動相容各種可能的欄位名稱寫法
+                        let latVal = row['緯度'] || row['latitude'] || row['Lat'] || row['緯度 (H)'];
+                        let lngVal = row['經度'] || row['longitude'] || row['Lng'] || row['經度 (I)'];
 
-                        let lat = rawLat;
-                        let lng = rawLng;
+                        let lat = parseFloat(latVal);
+                        let lng = parseFloat(lngVal);
 
-                        // 【智慧防呆校正】
-                        // 1. 如果經緯度數值顛倒了（例如緯度帶到 121.x、經度帶到 25.x），自動對調
-                        if (!isNaN(rawLat) && !isNaN(rawLng)) {
-                            if (rawLat > 100 && rawLng < 30) {
-                                lat = rawLng;
-                                lng = rawLat;
+                        // 防呆機制：若數值顛倒自動對調
+                        if (!isNaN(lat) && !isNaN(lng)) {
+                            if (lat > 100 && lng < 30) {
+                                let temp = lat; lat = lng; lng = temp;
                             }
                         }
 
-                        // 2. 如果經緯度完全空白或不在淡水合理範圍內，提供淡水區公所預設值
+                        // 如果經緯度無效，預設在淡水區公所附近
                         if (isNaN(lat) || lat < 25.10 || lat > 25.25) lat = 25.1705;
                         if (isNaN(lng) || lng < 121.38 || lng > 121.50) lng = 121.4395;
 
@@ -598,7 +601,7 @@
     window.onload = () => {
         initMap();
         fetchGoogleSheetData();
-        setInterval(fetchGoogleSheetData, 30000);
+        setInterval(fetchGoogleSheetData, 15000); // 縮短至每 15 秒自動同步一次
     };
 </script>
 </body>

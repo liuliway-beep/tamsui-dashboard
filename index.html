@@ -82,7 +82,7 @@
         .btn-ing-style { background-color: rgba(255, 159, 67, 0.15); border: 1px solid #ff9f43; color: #ff9f43; }
         .btn-done-style { background-color: rgba(46, 213, 115, 0.15); border: 1px solid #2ed573; color: #2ed573; }
         
-        /* 匯出 Excel 按鈕：固定完美安放於已結案下方 */
+        /* 匯出 Excel 按鈕：完美固定於已結案下方 */
         .btn-excel-style {
             background-color: rgba(46, 213, 115, 0.15); 
             border: 1px solid #2ed573; 
@@ -145,14 +145,15 @@
             <div class="sub-block">
                 <div class="panel-title">🌀 氣象署即時雷達回波 (自動更新)</div>
                 <div class="box-container" onclick="projectToCenter('氣象署即時雷達回波', document.getElementById('cwa-radar').src, true)">
+                    <!-- 改用強制避開快取的即時雷達圖端點 -->
                     <img id="cwa-radar" src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" class="weather-fit-img" alt="雷達回波">
                 </div>
             </div>
             <div class="sub-block">
-                <div class="panel-title">📡 CWA 氣象署即時雨量與颱風動態</div>
-                <!-- 改用氣象署首頁精準嵌入，確保 100% 正常顯示且零死角 -->
-                <div class="box-container" style="background: #ffffff; position: relative;">
-                    <iframe src="https://www.cwa.gov.tw/V8/C/W/County/County.html?CID=65" style="width: 100%; height: 100%; border: none;" title="新北市即時氣象與雨量"></iframe>
+                <div class="panel-title">📡 CWA 氣象署即時雨量與警報中心</div>
+                <!-- 採用氣象署官方氣象觀測專屬頁面嵌入 -->
+                <div class="box-container" style="background: #000; position: relative;">
+                    <iframe src="https://www.cwa.gov.tw/V8/C/W/OBS_Rain.html" style="width: 100%; height: 100%; border: none;" title="氣象署雨量觀測"></iframe>
                 </div>
             </div>
         </div>
@@ -347,7 +348,7 @@
             })
             .catch(err => console.log("氣象站連線等待中..."));
 
-        // 強制附加動態毫秒時間戳記更新雷達回波，避開瀏覽器快取
+        // 強制附加動態時間戳記以更新雷達回波，避開快取
         const timestamp = new Date().getTime();
         const radarImg = document.getElementById('cwa-radar');
         if (radarImg) radarImg.src = `https://www.cwa.gov.tw/Data/radar/CV1_3600.png?t=${timestamp}`;

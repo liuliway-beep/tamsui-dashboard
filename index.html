@@ -50,13 +50,18 @@
             padding-left: 5px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; height: 16px;
         }
         
-        .box-container { flex: 1; height: 0; width: 100%; background-color: #000; border: 1px solid #30363d; border-radius: 4px; position: relative; display: flex; overflow: hidden; cursor: pointer; transition: border-color 0.2s; }
+        .box-container { flex: 1; height: 0; width: 100%; background-color: #000; border: 1px solid #30363d; border-radius: 4px; position: relative; display: flex; overflow: hidden; transition: border-color 0.2s; }
         .box-container:hover { border-color: #00f2fe; }
 
-        /* 透明點擊覆蓋層，讓使用者直接點擊方塊就能觸發全螢幕放大 */
-        .iframe-click-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; background: transparent; cursor: pointer;
+        /* 中央地圖上方的切換分頁列样式 */
+        .map-tabs-bar {
+            display: flex; gap: 4px; margin-bottom: 4px; flex-shrink: 0; background: #0d1117; padding: 3px; border-radius: 4px; border: 1px solid #30363d;
         }
+        .map-tab-btn {
+            flex: 1; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-size: 10px; font-weight: bold; padding: 4px; border-radius: 3px; cursor: pointer; text-align: center; transition: all 0.2s;
+        }
+        .map-tab-btn:hover { color: #00f2fe; border-color: #00f2fe; }
+        .map-tab-btn.active { background: rgba(0, 242, 254, 0.15); border-color: #00f2fe; color: #00f2fe; }
 
         .forecast-box {
             background-color: #0d1117; padding: 8px; overflow-y: auto; font-size: 11px; color: #c9d1d9; width: 100%; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px;
@@ -75,16 +80,10 @@
             padding: 2px 4px; border-radius: 2px; outline: none; cursor: pointer;
         }
 
+        #map-view-container { width: 100%; height: 100%; position: relative; display: block; }
+        .map-sub-view { width: 100%; height: 100%; position: absolute; top: 0; left: 0; display: none; background: #000; z-index: 10; }
+        .map-sub-view.active { display: block; }
         #map { width: 100%; height: 100%; border-radius: 4px; z-index: 1; background-color: #e5e3df; }
-
-        /* 全螢幕全域互動投影燈箱 */
-        #center-projection-box { 
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
-            z-index: 99999; background-color: rgba(0, 0, 0, 0.95); display: none; 
-            flex-direction: column; box-sizing: border-box; padding: 45px 15px 15px 15px;
-        }
-        .projection-close-btn { position: absolute; top: 10px; right: 15px; z-index: 100000; background: #ff4d4d; color: #fff; border: 1px solid #ff4d4d; border-radius: 4px; padding: 4px 12px; font-size: 12px; font-weight: bold; cursor: pointer; }
-        .projection-title-tag { position: absolute; top: 10px; left: 15px; z-index: 100000; background: #161b22; color: #00f2fe; border-left: 3px solid #00f2fe; padding: 4px 12px; font-size: 12px; font-weight: bold; border-radius: 2px; }
 
         .bottom-layout { background-color: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 6px; height: 155px; box-sizing: border-box; flex-shrink: 0; display: flex; gap: 8px; }
         .stat-sidebar { width: 105px; display: flex; flex-direction: column; justify-content: space-between; gap: 4px; flex-shrink: 0; }
@@ -155,28 +154,45 @@
 
     <div class="top-layout">
         <div class="panel">
-            <!-- 左上角：點擊整個方塊直接放大至中央全螢幕 -->
             <div class="sub-block">
-                <div class="panel-title">🌀 Windy 颱風追蹤器與衛星雲圖 <span style="font-size:8px; color:#00f2fe;">(點擊畫面放大)</span></div>
-                <div class="box-container" style="background:#000;" onclick="projectIframeToCenter('Windy 颱風追蹤器與衛星雲圖', 'https://embed.windy.com/embed2.5.0.html?lat=25.930&lon=125.298&zoom=6&level=surface&overlay=satellite&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1')">
-                    <div class="iframe-click-overlay"></div>
-                    <iframe src="https://embed.windy.com/embed2.5.0.html?lat=25.930&lon=125.298&zoom=6&level=surface&overlay=satellite&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>
+                <div class="panel-title">🌀 區災害防救系統快覽</div>
+                <div class="box-container" style="background:#161b22; padding: 10px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
+                    <div style="color:#00f2fe; font-size:12px; font-weight:bold; margin-bottom:4px;">💡 提示：氣象大圖已移至中央主地圖上方</div>
+                    <div style="color:#8b949e; font-size:9px;">您可直接點擊中央畫面的「Windy 衛星雲圖」或「雷達雨量」分頁進行全方位互動檢視！</div>
                 </div>
             </div>
-            <!-- 左下角：點擊整個方塊直接放大至中央全螢幕 -->
             <div class="sub-block">
-                <div class="panel-title">🌧️ Windy 即時動態雨量與累積降雨預報 <span style="font-size:8px; color:#00f2fe;">(點擊畫面放大)</span></div>
-                <div class="box-container" style="background:#000;" onclick="projectIframeToCenter('Windy 即時動態雨量與累積降雨預報', 'https://embed.windy.com/embed2.5.0.html?lat=25.766&lon=124.144&zoom=6&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1')">
-                    <div class="iframe-click-overlay"></div>
-                    <iframe src="https://embed.windy.com/embed2.5.0.html?lat=25.766&lon=124.144&zoom=6&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>
+                <div class="panel-title">📡 氣象署即時警報聯防</div>
+                <div class="box-container" style="background:#161b22; padding: 10px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
+                    <div style="color:#ffdd67; font-size:11px; font-weight:bold; margin-bottom:4px;">⚠️ 警戒狀態：全面戒備</div>
+                    <div style="color:#8b949e; font-size:9px;">淡水區各編組已完成災情查報人員編管與待命。</div>
                 </div>
             </div>
         </div>
 
+        <!-- 中央主控面板：上方設置地圖分頁切換列 -->
         <div class="panel">
-            <div class="panel-title" id="center-panel-title">🗺️ 淡水區災害地圖</div>
+            <div class="panel-title" id="center-panel-title">🗺️ 淡水區情勢指揮中心</div>
+            <div class="map-tabs-bar">
+                <button class="map-tab-btn active" id="btn-tab-map" onclick="switchMapTab('map')">🗺️ 災情管制作業地圖</button>
+                <button class="map-tab-btn" id="btn-tab-sat" onclick="switchMapTab('sat')">🌀 Windy 衛星雲圖</button>
+                <button class="map-tab-btn" id="btn-tab-rain" onclick="switchMapTab('rain')">🌧️ Windy 雷達雨量</button>
+            </div>
             <div style="flex: 1; position: relative; min-height: 0;" class="center-projection-wrap">
-                <div id="map"></div>
+                <div id="map-view-container">
+                    <!-- 分頁 1：Leaflet 災害地圖 -->
+                    <div id="view-map" class="map-sub-view active">
+                        <div id="map"></div>
+                    </div>
+                    <!-- 分頁 2：Windy 衛星雲圖 -->
+                    <div id="view-sat" class="map-sub-view">
+                        <iframe src="https://embed.windy.com/embed2.5.0.html?lat=25.930&lon=125.298&zoom=6&level=surface&overlay=satellite&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>
+                    </div>
+                    <!-- 分頁 3：Windy 雷達雨量 -->
+                    <div id="view-rain" class="map-sub-view">
+                        <iframe src="https://embed.windy.com/embed2.5.0.html?lat=25.766&lon=124.144&zoom=6&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -214,13 +230,6 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- 全螢幕投影燈箱 -->
-    <div id="center-projection-box">
-        <div class="projection-title-tag" id="projection-title-tag">🎥 互動投影檢視</div>
-        <button class="projection-close-btn" onclick="closeCenterProjection()">✖ 關閉視窗</button>
-        <div id="projection-content" style="width:100%; height:100%;"></div>
     </div>
 
     <!-- 下方區域：左側統計按鈕區，已結案下方完美放置一鍵匯出 Excel 按鈕 -->
@@ -329,6 +338,24 @@
             maxZoom: 19
         }).addTo(map);
         markersGroup = L.layerGroup().addTo(map);
+    }
+
+    // 中央地圖分頁切換邏輯
+    function switchMapTab(tabName) {
+        document.querySelectorAll('.map-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.map-sub-view').forEach(v => v.classList.remove('active'));
+
+        if (tabName === 'map') {
+            document.getElementById('btn-tab-map').classList.add('active');
+            document.getElementById('view-map').classList.add('active');
+            setTimeout(() => { if(map) map.invalidateSize(); }, 100);
+        } else if (tabName === 'sat') {
+            document.getElementById('btn-tab-sat').classList.add('active');
+            document.getElementById('view-sat').classList.add('active');
+        } else if (tabName === 'rain') {
+            document.getElementById('btn-tab-rain').classList.add('active');
+            document.getElementById('view-rain').classList.add('active');
+        }
     }
 
     // 一鍵匯出 Excel 報表
@@ -459,39 +486,13 @@
         });
     }
 
-    function projectToCenter(title, imgUrl, isWeather = false) {
-        const box = document.getElementById('center-projection-box');
-        const titleTag = document.getElementById('projection-title-tag');
-        const content = document.getElementById('projection-content');
-        titleTag.innerText = `🚨 中央緊急投影：${title}`;
-        let imgStyle = "width:100%; height:100%; object-fit:contain; background:#ffffff;";
-        if (isWeather) {
-            imgStyle = "width:100%; height:100%; object-fit:contain; background:#000;";
-        }
-        content.innerHTML = `<img src="${imgUrl}" referrerpolicy="no-referrer" style="${imgStyle}" alt="投影畫面">`;
-        box.style.display = 'flex';
-    }
-
-    function projectIframeToCenter(title, iframeUrl) {
-        const box = document.getElementById('center-projection-box');
-        const titleTag = document.getElementById('projection-title-tag');
-        const content = document.getElementById('projection-content');
-        titleTag.innerText = `🚨 互動投影檢視：${title}`;
-        content.innerHTML = `<iframe src="${iframeUrl}" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>`;
-        box.style.display = 'flex';
-    }
-
     function projectCCTVToCenter() {
         const cctvLabel = document.getElementById('cctv-label').innerText;
         const imgEl = document.getElementById('cctv-img');
         if (imgEl) {
-            projectToCenter(`轄區 CCTV - ${cctvLabel}`, imgEl.src, false);
+            // 點擊 CCTV 時自動切換回標準地圖分頁並置中
+            switchMapTab('map');
         }
-    }
-
-    function closeCenterProjection() {
-        document.getElementById('center-projection-box').style.display = 'none';
-        document.getElementById('projection-content').innerHTML = "";
     }
 
     function changeCCTVLocation(locationName) {
@@ -580,7 +581,7 @@
                 radius: 8, fillColor: color, color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.95
             });
 
-            marker.bindPopup(`<b>${item["案件類別"]}</b><br>${item["地點"]}<br>狀態：${item["狀態"]}`);
+            marker.bindPopup(`<b>${item["案件類別"]}</b><br>${item["地點"]}<br>狀態：${item["Status"] || item["狀態"]}`);
             marker.on('click', () => { selectIncident(index, data); });
             markersGroup.addLayer(marker);
         });

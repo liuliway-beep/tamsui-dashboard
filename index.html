@@ -40,6 +40,7 @@
             flex: 1;
         }
 
+        /* 絕對醒目的頂部一鍵匯出 Excel 按鈕 */
         .excel-top-btn {
             background-color: rgba(46, 213, 115, 0.2);
             border: 1px solid #2ed573;
@@ -175,15 +176,15 @@
     <div class="top-layout">
         <div class="panel">
             <div class="sub-block">
-                <div class="panel-title">🌀 氣象署即時雷達回波</div>
+                <div class="panel-title">🌀 氣象署即時雷達回波 (API 鎖死)</div>
                 <div class="box-container" onclick="projectToCenter('氣象署即時雷達回波', document.getElementById('cwa-radar').src, true)">
                     <img id="cwa-radar" src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" class="weather-fit-img" alt="雷達回波">
                 </div>
             </div>
             <div class="sub-block">
-                <div class="panel-title">📡 氣象署累積雨量圖</div>
+                <div class="panel-title">📡 氣象署累積雨量圖 (API 鎖死)</div>
                 <div class="box-container" onclick="projectToCenter('氣象署累積雨量圖', document.getElementById('cwa-rain').src, true)">
-                    <!-- 已修復為氣象署標準穩定的雨量圖端點 -->
+                    <!-- 修正為氣象署標準穩定的雨量分佈圖路徑 -->
                     <img id="cwa-rain" src="https://www.cwa.gov.tw/Data/rainfall/O-A0040-001.PNG" class="weather-fit-img" alt="累積雨量圖">
                 </div>
             </div>
@@ -325,6 +326,7 @@
         markersGroup = L.layerGroup().addTo(map);
     }
 
+    // 一鍵匯出 Excel 報表
     function exportToExcel() {
         if (!globalData || globalData.length === 0) {
             alert("目前無災情資料可供匯出！");
@@ -373,7 +375,7 @@
             })
             .catch(err => console.log("氣象站連線等待中..."));
 
-        // 更新雷達與雨量圖資時間戳記
+        // 更新圖資防快取時間戳記
         const timestamp = new Date().getTime();
         const radarImg = document.getElementById('cwa-radar');
         const rainImg = document.getElementById('cwa-rain');

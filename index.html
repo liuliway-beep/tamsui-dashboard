@@ -53,19 +53,6 @@
         .box-container { flex: 1; height: 0; width: 100%; background-color: #000; border: 1px solid #30363d; border-radius: 4px; position: relative; display: flex; overflow: hidden; cursor: pointer; transition: border-color 0.2s; }
         .box-container:hover { border-color: #00f2fe; }
 
-        /* NCDR 縮放容器：將電腦版網頁等比例完美縮小嵌入格子 */
-        .iframe-scale-wrapper {
-            width: 1200px;
-            height: 900px;
-            position: absolute;
-            top: 0;
-            left: 0;
-            transform: scale(0.32);
-            transform-origin: 0 0;
-            border: none;
-            pointer-events: auto;
-        }
-
         .cctv-osd-top { position: absolute; top: 4px; left: 6px; color: #ffffff; font-family: monospace; font-size: 9px; text-shadow: 1px 1px 3px #000; z-index: 400; text-align: left; line-height: 1.2; }
         .cctv-osd-right { position: absolute; top: 4px; right: 6px; color: #ffffff; font-family: monospace; font-size: 8px; text-shadow: 1px 1px 3px #000; z-index: 400; }
 
@@ -155,17 +142,17 @@
     <div class="top-layout">
         <div class="panel">
             <div class="sub-block">
-                <div class="panel-title">🌀 NCDR 即時颱風動態 (完美縮放嵌入)</div>
-                <!-- 左上角：透過 CSS 縮放容器將 NCDR 完整桌面版面完美等比縮小嵌入，絕不破圖與捲軸 -->
-                <div class="box-container" style="overflow: hidden; position: relative;">
-                    <iframe src="https://watch.ncdr.nat.gov.tw/watch_page_typhoon_v2" class="iframe-scale-wrapper" scrolling="no"></iframe>
+                <div class="panel-title">🌀 CWA 氣象署即時動態雷達回波 (自動迴圈播放)</div>
+                <!-- 左上角：採用氣象署官方動態雷達回波 GIF，具備連續自動播放動畫效果且不會被阻擋 -->
+                <div class="box-container" onclick="projectToCenter('氣象署即時動態雷達回波', document.getElementById('cwa-radar').src, true)">
+                    <img id="cwa-radar" src="https://www.cwa.gov.tw/Data/radar/CV1_LG_1000.gif" referrerpolicy="no-referrer" class="weather-fit-img" alt="動態雷達回波">
                 </div>
             </div>
             <div class="sub-block">
-                <div class="panel-title">🌀 CWA 氣象署即時雷達回波 (自動更新)</div>
-                <!-- 左下角：即時雷達回波圖 -->
-                <div class="box-container" onclick="projectToCenter('氣象署即時雷達回波', document.getElementById('cwa-radar').src, true)">
-                    <img id="cwa-radar" src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" referrerpolicy="no-referrer" class="weather-fit-img" alt="雷達回波">
+                <div class="panel-title">📡 CWA 氣象署即時雨量分佈圖 (自動更新)</div>
+                <!-- 左下角：氣象署雨量圖 -->
+                <div class="box-container" onclick="projectToCenter('氣象署即時雨量分佈圖', document.getElementById('cwa-rain').src, true)">
+                    <img id="cwa-rain" src="https://www.cwa.gov.tw/Data/rainfall/QX_COLOR.gif" referrerpolicy="no-referrer" class="weather-fit-img" alt="動態雨量圖">
                 </div>
             </div>
         </div>
@@ -189,7 +176,7 @@
                     <span style="color: #ffdd67; font-size: 8px;">[連動調閱]</span>
                 </div>
                 <div class="box-container" id="incident-photo-box" onclick="projectCurrentIncidentToCenter()">
-                    <div class="cctv-osd-top" id="incident-osd">08-08-2026 Sat 03:03:00 C09017B 淡水區<br>淡水區文化路、新生街口</div>
+                    <div class="cctv-osd-top" id="incident-osd">08-08-2026 Sat 03:20:00 C09017B 淡水區<br>淡水區文化路、新生街口</div>
                     <div class="cctv-osd-right">TWIPCAM.COM</div>
                     <img src="https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80" id="incident-img" class="full-fit-img" alt="現場">
                 </div>
@@ -372,10 +359,12 @@
             })
             .catch(err => console.log("氣象站連線等待中..."));
 
-        // 即時更新雷達回波圖檔 (附加時間戳記防快取)
+        // 定時更新動態圖檔 (附加時間戳記防快取)
         const timestamp = new Date().getTime();
         const radarImg = document.getElementById('cwa-radar');
-        if (radarImg) radarImg.src = `https://www.cwa.gov.tw/Data/radar/CV1_3600.png?t=${timestamp}`;
+        const rainImg = document.getElementById('cwa-rain');
+        if (radarImg) radarImg.src = `https://www.cwa.gov.tw/Data/radar/CV1_LG_1000.gif?t=${timestamp}`;
+        if (rainImg) rainImg.src = `https://www.cwa.gov.tw/Data/rainfall/QX_COLOR.gif?t=${timestamp}`;
     }
 
     function fetchGoogleSheetData() {
@@ -604,7 +593,7 @@
         fetchCWAWeatherData();
 
         setInterval(fetchGoogleSheetData, 15000);         
-        setInterval(fetchCWAWeatherData, 300000);         
+        setInterval(fetchCWAWeatherData, 60000);         
     };
 </script>
 </body>

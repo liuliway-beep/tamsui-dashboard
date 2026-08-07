@@ -50,22 +50,21 @@
             padding-left: 5px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; height: 16px;
         }
         
-        .box-container { flex: 1; height: 0; width: 100%; background-color: #000; border: 1px solid #30363d; border-radius: 4px; position: relative; display: flex; overflow: hidden; transition: border-color 0.2s; }
+        .box-container { flex: 1; height: 0; width: 100%; background-color: #000; border: 1px solid #30363d; border-radius: 4px; position: relative; display: flex; overflow: hidden; cursor: pointer; transition: border-color 0.2s; }
         .box-container:hover { border-color: #00f2fe; }
 
-        .expand-btn {
-            background: rgba(0, 242, 254, 0.2); border: 1px solid #00f2fe; color: #00f2fe; font-size: 8px; padding: 1px 4px; border-radius: 2px; cursor: pointer; font-weight: bold;
+        /* 透明點擊覆蓋層，讓使用者直接點擊方塊就能觸發全螢幕放大 */
+        .iframe-click-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; background: transparent; cursor: pointer;
         }
-        .expand-btn:hover { background: #00f2fe; color: #0b0e14; }
 
         .forecast-box {
-            background-color: #0d1117; padding: 6px; overflow-y: auto; font-size: 10px; color: #c9d1d9; width: 100%; height: 100%; box-sizing: border-box;
+            background-color: #0d1117; padding: 8px; overflow-y: auto; font-size: 11px; color: #c9d1d9; width: 100%; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px;
         }
-        .forecast-item {
-            background: #161b22; border: 1px solid #30363d; border-radius: 3px; padding: 5px; margin-bottom: 4px; display: flex; flex-direction: column; gap: 2px;
+        .weather-card {
+            background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 8px; display: flex; flex-direction: column; gap: 4px;
         }
-        .forecast-time { color: #00f2fe; font-weight: bold; font-size: 10px; }
-        .forecast-desc { color: #ffdd67; }
+        .weather-card-title { color: #00f2fe; font-weight: bold; font-size: 12px; border-bottom: 1px solid #30363d; padding-bottom: 3px; display: flex; justify-content: space-between; }
 
         .full-fit-img { width: 100%; height: 100%; object-fit: cover !important; display: block; }
         .weather-fit-img { width: 100%; height: 100%; object-fit: contain; background-color: #000; display: block; }
@@ -78,10 +77,14 @@
 
         #map { width: 100%; height: 100%; border-radius: 4px; z-index: 1; background-color: #e5e3df; }
 
-        .center-projection-wrap { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
-        #center-projection-box { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 800; background-color: #000; display: none; border-radius: 4px; overflow: hidden; }
-        .projection-close-btn { position: absolute; top: 6px; right: 6px; z-index: 900; background: rgba(218, 54, 51, 0.85); color: #fff; border: 1px solid #ff4d4d; border-radius: 3px; padding: 2px 8px; font-size: 10px; font-weight: bold; cursor: pointer; }
-        .projection-title-tag { position: absolute; top: 6px; left: 6px; z-index: 900; background: rgba(0, 0, 0, 0.85); color: #00f2fe; border-left: 3px solid #00f2fe; padding: 2px 8px; font-size: 11px; font-weight: bold; border-radius: 2px; }
+        /* 全螢幕全域互動投影燈箱 */
+        #center-projection-box { 
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+            z-index: 99999; background-color: rgba(0, 0, 0, 0.95); display: none; 
+            flex-direction: column; box-sizing: border-box; padding: 45px 15px 15px 15px;
+        }
+        .projection-close-btn { position: absolute; top: 10px; right: 15px; z-index: 100000; background: #ff4d4d; color: #fff; border: 1px solid #ff4d4d; border-radius: 4px; padding: 4px 12px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .projection-title-tag { position: absolute; top: 10px; left: 15px; z-index: 100000; background: #161b22; color: #00f2fe; border-left: 3px solid #00f2fe; padding: 4px 12px; font-size: 12px; font-weight: bold; border-radius: 2px; }
 
         .bottom-layout { background-color: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 6px; height: 155px; box-sizing: border-box; flex-shrink: 0; display: flex; gap: 8px; }
         .stat-sidebar { width: 105px; display: flex; flex-direction: column; justify-content: space-between; gap: 4px; flex-shrink: 0; }
@@ -152,22 +155,20 @@
 
     <div class="top-layout">
         <div class="panel">
+            <!-- 左上角：點擊整個方塊直接放大至中央全螢幕 -->
             <div class="sub-block">
-                <div class="panel-title">
-                    <span>🌀 Windy 颱風追蹤器與衛星雲圖</span>
-                    <button class="expand-btn" onclick="projectIframeToCenter('Windy 颱風追蹤器與衛星雲圖', 'https://embed.windy.com/embed2.5.0.html?lat=25.930&lon=125.298&zoom=6&level=surface&overlay=satellite&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1')">🔍 放大互動</button>
-                </div>
-                <div class="box-container" style="background:#000;">
-                    <iframe id="windy-sat-iframe" src="https://embed.windy.com/embed2.5.0.html?lat=25.930&lon=125.298&zoom=6&level=surface&overlay=satellite&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>
+                <div class="panel-title">🌀 Windy 颱風追蹤器與衛星雲圖 <span style="font-size:8px; color:#00f2fe;">(點擊畫面放大)</span></div>
+                <div class="box-container" style="background:#000;" onclick="projectIframeToCenter('Windy 颱風追蹤器與衛星雲圖', 'https://embed.windy.com/embed2.5.0.html?lat=25.930&lon=125.298&zoom=6&level=surface&overlay=satellite&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1')">
+                    <div class="iframe-click-overlay"></div>
+                    <iframe src="https://embed.windy.com/embed2.5.0.html?lat=25.930&lon=125.298&zoom=6&level=surface&overlay=satellite&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>
                 </div>
             </div>
+            <!-- 左下角：點擊整個方塊直接放大至中央全螢幕 -->
             <div class="sub-block">
-                <div class="panel-title">
-                    <span>🌧️ Windy 即時動態雨量與累積降雨預報</span>
-                    <button class="expand-btn" onclick="projectIframeToCenter('Windy 即時動態雨量與累積降雨預報', 'https://embed.windy.com/embed2.5.0.html?lat=25.766&lon=124.144&zoom=6&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1')">🔍 放大互動</button>
-                </div>
-                <div class="box-container" style="background:#000;">
-                    <iframe id="windy-rain-iframe" src="https://embed.windy.com/embed2.5.0.html?lat=25.766&lon=124.144&zoom=6&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>
+                <div class="panel-title">🌧️ Windy 即時動態雨量與累積降雨預報 <span style="font-size:8px; color:#00f2fe;">(點擊畫面放大)</span></div>
+                <div class="box-container" style="background:#000;" onclick="projectIframeToCenter('Windy 即時動態雨量與累積降雨預報', 'https://embed.windy.com/embed2.5.0.html?lat=25.766&lon=124.144&zoom=6&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1')">
+                    <div class="iframe-click-overlay"></div>
+                    <iframe src="https://embed.windy.com/embed2.5.0.html?lat=25.766&lon=124.144&zoom=6&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>
                 </div>
             </div>
         </div>
@@ -176,23 +177,21 @@
             <div class="panel-title" id="center-panel-title">🗺️ 淡水區災害地圖</div>
             <div style="flex: 1; position: relative; min-height: 0;" class="center-projection-wrap">
                 <div id="map"></div>
-                <div id="center-projection-box">
-                    <div class="projection-title-tag" id="projection-title-tag">🎥 投影連動監控</div>
-                    <button class="projection-close-btn" onclick="closeCenterProjection()">✖ 返回地圖</button>
-                    <div id="projection-content" style="width:100%; height:100%;"></div>
-                </div>
             </div>
         </div>
 
         <div class="panel">
             <div class="sub-block">
                 <div class="panel-title">
-                    <span>⛅ 新北市淡水區未來 3 天氣象預報</span>
-                    <span style="color: #ffdd67; font-size: 8px;">[F-D0047-069]</span>
+                    <span>⛅ 新北市淡水區即時氣象與預報情報</span>
+                    <span style="color: #ffdd67; font-size: 8px;">[CWA 氣象署]</span>
                 </div>
                 <div class="box-container">
                     <div id="weather-forecast-container" class="forecast-box">
-                        正在向中央氣象署 API 請求氣象預報數據中...
+                        <div class="weather-card">
+                            <div class="weather-card-title"><span>📍 淡水測站即時數據</span><span style="color:#2ed573;">● 連線正常</span></div>
+                            <div id="live-weather-info" style="color:#c9d1d9; line-height: 1.4;">正在向氣象署同步淡水氣象數據...</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -215,6 +214,13 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- 全螢幕投影燈箱 -->
+    <div id="center-projection-box">
+        <div class="projection-title-tag" id="projection-title-tag">🎥 互動投影檢視</div>
+        <button class="projection-close-btn" onclick="closeCenterProjection()">✖ 關閉視窗</button>
+        <div id="projection-content" style="width:100%; height:100%;"></div>
     </div>
 
     <!-- 下方區域：左側統計按鈕區，已結案下方完美放置一鍵匯出 Excel 按鈕 -->
@@ -366,71 +372,22 @@
                     const temp = weather.AirTemperature;
                     const humid = weather.RelativeHumidity;
                     const rain = weather.Now.Precipitation;
+                    const windDir = weather.WindDirection;
+                    const windSpeed = weather.WindSpeed;
+                    
                     cwaWeatherString = `【🌀 CWA 氣象即時回報】淡水測站：氣溫 ${temp}°C，濕度 ${humid}%，累積雨量 ${rain} mm`;
+                    
+                    document.getElementById('live-weather-info').innerHTML = `
+                        🌡️ 即時氣溫：<b style="color:#00f2fe; font-size:13px;">${temp} °C</b><br>
+                        💧 相對濕度：<b>${humid} %</b><br>
+                        🌧️ 累積雨量：<b style="color:#ffdd67;">${rain} mm</b><br>
+                        💨 風向風速：<b>風向 ${windDir}° / 風速 ${windSpeed} m/s</b>
+                    `;
                 } catch (e) {
                     console.error("氣象站資料解析錯誤", e);
                 }
             })
             .catch(err => console.log("氣象站連線等待中..."));
-
-        // 串接未來 3 天天氣預報 (F-D0047-069)
-        const forecastUrl = `https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-069?Authorization=${CWA_API_KEY}&format=JSON&locationName=淡水區`;
-        fetch(forecastUrl)
-            .then(res => res.json())
-            .then(data => {
-                try {
-                    const records = data.records || data.Records;
-                    const locations = records.Locations || records.locations;
-                    const locationArray = locations[0].Location || locations[0].location;
-                    
-                    // 尋找淡水區
-                    let tamsuiLoc = locationArray.find(loc => (loc.LocationName || loc.locationName) === "淡水區") || locationArray[0];
-                    const weatherElements = tamsuiLoc.WeatherElement || tamsuiLoc.weatherElement;
-                    
-                    let wxElem = weatherElements.find(e => (e.ElementName || e.elementName) === "Wx");
-                    let tempElem = weatherElements.find(e => (e.ElementName || e.elementName) === "T");
-                    let popElem = weatherElements.find(e => (e.ElementName || e.elementName) === "PoP6h") || weatherElements.find(e => (e.ElementName || e.elementName) === "PoP");
-
-                    let timeSeries = wxElem.Time || wxElem.time;
-                    let htmlContent = "";
-
-                    for (let i = 0; i < Math.min(timeSeries.length, 6); i++) {
-                        let tObj = timeSeries[i];
-                        let startTime = (tObj.StartTime || tObj.startTime || "").replace('T', ' ').substring(5, 16);
-                        let valArr = tObj.ElementValue || tObj.elementValue;
-                        let wx = valArr[0].Weather || valArr[0].weather || valArr[0].WeatherDescription || "一般";
-                        
-                        let tVal = "--";
-                        if (tempElem) {
-                            let tTimeArr = tempElem.Time || tempElem.time;
-                            let tValArr = tTimeArr[i].ElementValue || tTimeArr[i].elementValue;
-                            tVal = tValArr[0].Temperature || tValArr[0].temperature || "--";
-                        }
-
-                        let popVal = "0";
-                        if (popElem) {
-                            let pTimeArr = popElem.Time || popElem.time;
-                            let pValArr = pTimeArr[i].ElementValue || pTimeArr[i].elementValue;
-                            popVal = pValArr[0].ProbabilityOfPrecipitation || pValArr[0].PrecipitationProbability || pValArr[0].probabilityOfPrecipitation || "0";
-                        }
-
-                        htmlContent += `
-                            <div class="forecast-item">
-                                <div class="forecast-time">⏱️ ${startTime}</div>
-                                <div class="forecast-desc">☁️ ${wx} ｜ 🌡️ 氣溫: ${tVal}°C ｜ ☔ 降雨機率: ${popVal}%</div>
-                            </div>
-                        `;
-                    }
-                    document.getElementById('weather-forecast-container').innerHTML = htmlContent;
-                } catch (e) {
-                    console.error("預報資料解析錯誤", e);
-                    document.getElementById('weather-forecast-container').innerHTML = `<div style="padding:10px; color:#ff4d4d;">淡水區預報資料載入中或正在同步連線...</div>`;
-                }
-            })
-            .catch(err => {
-                console.log("預報 API 連線等待中...");
-                document.getElementById('weather-forecast-container').innerHTML = `<div style="padding:10px; color:#ffdd67;">預報資料連線中...</div>`;
-            });
     }
 
     function fetchGoogleSheetData() {
@@ -512,7 +469,7 @@
             imgStyle = "width:100%; height:100%; object-fit:contain; background:#000;";
         }
         content.innerHTML = `<img src="${imgUrl}" referrerpolicy="no-referrer" style="${imgStyle}" alt="投影畫面">`;
-        box.style.display = 'block';
+        box.style.display = 'flex';
     }
 
     function projectIframeToCenter(title, iframeUrl) {
@@ -521,7 +478,7 @@
         const content = document.getElementById('projection-content');
         titleTag.innerText = `🚨 互動投影檢視：${title}`;
         content.innerHTML = `<iframe src="${iframeUrl}" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>`;
-        box.style.display = 'block';
+        box.style.display = 'flex';
     }
 
     function projectCCTVToCenter() {

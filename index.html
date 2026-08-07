@@ -18,11 +18,20 @@
             overflow: hidden; 
             box-sizing: border-box;
         }
-        .wrapper { display: flex; flex-direction: column; height: 100vh; padding: 6px; box-sizing: border-box; gap: 6px; }
+        .wrapper { 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            max-height: 100vh;
+            padding: 6px; 
+            box-sizing: border-box; 
+            gap: 6px; 
+            overflow: hidden;
+        }
         
-        /* 上方區域（占整體高度 11%） */
+        /* 上方區域固定高度 */
         .header-section {
-            height: 11vh;
+            height: 65px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -39,7 +48,7 @@
             font-weight: bold; 
             border-radius: 4px; 
             text-shadow: 0 0 8px rgba(0, 242, 254, 0.4); 
-            height: 52%;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -50,7 +59,7 @@
         .ticker { 
             background-color: #161b22; 
             border: 1px solid #30363d; 
-            padding: 2px 6px; 
+            padding: 0 6px; 
             border-radius: 4px; 
             color: #f0f6fc; 
             font-weight: bold; 
@@ -58,9 +67,8 @@
             align-items: center; 
             font-size: 10px; 
             flex-shrink: 0; 
-            height: 40%;
+            height: 26px;
             justify-content: flex-start; 
-            transition: all 0.3s ease;
             overflow: hidden;
             position: relative;
             box-sizing: border-box;
@@ -109,7 +117,7 @@
             100% { transform: translate3d(-100%, 0, 0); }
         }
 
-        /* 三欄配置：27% : 45% : 27% */
+        /* 三欄配置：固定比例 */
         .top-layout { 
             display: grid; 
             grid-template-columns: 27% 45% 27%; 
@@ -117,6 +125,7 @@
             gap: 6px; 
             flex: 1; 
             min-height: 0; 
+            overflow: hidden;
         }
         .panel { 
             background-color: #161b22; 
@@ -127,10 +136,11 @@
             flex-direction: column; 
             min-height: 0; 
             gap: 6px;
+            box-sizing: border-box;
         }
         
         .sub-block {
-            height: 50%;
+            height: calc(50% - 3px);
             display: flex;
             flex-direction: column;
             min-height: 0;
@@ -154,7 +164,7 @@
         
         .box-container { 
             flex: 1; 
-            height: 0; 
+            min-height: 0; 
             width: 100%;
             background-color: #000; 
             border: 1px solid #30363d; 
@@ -164,6 +174,7 @@
             overflow: hidden; 
             cursor: pointer;
             transition: border-color 0.2s;
+            box-sizing: border-box;
         }
         .box-container:hover {
             border-color: #00f2fe;
@@ -232,7 +243,8 @@
         .center-projection-wrap {
             position: relative;
             width: 100%;
-            height: 100%;
+            flex: 1;
+            min-height: 0;
             display: flex;
             flex-direction: column;
         }
@@ -276,17 +288,18 @@
             border-radius: 2px;
         }
 
-        /* 下方區域 (大表 + 左側小計按鈕區) */
+        /* 下方區域固定高度 145px */
         .bottom-layout { 
             background-color: #161b22; 
             border: 1px solid #30363d; 
             border-radius: 4px; 
             padding: 6px; 
-            height: 155px; 
+            height: 145px; 
             box-sizing: border-box; 
             flex-shrink: 0; 
             display: flex; 
             gap: 8px;
+            overflow: hidden;
         }
 
         .stat-sidebar {
@@ -322,7 +335,7 @@
         .stat-checkbox { width: 10px; height: 10px; border: 1px solid currentColor; display: flex; align-items: center; justify-content: center; font-size: 8px; }
         .stat-btn-num { font-size: 14px; font-weight: 900; }
 
-        .table-wrap { flex: 1; overflow-y: auto; border: 1px solid #30363d; border-radius: 4px; }
+        .table-wrap { flex: 1; overflow-y: auto; border: 1px solid #30363d; border-radius: 4px; min-width: 0; }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 10px; }
         th, td { padding: 4px 6px; border-bottom: 1px solid #30363d; line-height: 1.2; vertical-align: middle; }
         th { background-color: #21262d; color: #f0f6fc; position: sticky; top: 0; z-index: 2; }
@@ -416,7 +429,7 @@
                 <span>🗺️ 淡水區災害地圖</span>
                 <span id="sync-status-indicator" style="color: #ffdd67; font-size: 8px;">🔄 同步中...</span>
             </div>
-            <div style="flex: 1; position: relative; min-height: 0;" class="center-projection-wrap">
+            <div class="center-projection-wrap">
                 <div id="map"></div>
                 <!-- 投影覆蓋視窗 -->
                 <div id="center-projection-box">
@@ -544,16 +557,13 @@
     let map, markersGroup;
     let currentFilterStatus = null;
     let currentSelectedIncident = null;
-    // 快取已轉換的座標，避免重複呼叫 API
     const geocodeCache = {}; 
 
-    // ⚠️ 請填入你的 Google Sheet CSV 發布網址
     const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
     const officialEqReportImgUrl = "https://img.ltn.com.tw/Upload/news/600/2026/07/26/php66dE9S.jpg";
 
     function initMap() {
         map = L.map('map').setView([25.1720, 121.4450], 13);
-        // 使用暗色系地圖，完美搭配你的 UI
         L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
             attribution: '&copy; CartoDB',
             maxZoom: 19
@@ -561,7 +571,6 @@
         markersGroup = L.layerGroup().addTo(map);
     }
 
-    // 氣象圖強制刷新 (破解快取)
     function refreshWeatherData() {
         const timestamp = new Date().getTime();
         document.getElementById('img-typhoon').src = `https://www.cwa.gov.tw/Data/typhoon/TY_WARN/B20.png?t=${timestamp}`;
@@ -569,7 +578,6 @@
     }
     setInterval(refreshWeatherData, 300000);
 
-    /* 抓取 Google 試算表資料 */
     function fetchDisasterData() {
         document.getElementById('sync-status-indicator').innerText = '🔄 同步中...';
         document.getElementById('sync-status-indicator').style.color = '#ffdd67';
@@ -578,7 +586,6 @@
             download: true,
             header: true,
             complete: function(results) {
-                // 將試算表欄位轉換為介面使用的屬性
                 const parsedData = results.data.filter(row => row['地點'] || row['地點 (E)']).map(row => ({
                     "受理時間": row['受理時間'] || row['受理時間 (B)'] || '時間未記錄',
                     "案件類別": row['案件類別'] || row['案件類別 (C)'] || '一般通報',
@@ -586,7 +593,7 @@
                     "地點": row['地點'] || row['地點 (E)'] || '地點未確認',
                     "現場狀況與完整歷史進程": row['現場狀況與完整歷史進程'] || row['現場狀況與完整歷史進程 (F)'] || row['現場狀況'] || '無詳細說明',
                     "狀態": row['狀態'] || row['狀態 (G)'] || '新通報',
-                    "照片網址": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80" // 預設圖
+                    "照片網址": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80"
                 }));
 
                 globalData = parsedData;
@@ -657,7 +664,6 @@
     }
 
     function sortAndRenderAll() {
-        // 依照時間排序 (最新在上)
         globalData.sort((a, b) => new Date(b["受理時間"]) - new Date(a["受理時間"]));
 
         let countNew = 0, countIng = 0, countDone = 0;
@@ -713,7 +719,6 @@
         document.getElementById('table-body').innerHTML = tableHtml || `<tr><td colspan="6" style="text-align:center;">目前無符合條件的災情資料</td></tr>`;
     }
 
-    // 將地址即時轉換並打點到地圖上
     async function renderMapMarkers(data) {
         markersGroup.clearLayers();
 
@@ -727,7 +732,6 @@
             let lat = 25.1720;
             let lng = 121.4450;
 
-            // 呼叫地理編碼 API (搭配快取避免超載)
             if (geocodeCache[fullAddress]) {
                 lat = geocodeCache[fullAddress].lat;
                 lng = geocodeCache[fullAddress].lon;
@@ -741,7 +745,7 @@
                         geocodeCache[fullAddress] = { lat, lon: lng };
                     }
                 } catch (e) { console.error("座標轉換失敗"); }
-                await new Promise(r => setTimeout(r, 500)); // 避免 API 頻率限制
+                await new Promise(r => setTimeout(r, 500));
             }
 
             let color = "#ff4d4d";
@@ -812,7 +816,6 @@
         } else {
             let imgUrl = item["照片網址"] || "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80";
             
-            // 抓取當下時間放入 CCTV OSD
             let now = new Date();
             let timeStr = `${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}-${now.getFullYear()} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
             
@@ -826,11 +829,9 @@
         }
     }
 
-    // 系統初始化
     window.onload = () => {
         initMap();
         fetchDisasterData();
-        // 設定每 30 秒自動更新資料庫
         setInterval(fetchDisasterData, 30000);
     };
 </script>

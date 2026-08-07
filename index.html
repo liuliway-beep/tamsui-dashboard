@@ -53,7 +53,6 @@
         .box-container { flex: 1; height: 0; width: 100%; background-color: #000; border: 1px solid #30363d; border-radius: 4px; position: relative; display: flex; overflow: hidden; cursor: pointer; transition: border-color 0.2s; }
         .box-container:hover { border-color: #00f2fe; }
 
-        /* 透明覆蓋層讓點擊直接觸發中央投影 */
         .iframe-click-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; background: transparent; cursor: pointer;
         }
@@ -67,7 +66,6 @@
         .weather-card-title { color: #00f2fe; font-weight: bold; font-size: 12px; border-bottom: 1px solid #30363d; padding-bottom: 3px; display: flex; justify-content: space-between; }
 
         .full-fit-img { width: 100%; height: 100%; object-fit: cover !important; display: block; }
-        .weather-fit-img { width: 100%; height: 100%; object-fit: contain; background-color: #000; display: block; }
 
         .cctv-select {
             position: absolute; bottom: 4px; left: 4px; z-index: 600; width: calc(100% - 8px);
@@ -77,8 +75,7 @@
 
         #map { width: 100%; height: 100%; border-radius: 4px; z-index: 1; background-color: #e5e3df; }
 
-        /* 中央地圖區塊的投影覆蓋層（只覆蓋中間地圖，不影響左右兩側） */
-        .center-projection-wrap { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
+        /* 中央投影視窗 */
         #center-projection-box { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             z-index: 900; background-color: #000; display: none; 
@@ -173,7 +170,7 @@
             </div>
         </div>
 
-        <!-- 中央主地圖區塊（內含中央投影覆蓋層，點擊四個角落會覆蓋在這裡） -->
+        <!-- 中央主地圖區塊 -->
         <div class="panel">
             <div class="panel-title" id="center-panel-title">🗺️ 淡水區災害地圖</div>
             <div style="flex: 1; position: relative; min-height: 0;" class="center-projection-wrap">
@@ -186,7 +183,7 @@
             </div>
         </div>
 
-        <!-- 右側面板：上(氣象預報) 下(CCTV) -->
+        <!-- 右側面板：上(氣象預報) 下(CCTV 巡邏監控) -->
         <div class="panel">
             <div class="sub-block">
                 <div class="panel-title">
@@ -206,18 +203,18 @@
             <div class="sub-block">
                 <div class="panel-title">
                     <span>🎥 轄區 CCTV 巡邏監控</span>
-                    <span style="font-size:8px; color:#00f2fe;">(點擊放大至中央)</span>
+                    <span style="color: #ff4d4d; font-size: 8px; font-weight: bold;" id="cctv-status-tag">(🔴 巡邏輪播中)</span>
                 </div>
                 <div class="box-container" onclick="projectCCTVToCenter()">
-                    <div class="window-label" id="cctv-label">淡水區 中山路路樹現場</div>
-                    <div class="window-tag">巡邏監控</div>
+                    <div class="iframe-click-overlay"></div>
+                    <div class="window-label" id="cctv-label" style="position: absolute; top: 4px; left: 6px; z-index: 20; color: #fff; font-family: monospace; font-size: 9px; text-shadow: 1px 1px 3px #000;">淡水區 中山路路樹現場</div>
                     <img src="https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80" id="cctv-img" class="full-fit-img" alt="CCTV">
                     <select class="cctv-select" id="cctv-dropdown" onclick="event.stopPropagation();" onchange="changeCCTVLocation(this.value)">
-                        <option value="淡水區 中山路路樹現場">📍 淡水區 中山路路樹現場 (常態輪播)</option>
-                        <option value="淡水老街金色水岸">📍 淡水老街金色水岸</option>
-                        <option value="漁人碼頭情人橋">📍 漁人碼頭情人橋海岸</option>
-                        <option value="淡水捷運站前廣場">📍 淡水捷運站前廣場</option>
-                        <option value="關渡大橋淡水端">📍 關渡大橋淡水端交通樞紐</option>
+                        <option value="0">📍 淡水區 中山路路樹現場</option>
+                        <option value="1">📍 淡水老街金色水岸</option>
+                        <option value="2">📍 漁人碼頭情人橋海岸</option>
+                        <option value="3">📍 淡水捷運站前廣場</option>
+                        <option value="4">📍 關渡大橋淡水端交通樞紐</option>
                     </select>
                 </div>
             </div>
@@ -300,6 +297,17 @@
     const CWA_API_KEY = "CWA-3CF372A5-0801-4819-ADE1-7DE3D1F3010B"; 
     const BASE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
 
+    // CCTV 巡邏站點清單
+    const cctvStations = [
+        { name: "淡水區 中山路路樹現場", img: "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80" },
+        { name: "淡水老街金色水岸", img: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80" },
+        { name: "漁人碼頭情人橋海岸", img: "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80" },
+        { name: "淡水捷運站前廣場", img: "https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1200&q=80" },
+        { name: "關渡大橋淡水端交通樞紐", img: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=80" }
+    ];
+    let currentCCTVIndex = 0;
+    let cctvPatrolTimer = null;
+
     // 精準對照淡水區主要路段座標
     const tamsuiLocations = [
         { key: "中山北路一段", lat: 25.1768, lng: 121.4435 },
@@ -330,6 +338,45 @@
             maxZoom: 19
         }).addTo(map);
         markersGroup = L.layerGroup().addTo(map);
+    }
+
+    // 啟動 CCTV 自動巡邏輪播引擎
+    function startCCTVPatrol() {
+        if (cctvPatrolTimer) clearInterval(cctvPatrolTimer);
+        cctvPatrolTimer = setInterval(() => {
+            currentCCTVIndex = (currentCCTVIndex + 1) % cctvStations.length;
+            updateCCTVDisplay(currentCCTVIndex);
+        }, 7000); // 每 7 秒自動切換下一個鏡頭
+    }
+
+    function updateCCTVDisplay(index) {
+        const station = cctvStations[index];
+        document.getElementById('cctv-label').innerText = station.name;
+        document.getElementById('cctv-img').src = station.img;
+        document.getElementById('cctv-dropdown').value = index;
+
+        // 如果目前中央正投影著 CCTV，連動更新大畫面
+        const box = document.getElementById('center-projection-box');
+        if (box.style.display === 'block') {
+            const content = document.getElementById('projection-content');
+            if (content.dataset.type === 'cctv') {
+                content.innerHTML = `<img src="${station.img}" style="width:100%; height:100%; object-fit:contain; background:#000;" alt="CCTV投影">`;
+                document.getElementById('projection-title-tag').innerText = `🎥 互動投影：轄區 CCTV - ${station.name}`;
+            }
+        }
+    }
+
+    function changeCCTVLocation(val) {
+        currentCCTVIndex = parseInt(val);
+        updateCCTVDisplay(currentCCTVIndex);
+        
+        // 手動選擇時暫停自動巡邏，避免干擾；5秒後自動恢復巡邏
+        if (cctvPatrolTimer) clearInterval(cctvPatrolTimer);
+        document.getElementById('cctv-status-tag').innerText = "(⏸️ 手動檢視中)";
+        setTimeout(() => {
+            startCCTVPatrol();
+            document.getElementById('cctv-status-tag').innerText = "(🔴 巡邏輪播中)";
+        }, 15000);
     }
 
     // 一鍵匯出 Excel 報表
@@ -466,6 +513,7 @@
         const titleTag = document.getElementById('projection-title-tag');
         const content = document.getElementById('projection-content');
         titleTag.innerText = `🎥 互動投影：${title}`;
+        content.dataset.type = 'iframe';
         content.innerHTML = `<iframe src="${iframeUrl}" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>`;
         box.style.display = 'block';
     }
@@ -475,6 +523,7 @@
         const titleTag = document.getElementById('projection-title-tag');
         const content = document.getElementById('projection-content');
         titleTag.innerText = `🎥 互動投影：新北市淡水區即時氣象與預報情報`;
+        content.dataset.type = 'weather';
         const liveHtml = document.getElementById('weather-forecast-container').innerHTML;
         content.innerHTML = `<div style="padding: 20px; height: 100%; box-sizing: border-box; overflow-y: auto; background: #0d1117; font-size: 14px;">
             <h3 style="color: #00f2fe; margin-top: 0;">⛅ 新北市淡水區完整氣象與預報戰情檢視</h3>
@@ -497,6 +546,7 @@
             const titleTag = document.getElementById('projection-title-tag');
             const content = document.getElementById('projection-content');
             titleTag.innerText = `🎥 互動投影：轄區 CCTV - ${cctvLabel}`;
+            content.dataset.type = 'cctv';
             content.innerHTML = `<img src="${imgEl.src}" style="width:100%; height:100%; object-fit:contain; background:#000;" alt="CCTV投影">`;
             box.style.display = 'block';
         }
@@ -505,14 +555,6 @@
     function closeCenterProjection() {
         document.getElementById('center-projection-box').style.display = 'none';
         document.getElementById('projection-content').innerHTML = "";
-    }
-
-    function changeCCTVLocation(locationName) {
-        document.getElementById('cctv-label').innerText = locationName;
-        const imgEl = document.getElementById('cctv-img');
-        imgEl.src = locationName.includes("老街") ? 
-            "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80" : 
-            "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80";
     }
 
     function filterByStatus(statusTarget) {
@@ -623,6 +665,7 @@
         initMap();
         fetchGoogleSheetData();
         fetchCWAWeatherData();
+        startCCTVPatrol(); // 啟動 CCTV 自動巡邏輪播
 
         setInterval(fetchGoogleSheetData, 15000);         
         setInterval(fetchCWAWeatherData, 300000);         

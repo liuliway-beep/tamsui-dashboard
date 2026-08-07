@@ -142,13 +142,14 @@
     <div class="top-layout">
         <div class="panel">
             <div class="sub-block">
-                <div class="panel-title">🌀 氣象署即時雷達回波 (自動更新)</div>
-                <div class="box-container" onclick="projectToCenter('氣象署即時雷達回波', document.getElementById('cwa-radar').src, true)">
-                    <img id="cwa-radar" src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" referrerpolicy="no-referrer" class="weather-fit-img" alt="雷達回波">
+                <div class="panel-title">🌀 CWA 氣象署即時颱風路徑圖 (自動更新)</div>
+                <!-- 已將即時雷達回波改為氣象署官方標準颱風路徑動態圖檔 -->
+                <div class="box-container" onclick="projectToCenter('CWA 氣象署即時颱風路徑圖', document.getElementById('cwa-typhoon').src, true)">
+                    <img id="cwa-typhoon" src="https://www.cwa.gov.tw/Data/typhoon/TY_C.png" referrerpolicy="no-referrer" class="weather-fit-img" alt="颱風路徑圖">
                 </div>
             </div>
             <div class="sub-block">
-                <div class="panel-title">📡 CWA 氣象署即時雨量與溫濕度數據看板</div>
+                <div class="panel-title">📡 CWA 氣象署淡水測站即時雨量與溫濕度</div>
                 <div class="box-container" style="background: linear-gradient(135deg, #161b22, #0d1117); display: flex; flex-direction: column; justify-content: center; padding: 10px; box-sizing: border-box; cursor: default;">
                     <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #30363d; padding-bottom: 3px; margin-bottom: 4px;">
                         <span style="color: #00f2fe; font-size: 10px; font-weight: bold;">📍 淡水自動氣象站 (API 鎖死)</span>
@@ -195,7 +196,7 @@
                     <span style="color: #ffdd67; font-size: 8px;">[連動調閱]</span>
                 </div>
                 <div class="box-container" id="incident-photo-box" onclick="projectCurrentIncidentToCenter()">
-                    <div class="cctv-osd-top" id="incident-osd">08-08-2026 Sat 01:27:00 C09017B 淡水區<br>淡水區文化路、新生街口</div>
+                    <div class="cctv-osd-top" id="incident-osd">08-08-2026 Sat 01:37:00 C09017B 淡水區<br>淡水區文化路、新生街口</div>
                     <div class="cctv-osd-right">TWIPCAM.COM</div>
                     <img src="https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80" id="incident-img" class="full-fit-img" alt="現場">
                 </div>
@@ -292,7 +293,7 @@
     let map, markersGroup;
     let currentFilterStatus = null;
     let currentSelectedIncident = null;
-    let cwaWeatherString = "正在透過中央氣象署 API 同步淡水區即時氣象...";
+    let cwaWeatherString = "正在透過中央氣象署 API 同步淡水區即時氣象與颱風動態...";
 
     const CWA_API_KEY = "CWA-3CF372A5-0801-4819-ADE1-7DE3D1F3010B"; 
     const BASE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
@@ -387,10 +388,10 @@
             })
             .catch(err => console.log("氣象站連線等待中..."));
 
-        // 2. 即時更新雷達圖與颱風路徑圖檔
+        // 2. 即時更新颱風路徑圖檔 (附加時間戳記防快取)
         const timestamp = new Date().getTime();
-        const radarImg = document.getElementById('cwa-radar');
-        if (radarImg) radarImg.src = `https://www.cwa.gov.tw/Data/radar/CV1_3600.png?t=${timestamp}`;
+        const typhoonImg = document.getElementById('cwa-typhoon');
+        if (typhoonImg) typhoonImg.src = `https://www.cwa.gov.tw/Data/typhoon/TY_C.png?t=${timestamp}`;
     }
 
     function fetchGoogleSheetData() {

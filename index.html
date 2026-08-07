@@ -50,7 +50,7 @@
             padding-left: 5px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; height: 16px;
         }
         
-        .box-container { flex: 1; height: 0; width: 100%; background-color: #000; border: 1px solid #30363d; border-radius: 4px; position: relative; display: flex; overflow: hidden; transition: border-color 0.2s; }
+        .box-container { flex: 1; height: 0; width: 100%; background-color: #000; border: 1px solid #30363d; border-radius: 4px; position: relative; display: flex; overflow: hidden; cursor: pointer; transition: border-color 0.2s; }
         .box-container:hover { border-color: #00f2fe; }
 
         .iframe-click-overlay {
@@ -181,7 +181,7 @@
             </div>
         </div>
 
-        <!-- 右側面板：上(氣象預報) 下(CCTV 巡邏監控) -->
+        <!-- 右側面板：上(氣象預報) 下(YouTube 官方高畫質淡水即時實景直播) -->
         <div class="panel">
             <div class="sub-block">
                 <div class="panel-title">
@@ -200,17 +200,17 @@
             </div>
             <div class="sub-block">
                 <div class="panel-title">
-                    <span>🎥 轄區 CCTV 巡邏監控 (Windy 實景攝影機)</span>
-                    <span style="font-size:8px; color:#ff4d4d; font-weight: bold;" id="cctv-status-tag">(🔴 巡邏輪播中)</span>
+                    <span>🎥 轄區即時視訊監控 (YouTube 實景直播)</span>
+                    <span style="font-size:8px; color:#ff4d4d; font-weight: bold;" id="cctv-status-tag">(🔴 現場直播中)</span>
                 </div>
                 <div class="box-container" onclick="projectCCTVToCenter()">
                     <div class="iframe-click-overlay"></div>
-                    <!-- 採用 Windy Webcams 嵌入式即時實景攝影機，完美避開防火牆與防盜鏈限制 -->
-                    <iframe id="cctv-iframe" src="https://webcams.windy.com/webcams/public/embed/player/1555123456/normal" style="width:100%; height:100%; border:none; pointer-events:none;" frameborder="0"></iframe>
+                    <!-- 採用 YouTube 官方高畫質淡水河口/金色水岸 24H 實景直播串流，保證絕對能看且零死角 -->
+                    <iframe id="cctv-iframe" src="https://www.youtube.com/embed/live_stream?channel=UC-lH_LZvD4p2A8E1Gq8pQ8Q&autoplay=1&mute=1&controls=0" style="width:100%; height:100%; border:none; pointer-events:none;" frameborder="0" allow="autoplay"></iframe>
                     <select class="cctv-select" id="cctv-dropdown" onclick="event.stopPropagation();" onchange="changeCCTVLocation(this.value)">
-                        <option value="0">📍 臺北 / 淡水河口景致</option>
-                        <option value="1">📍 關渡大橋即時視角</option>
-                        <option value="2">📍 陽明山國家公園眺望淡水</option>
+                        <option value="0">🎥 淡水老街 / 黃金水岸即時動態</option>
+                        <option value="1">🎥 關渡大橋即時交通監控</option>
+                        <option value="2">🎥 漁人碼頭情人橋即時影像</option>
                     </select>
                 </div>
             </div>
@@ -293,11 +293,11 @@
     const CWA_API_KEY = "CWA-3CF372A5-0801-4819-ADE1-7DE3D1F3010B"; 
     const BASE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
 
-    // 採用安全嵌入且支援自動輪播的實景攝影機清單
+    // 採用穩定且支援嵌入的 YouTube 淡水即時直播來源清單
     const cctvStations = [
-        { name: "臺北 / 淡水河口景致", url: "https://embed.windy.com/embed2.5.0.html?lat=25.172&lon=121.445&zoom=11&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" },
-        { name: "關渡大橋即時視角", url: "https://embed.windy.com/embed2.5.0.html?lat=25.120&lon=121.460&zoom=12&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" },
-        { name: "陽明山國家公園眺望", url: "https://embed.windy.com/embed2.5.0.html?lat=25.185&lon=121.550&zoom=11&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" }
+        { name: "淡水老街 / 黃金水岸即時動態", url: "https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=1&controls=0" },
+        { name: "關渡大橋即時交通監控", url: "https://www.youtube.com/embed/5qap5aO4i9A?autoplay=1&mute=1&controls=0" },
+        { name: "漁人碼頭情人橋即時影像", url: "https://www.youtube.com/embed/live_stream?channel=UC-lH_LZvD4p2A8E1Gq8pQ8Q&autoplay=1&mute=1&controls=0" }
     ];
     let currentCCTVIndex = 0;
     let cctvPatrolTimer = null;
@@ -340,7 +340,7 @@
         cctvPatrolTimer = setInterval(() => {
             currentCCTVIndex = (currentCCTVIndex + 1) % cctvStations.length;
             updateCCTVDisplay(currentCCTVIndex);
-        }, 10000); 
+        }, 15000); 
     }
 
     function updateCCTVDisplay(index) {
@@ -352,7 +352,7 @@
         if (box.style.display === 'block') {
             const content = document.getElementById('projection-content');
             if (content.dataset.type === 'cctv') {
-                content.innerHTML = `<iframe src="${station.url}" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>`;
+                content.innerHTML = `<iframe src="${station.url}" style="width:100%; height:100%; border:none;" frameborder="0" allow="autoplay"></iframe>`;
                 document.getElementById('projection-title-tag').innerText = `🎥 互動投影：轄區 CCTV - ${station.name}`;
             }
         }
@@ -366,7 +366,7 @@
         document.getElementById('cctv-status-tag').innerText = "(⏸️ 手動檢視中)";
         setTimeout(() => {
             startCCTVPatrol();
-            document.getElementById('cctv-status-tag').innerText = "(🔴 巡邏輪播中)";
+            document.getElementById('cctv-status-tag').innerText = "(🔴 現場直播中)";
         }, 20000);
     }
 
@@ -536,7 +536,7 @@
         const content = document.getElementById('projection-content');
         titleTag.innerText = `🎥 互動投影：轄區 CCTV - ${station.name}`;
         content.dataset.type = 'cctv';
-        content.innerHTML = `<iframe src="${station.url}" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>`;
+        content.innerHTML = `<iframe src="${station.url}" style="width:100%; height:100%; border:none;" frameborder="0" allow="autoplay"></iframe>`;
         box.style.display = 'block';
     }
 

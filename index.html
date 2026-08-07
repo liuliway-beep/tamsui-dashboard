@@ -11,166 +11,50 @@
             background-color: #0b0e14; 
             color: #c9d1d9; 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            margin: 0; 
-            padding: 0;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden; 
-            box-sizing: border-box;
+            margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; box-sizing: border-box;
         }
         .wrapper { display: flex; flex-direction: column; height: 100vh; padding: 6px; box-sizing: border-box; gap: 6px; }
         
-        .header-section {
-            height: 70px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            flex-shrink: 0;
-            gap: 4px;
-        }
-
+        .header-section { height: 70px; display: flex; flex-direction: column; justify-content: space-between; flex-shrink: 0; gap: 4px; }
         .header { 
-            background: linear-gradient(90deg, #1f242c, #0d1117, #1f242c); 
-            border: 1px solid #30363d; 
-            text-align: center; 
-            color: #00f2fe; 
-            font-size: 14px; 
-            font-weight: bold; 
-            border-radius: 4px; 
-            text-shadow: 0 0 8px rgba(0, 242, 254, 0.4); 
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-sizing: border-box;
+            background: linear-gradient(90deg, #1f242c, #0d1117, #1f242c); border: 1px solid #30363d; 
+            text-align: center; color: #00f2fe; font-size: 14px; font-weight: bold; border-radius: 4px; 
+            text-shadow: 0 0 8px rgba(0, 242, 254, 0.4); height: 36px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;
         }
         
         .ticker { 
-            background-color: #161b22; 
-            border: 1px solid #30363d; 
-            padding: 2px 6px; 
-            border-radius: 4px; 
-            color: #f0f6fc; 
-            font-weight: bold; 
-            display: flex; 
-            align-items: center; 
-            font-size: 10px; 
-            flex-shrink: 0; 
-            height: 30px;
-            justify-content: flex-start; 
-            overflow: hidden;
-            position: relative;
-            box-sizing: border-box;
+            background-color: #161b22; border: 1px solid #30363d; padding: 2px 6px; border-radius: 4px; color: #f0f6fc; 
+            font-weight: bold; display: flex; align-items: center; font-size: 10px; flex-shrink: 0; height: 30px;
+            justify-content: flex-start; overflow: hidden; position: relative; box-sizing: border-box;
         }
-        .ticker.emergency {
-            background-color: rgba(255, 77, 77, 0.15);
-            border: 1px solid #ff4d4d;
-            animation: pulse-border 1.5s infinite;
-        }
+        .ticker.emergency { background-color: rgba(255, 77, 77, 0.15); border: 1px solid #ff4d4d; animation: pulse-border 1.5s infinite; }
         @keyframes pulse-border {
             0% { border-color: rgba(255, 77, 77, 0.3); box-shadow: 0 0 5px rgba(255, 77, 77, 0.2); }
             50% { border-color: rgba(255, 77, 77, 1); box-shadow: 0 0 15px rgba(255, 77, 77, 0.6); }
             100% { border-color: rgba(255, 77, 77, 0.3); box-shadow: 0 0 5px rgba(255, 77, 77, 0.2); }
         }
-        .ticker-title { 
-            background-color: #00f2fe; 
-            color: #0b0e14; 
-            padding: 2px 6px; 
-            border-radius: 2px; 
-            margin-right: 6px; 
-            font-size: 9px; 
-            flex-shrink: 0; 
-            z-index: 10;
-        }
+        .ticker-title { background-color: #00f2fe; color: #0b0e14; padding: 2px 6px; border-radius: 2px; margin-right: 6px; font-size: 9px; flex-shrink: 0; z-index: 10; }
         .ticker.emergency .ticker-title { background-color: #ff4d4d; color: #fff; }
 
-        .ticker-marquee-wrap {
-            flex: 1;
-            overflow: hidden;
-            white-space: nowrap;
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-        .ticker-marquee-content {
-            display: inline-block;
-            white-space: nowrap;
-            padding-left: 100%;
-            animation: marquee-anim 20s linear infinite;
-        }
-        .ticker-marquee-wrap:hover .ticker-marquee-content {
-            animation-play-state: paused;
-        }
-        @keyframes marquee-anim {
-            0% { transform: translate3d(0, 0, 0); }
-            100% { transform: translate3d(-100%, 0, 0); }
-        }
+        .ticker-marquee-wrap { flex: 1; overflow: hidden; white-space: nowrap; position: relative; display: flex; align-items: center; }
+        .ticker-marquee-content { display: inline-block; white-space: nowrap; padding-left: 100%; animation: marquee-anim 20s linear infinite; }
+        .ticker-marquee-wrap:hover .ticker-marquee-content { animation-play-state: paused; }
+        @keyframes marquee-anim { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
 
-        .top-layout { 
-            display: grid; 
-            grid-template-columns: 27% 45% 27%; 
-            justify-content: space-between;
-            gap: 6px; 
-            flex: 1; 
-            min-height: 0; 
-        }
-        .panel { 
-            background-color: #161b22; 
-            border: 1px solid #30363d; 
-            border-radius: 4px; 
-            padding: 6px; 
-            display: flex; 
-            flex-direction: column; 
-            min-height: 0; 
-            gap: 6px;
-        }
+        .top-layout { display: grid; grid-template-columns: 27% 45% 27%; justify-content: space-between; gap: 6px; flex: 1; min-height: 0; }
+        .panel { background-color: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 6px; display: flex; flex-direction: column; min-height: 0; gap: 6px; }
         
-        .sub-block {
-            height: 50%;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-            overflow: hidden;
-            position: relative;
-        }
-
+        .sub-block { height: 50%; display: flex; flex-direction: column; min-height: 0; overflow: hidden; position: relative; }
         .panel-title { 
-            color: #00f2fe; 
-            font-size: 11px; 
-            font-weight: bold; 
-            margin-bottom: 4px; 
-            border-left: 3px solid #00f2fe; 
-            padding-left: 5px; 
-            flex-shrink: 0; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            height: 16px;
+            color: #00f2fe; font-size: 11px; font-weight: bold; margin-bottom: 4px; border-left: 3px solid #00f2fe; 
+            padding-left: 5px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; height: 16px;
         }
         
-        .box-container { 
-            flex: 1; 
-            height: 0; 
-            width: 100%;
-            background-color: #000; 
-            border: 1px solid #30363d; 
-            border-radius: 4px; 
-            position: relative; 
-            display: flex; 
-            overflow: hidden; 
-            cursor: pointer;
-            transition: border-color 0.2s;
-        }
+        .box-container { flex: 1; height: 0; width: 100%; background-color: #000; border: 1px solid #30363d; border-radius: 4px; position: relative; display: flex; overflow: hidden; cursor: pointer; transition: border-color 0.2s; }
         .box-container:hover { border-color: #00f2fe; }
 
-        .cctv-osd-top {
-            position: absolute; top: 4px; left: 6px; color: #ffffff; font-family: monospace; font-size: 9px;
-            text-shadow: 1px 1px 3px #000; z-index: 400; text-align: left; line-height: 1.2;
-        }
-        .cctv-osd-right {
-            position: absolute; top: 4px; right: 6px; color: #ffffff; font-family: monospace; font-size: 8px;
-            text-shadow: 1px 1px 3px #000; z-index: 400;
-        }
+        .cctv-osd-top { position: absolute; top: 4px; left: 6px; color: #ffffff; font-family: monospace; font-size: 9px; text-shadow: 1px 1px 3px #000; z-index: 400; text-align: left; line-height: 1.2; }
+        .cctv-osd-right { position: absolute; top: 4px; right: 6px; color: #ffffff; font-family: monospace; font-size: 8px; text-shadow: 1px 1px 3px #000; z-index: 400; }
 
         .full-fit-img { width: 100%; height: 100%; object-fit: cover !important; display: block; }
         .weather-fit-img { width: 100%; height: 100%; object-fit: contain; background-color: #000; display: block; }
@@ -181,35 +65,17 @@
             padding: 2px 4px; border-radius: 2px; outline: none; cursor: pointer;
         }
 
-        #map { width: 100%; height: 100%; border-radius: 4px; z-index: 1; background-color: #05070a; }
+        /* 恢復明亮清晰的標準彩色地圖 */
+        #map { width: 100%; height: 100%; border-radius: 4px; z-index: 1; background-color: #e5e3df; }
 
-        .center-projection-wrap {
-            position: relative; width: 100%; height: 100%; display: flex; flex-direction: column;
-        }
-        #center-projection-box {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 800; background-color: #000; display: none; border-radius: 4px; overflow: hidden;
-        }
-        .projection-close-btn {
-            position: absolute; top: 6px; right: 6px; z-index: 900;
-            background: rgba(218, 54, 51, 0.85); color: #fff; border: 1px solid #ff4d4d;
-            border-radius: 3px; padding: 2px 8px; font-size: 10px; font-weight: bold; cursor: pointer;
-        }
-        .projection-title-tag {
-            position: absolute; top: 6px; left: 6px; z-index: 900;
-            background: rgba(0, 0, 0, 0.85); color: #00f2fe; border-left: 3px solid #00f2fe;
-            padding: 2px 8px; font-size: 11px; font-weight: bold; border-radius: 2px;
-        }
+        .center-projection-wrap { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
+        #center-projection-box { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 800; background-color: #000; display: none; border-radius: 4px; overflow: hidden; }
+        .projection-close-btn { position: absolute; top: 6px; right: 6px; z-index: 900; background: rgba(218, 54, 51, 0.85); color: #fff; border: 1px solid #ff4d4d; border-radius: 3px; padding: 2px 8px; font-size: 10px; font-weight: bold; cursor: pointer; }
+        .projection-title-tag { position: absolute; top: 6px; left: 6px; z-index: 900; background: rgba(0, 0, 0, 0.85); color: #00f2fe; border-left: 3px solid #00f2fe; padding: 2px 8px; font-size: 11px; font-weight: bold; border-radius: 2px; }
 
-        .bottom-layout { 
-            background-color: #161b22; border: 1px solid #30363d; border-radius: 4px; 
-            padding: 6px; height: 155px; box-sizing: border-box; flex-shrink: 0; display: flex; gap: 8px;
-        }
+        .bottom-layout { background-color: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 6px; height: 155px; box-sizing: border-box; flex-shrink: 0; display: flex; gap: 8px; }
         .stat-sidebar { width: 105px; display: flex; flex-direction: column; justify-content: space-between; gap: 4px; flex-shrink: 0; }
-        .stat-btn {
-            flex: 1; border-radius: 4px; padding: 4px 6px; display: flex; align-items: center; justify-content: space-between;
-            cursor: pointer; transition: all 0.2s ease; user-select: none; box-sizing: border-box; border: 1px solid transparent;
-        }
+        .stat-btn { flex: 1; border-radius: 4px; padding: 4px 6px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.2s ease; user-select: none; box-sizing: border-box; border: 1px solid transparent; }
         .stat-btn:hover { filter: brightness(1.2); }
         .stat-btn.active { box-shadow: 0 0 8px rgba(0, 242, 254, 0.8); border-color: #00f2fe !important; }
 
@@ -255,7 +121,7 @@
             <div class="ticker-title" id="ticker-badge">📢 系統提示</div>
             <div class="ticker-marquee-wrap">
                 <div class="ticker-marquee-content" id="ticker-text">
-                    淡水區災害應變智慧戰情中心運作正常，即時同步 Google 試算表災情資料與 AI 經緯度座標中...
+                    淡水區災害應變智慧戰情中心運作正常，即時同步 Google 試算表災情資料中...
                 </div>
             </div>
         </div>
@@ -390,20 +256,20 @@
     let currentSelectedIncident = null;
 
     const officialEqReportImgUrl = "https://img.ltn.com.tw/Upload/news/600/2026/07/26/php66dE9S.jpg";
-    // 加上時間戳記 &v=... 徹底破除 Google 試算表快取
     const BASE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
 
     function initMap() {
+        // 初始化對準淡水區中心
         map = L.map('map').setView([25.1720, 121.4450], 13);
-        L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
-            attribution: '&copy; CartoDB',
+        // 改用明亮清晰的 OpenStreetMap 彩色標準圖資，地圖絕不再黑漆漆
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap',
             maxZoom: 19
         }).addTo(map);
         markersGroup = L.layerGroup().addTo(map);
     }
 
     function fetchGoogleSheetData() {
-        // 每次抓取都加上當下毫秒數，確保抓到最新資料
         const antiCacheUrl = `${BASE_CSV_URL}&v=${new Date().getTime()}`;
 
         Papa.parse(antiCacheUrl, {
@@ -412,23 +278,22 @@
             complete: function(results) {
                 if (results.data && results.data.length > 0) {
                     const fetchedData = results.data.filter(row => row['地點'] || row['地點 (E)'] || row['地點']).map(row => {
-                        // 自動相容各種可能的欄位名稱寫法
-                        let latVal = row['緯度'] || row['latitude'] || row['Lat'] || row['緯度 (H)'];
-                        let lngVal = row['經度'] || row['longitude'] || row['Lng'] || row['經度 (I)'];
+                        let latVal = row['緯度'] || row['latitude'] || row['Lat'];
+                        let lngVal = row['經度'] || row['longitude'] || row['Lng'];
 
                         let lat = parseFloat(latVal);
                         let lng = parseFloat(lngVal);
 
-                        // 防呆機制：若數值顛倒自動對調
+                        // 防呆對調
                         if (!isNaN(lat) && !isNaN(lng)) {
                             if (lat > 100 && lng < 30) {
                                 let temp = lat; lat = lng; lng = temp;
                             }
                         }
 
-                        // 如果經緯度無效，預設在淡水區公所附近
-                        if (isNaN(lat) || lat < 25.10 || lat > 25.25) lat = 25.1705;
-                        if (isNaN(lng) || lng < 121.38 || lng > 121.50) lng = 121.4395;
+                        // 如果試算表沒填經緯度，自動給予淡水區公所附近的不同微幅偏移量，避免完全疊在一起
+                        if (isNaN(lat) || lat < 25.10 || lat > 25.25) lat = 25.1705 + (Math.random() * 0.005);
+                        if (isNaN(lng) || lng < 121.38 || lng > 121.50) lng = 121.4395 + (Math.random() * 0.005);
 
                         return {
                             "受理時間": row['受理時間'] || row['受理時間 (B)'] || '時間未記錄',
@@ -567,7 +432,8 @@
                 radius: 8, fillColor: color, color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.95
             });
 
-            marker.bindPopup(`<b>${item["案件類別"]}</b><br>${item["地點"]}<br>狀態：${item["狀態"]}`);
+            // 彈出視窗直接顯示經緯度與地址，方便你一眼看出有沒有抓對座標
+            marker.bindPopup(`<b>${item["案件類別"]}</b><br>${item["地點"]}<br><small>座標: ${item["緯度"].toFixed(4)}, ${item["經度"].toFixed(4)}</small><br>狀態：${item["狀態"]}`);
             marker.on('click', () => { selectIncident(index, data); });
             markersGroup.addLayer(marker);
         });
@@ -601,7 +467,7 @@
     window.onload = () => {
         initMap();
         fetchGoogleSheetData();
-        setInterval(fetchGoogleSheetData, 15000); // 縮短至每 15 秒自動同步一次
+        setInterval(fetchGoogleSheetData, 15000);
     };
 </script>
 </body>

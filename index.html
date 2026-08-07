@@ -6,6 +6,8 @@
     <title>新北市淡水區災害應變智慧戰情中心</title>
     <!-- 載入 Leaflet 地圖套件 CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- 載入 SheetJS (xlsx) 專門用於一鍵匯出 Excel 報表 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         html, body { 
             background-color: #0b0e14; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
@@ -35,7 +37,7 @@
         .ticker.emergency .ticker-title { background-color: #ff4d4d; color: #fff; }
 
         .ticker-marquee-wrap { flex: 1; overflow: hidden; white-space: nowrap; position: relative; display: flex; align-items: center; }
-        .ticker-marquee-content { display: inline-block; white-space: nowrap; padding-left: 100%; animation: marquee-anim 20s linear infinite; }
+        .ticker-marquee-content { display: inline-block; white-space: nowrap; padding-left: 100%; animation: marquee-anim 25s linear infinite; }
         .ticker-marquee-wrap:hover .ticker-marquee-content { animation-play-state: paused; }
         @keyframes marquee-anim { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
 
@@ -80,6 +82,20 @@
         .btn-ing-style { background-color: rgba(255, 159, 67, 0.15); border: 1px solid #ff9f43; color: #ff9f43; }
         .btn-done-style { background-color: rgba(46, 213, 115, 0.15); border: 1px solid #2ed573; color: #2ed573; }
 
+        /* 一鍵匯出 Excel 按鈕樣式 (置於左側按鈕區最下方) */
+        .btn-excel-style {
+            background-color: rgba(46, 213, 115, 0.15);
+            border: 1px solid #2ed573;
+            color: #2ed573;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .btn-excel-style:hover {
+            background-color: #2ed573;
+            color: #0b0e14;
+            box-shadow: 0 0 8px rgba(46, 213, 115, 0.8);
+        }
+
         .stat-btn-left { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: bold; }
         .stat-checkbox { width: 10px; height: 10px; border: 1px solid currentColor; display: flex; align-items: center; justify-content: center; font-size: 8px; }
         .stat-btn-num { font-size: 14px; font-weight: 900; }
@@ -115,10 +131,10 @@
     <div class="header-section">
         <div class="header">新北市淡水區災害應變智慧戰情中心</div>
         <div class="ticker" id="ticker-box">
-            <div class="ticker-title" id="ticker-badge">📢 系統提示</div>
+            <div class="ticker-title" id="ticker-badge">📢 CWA 氣象鎖死同步</div>
             <div class="ticker-marquee-wrap">
                 <div class="ticker-marquee-content" id="ticker-text">
-                    淡水區災害應變智慧戰情中心運作正常，即時同步 Google 試算表災情資料中...
+                    正在透過中央氣象署專屬授權碼即時擷取淡水區氣象與雨量監測數據...
                 </div>
             </div>
         </div>
@@ -127,15 +143,15 @@
     <div class="top-layout">
         <div class="panel">
             <div class="sub-block">
-                <div class="panel-title">🌀 氣象署颱風路徑</div>
-                <div class="box-container" onclick="projectToCenter('氣象署颱風路徑', 'https://www.cwa.gov.tw/Data/typhoon/TY_WARN/B20.png', true)">
-                    <img src="https://www.cwa.gov.tw/Data/typhoon/TY_WARN/B20.png" class="weather-fit-img" alt="颱風路徑">
+                <div class="panel-title">🌀 氣象署即時雷達回波</div>
+                <div class="box-container" onclick="projectToCenter('氣象署即時雷達回波', document.getElementById('cwa-radar').src, true)">
+                    <img id="cwa-radar" src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" class="weather-fit-img" alt="雷達回波">
                 </div>
             </div>
             <div class="sub-block">
-                <div class="panel-title">📡 雷達回波 / 雨量監測</div>
-                <div class="box-container" onclick="projectToCenter('📡 雷達回波 / 雨量監測', 'https://www.cwa.gov.tw/Data/radar/CV1_3600.png', true)">
-                    <img id="radar-img" src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" class="weather-fit-img" alt="雷達回波圖">
+                <div class="panel-title">📡 氣象署累積雨量圖</div>
+                <div class="box-container" onclick="projectToCenter('氣象署累積雨量圖', document.getElementById('cwa-rain').src, true)">
+                    <img id="cwa-rain" src="https://www.cwa.gov.tw/Data/rainfall/24hr/O-A0040-001.PNG" class="weather-fit-img" alt="累積雨量圖">
                 </div>
             </div>
         </div>
@@ -185,6 +201,7 @@
         </div>
     </div>
 
+    <!-- 下方區域：左側加入一鍵匯出 Excel 按鈕 -->
     <div class="bottom-layout">
         <div class="stat-sidebar">
             <div class="stat-btn btn-new-style" id="btn-filter-new" onclick="filterByStatus('新通報')">
@@ -207,6 +224,10 @@
                     <span>已結案</span>
                 </div>
                 <div class="stat-btn-num" id="cnt-done">0件</div>
+            </div>
+            <!-- 一鍵匯出 Excel 報表按鈕 -->
+            <div class="stat-btn btn-excel-style" onclick="exportToExcel()" title="一鍵產出完整報表 Excel 檔">
+                <div style="font-size: 11px; font-weight: bold; text-align: center; width: 100%;">📊 匯出 Excel</div>
             </div>
         </div>
 
@@ -252,7 +273,7 @@
     let currentFilterStatus = null;
     let currentSelectedIncident = null;
 
-    const officialEqReportImgUrl = "https://img.ltn.com.tw/Upload/news/600/2026/07/26/php66dE9S.jpg";
+    const CWA_API_KEY = "CWA-3CF372A5-0801-4819-ADE1-7DE3D1F3010B"; 
     const BASE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
 
     const tamsuiLocations = {
@@ -275,6 +296,66 @@
         markersGroup = L.layerGroup().addTo(map);
     }
 
+    // 【一鍵匯出 Excel 報表核心功能】
+    function exportToExcel() {
+        if (!globalData || globalData.length === 0) {
+            alert("目前無災情資料可供匯出！");
+            return;
+        }
+
+        const exportData = globalData.map((item, index) => ({
+            "項次": index + 1,
+            "受理時間": item["受理時間"],
+            "案件類別": item["案件類別"],
+            "權責單位": item["權責單位"],
+            "災害地點": item["地點"],
+            "現場狀況與完整歷史進程": item["現場狀況與完整歷史進程"],
+            "目前狀態": item["狀態"],
+            "座標緯度": item["緯度"],
+            "座標經度": item["經度"]
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "淡水區災情管制表");
+
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+        const fileName = `新北市淡水區災害應變災情管制報表_${dateStr}.xlsx`;
+
+        XLSX.writeFile(workbook, fileName);
+    }
+
+    function fetchCWAWeatherData() {
+        const apiUrl = `https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0001-001?Authorization=${CWA_API_KEY}&format=JSON&locationName=淡水`;
+
+        fetch(apiUrl)
+            .then(res => res.json())
+            .then(data => {
+                try {
+                    const station = data.records.Station[0];
+                    const weather = station.WeatherElement;
+                    const temp = weather.AirTemperature;
+                    const humid = weather.RelativeHumidity;
+                    const rain = weather.Now.Precipitation;
+
+                    const tickerText = `【🌀 CWA 氣象署授權鎖死同步】淡水測站即時回報：氣溫 ${temp}°C，相對濕度 ${humid}%，現有累積雨量 ${rain} mm。淡水區災害應變智慧戰情中心運作正常。`;
+                    document.getElementById('ticker-text').innerText = tickerText;
+                } catch (e) {
+                    console.error("氣象署 API 解析格式調整", e);
+                }
+            })
+            .catch(err => console.log("氣象連線等待中..."));
+    }
+
+    function refreshCWAWeatherImages() {
+        const timestamp = new Date().getTime();
+        const radarImg = document.getElementById('cwa-radar');
+        const rainImg = document.getElementById('cwa-rain');
+        if (radarImg) radarImg.src = `https://www.cwa.gov.tw/Data/radar/CV1_3600.png?t=${timestamp}`;
+        if (rainImg) rainImg.src = `https://www.cwa.gov.tw/Data/rainfall/24hr/O-A0040-001.PNG?t=${timestamp}`;
+    }
+
     function fetchGoogleSheetData() {
         const antiCacheUrl = `${BASE_CSV_URL}&v=${new Date().getTime()}`;
 
@@ -283,15 +364,12 @@
             header: true,
             complete: function(results) {
                 if (results.data && results.data.length > 0) {
-                    // 放寬過濾條件：只要整行有資料就抓進來，不再強制要求地點欄位名稱必須完全一致
                     const fetchedData = results.data.filter(row => Object.values(row).some(val => val && val.trim() !== "")).map((row, index) => {
-                        // 自動尋找任何包含資料的欄位作為對應
                         let rowValues = Object.values(row);
                         let address = row['地點'] || row['地點 (E)'] || row[3] || rowValues[3] || '淡水區內';
                         let historyText = row['現場狀況與完整歷史進程'] || row['現場狀況與完整歷史進程 (F)'] || row['現場狀況'] || row[4] || rowValues[4] || '無詳細說明';
                         let rawStatus = row['狀態'] || row['狀態 (G)'] || row[5] || rowValues[5] || '';
 
-                        // 【強力狀態判定】只要內容或狀態出現「已結案」，就強制歸類為已結案
                         let status = "新通報";
                         let combinedText = (rawStatus + " " + historyText + " " + address);
                         if (combinedText.includes("已結案")) {
@@ -450,9 +528,9 @@
         data.forEach((item, index) => {
             if (String(item["案件類別"] || "").trim() === "地震快訊") return;
 
-            let color = "#ff4d4d"; // 新通報：紅
-            if (item["狀態"] === "處理中") color = "#ff9f43"; // 處理中：橘
-            if (item["狀態"] === "已結案") color = "#2ed573"; // 已結案：綠
+            let color = "#ff4d4d";
+            if (item["狀態"] === "處理中") color = "#ff9f43";
+            if (item["狀態"] === "已結案") color = "#2ed573";
 
             const marker = L.circleMarker([item["緯度"], item["經度"]], {
                 radius: 8, fillColor: color, color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.95
@@ -492,7 +570,12 @@
     window.onload = () => {
         initMap();
         fetchGoogleSheetData();
-        setInterval(fetchGoogleSheetData, 15000);
+        refreshCWAWeatherImages();
+        fetchCWAWeatherData();
+
+        setInterval(fetchGoogleSheetData, 15000);         
+        setInterval(refreshCWAWeatherImages, 600000);     
+        setInterval(fetchCWAWeatherData, 300000);         
     };
 </script>
 </body>

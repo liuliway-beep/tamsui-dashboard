@@ -82,10 +82,19 @@
         .btn-ing-style { background-color: rgba(255, 159, 67, 0.15); border: 1px solid #ff9f43; color: #ff9f43; }
         .btn-done-style { background-color: rgba(46, 213, 115, 0.15); border: 1px solid #2ed573; color: #2ed573; }
         
+        /* 匯出 Excel 按鈕：完美固定於已結案按鈕下方 */
         .btn-excel-style {
-            background-color: rgba(46, 213, 115, 0.15); border: 1px solid #2ed573; color: #2ed573; justify-content: center; font-weight: bold;
+            background-color: rgba(46, 213, 115, 0.15); 
+            border: 1px solid #2ed573; 
+            color: #2ed573; 
+            justify-content: center; 
+            font-weight: bold;
         }
-        .btn-excel-style:hover { background-color: #2ed573; color: #0b0e14; box-shadow: 0 0 8px rgba(46, 213, 115, 0.8); }
+        .btn-excel-style:hover { 
+            background-color: #2ed573; 
+            color: #0b0e14; 
+            box-shadow: 0 0 8px rgba(46, 213, 115, 0.8); 
+        }
 
         .stat-btn-left { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: bold; }
         .stat-checkbox { width: 10px; height: 10px; border: 1px solid currentColor; display: flex; align-items: center; justify-content: center; font-size: 8px; }
@@ -141,7 +150,7 @@
             </div>
             <div class="sub-block">
                 <div class="panel-title">📡 CWA 氣象署淡水測站即時雨量與溫濕度</div>
-                <!-- 採用 API 直接串接的實時數值看板，徹底解決破圖問題 -->
+                <!-- 即時氣象與雨量數據卡 -->
                 <div class="box-container" style="background: linear-gradient(135deg, #161b22, #0d1117); display: flex; flex-direction: column; justify-content: center; padding: 10px; box-sizing: border-box; cursor: default;">
                     <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #30363d; padding-bottom: 3px; margin-bottom: 4px;">
                         <span style="color: #00f2fe; font-size: 10px; font-weight: bold;">📍 淡水自動氣象站 (API 鎖死)</span>
@@ -214,6 +223,7 @@
         </div>
     </div>
 
+    <!-- 下方區域：左側統計按鈕區，已結案下方完美放置一鍵匯出 Excel 按鈕 -->
     <div class="bottom-layout">
         <div class="stat-sidebar">
             <div class="stat-btn btn-new-style" id="btn-filter-new" onclick="filterByStatus('新通報')">
@@ -237,7 +247,7 @@
                 </div>
                 <div class="stat-btn-num" id="cnt-done">0件</div>
             </div>
-            <!-- 一鍵匯出 Excel 報表：固定完美安放於已結案下方 -->
+            <!-- 一鍵匯出 Excel 報表：位於已結案按鈕下方 -->
             <div class="stat-btn btn-excel-style" onclick="exportToExcel()" title="一鍵產出完整報表 Excel 檔">
                 <div style="font-size: 11px; font-weight: bold; text-align: center; width: 100%;">📊 匯出 Excel</div>
             </div>

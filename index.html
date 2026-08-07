@@ -53,8 +53,14 @@
         .box-container { flex: 1; height: 0; width: 100%; background-color: #000; border: 1px solid #30363d; border-radius: 4px; position: relative; display: flex; overflow: hidden; transition: border-color 0.2s; }
         .box-container:hover { border-color: #00f2fe; }
 
-        .cctv-osd-top { position: absolute; top: 4px; left: 6px; color: #ffffff; font-family: monospace; font-size: 9px; text-shadow: 1px 1px 3px #000; z-index: 400; text-align: left; line-height: 1.2; }
-        .cctv-osd-right { position: absolute; top: 4px; right: 6px; color: #ffffff; font-family: monospace; font-size: 8px; text-shadow: 1px 1px 3px #000; z-index: 400; }
+        .forecast-box {
+            background-color: #0d1117; padding: 8px; overflow-y: auto; font-size: 10px; color: #c9d1d9; width: 100%; height: 100%; box-sizing: border-box;
+        }
+        .forecast-item {
+            background: #161b22; border: 1px solid #30363d; border-radius: 3px; padding: 6px; margin-bottom: 4px; display: flex; flex-direction: column; gap: 2px;
+        }
+        .forecast-time { color: #00f2fe; font-weight: bold; font-size: 10px; }
+        .forecast-desc { color: #ffdd67; }
 
         .full-fit-img { width: 100%; height: 100%; object-fit: cover !important; display: block; }
         .weather-fit-img { width: 100%; height: 100%; object-fit: contain; background-color: #000; display: block; }
@@ -142,17 +148,15 @@
     <div class="top-layout">
         <div class="panel">
             <div class="sub-block">
-                <div class="panel-title">🌀 Windy 即時動態氣象與風場環流監控</div>
-                <!-- 左上角：Windy 互動風場動態大圖 -->
+                <div class="panel-title">🌀 Windy 颱風追蹤器與衛星雲圖</div>
                 <div class="box-container" style="background:#000;">
-                    <iframe src="https://embed.windy.com/embed2.5.0.html?lat=25.172&lon=121.445&zoom=6&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>
+                    <iframe src="https://embed.windy.com/embed2.5.0.html?lat=25.930&lon=125.298&zoom=6&level=surface&overlay=satellite&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>
                 </div>
             </div>
             <div class="sub-block">
-                <div class="panel-title">📡 Windy 即時動態雷達回波迴圈</div>
-                <!-- 左下角：採用 Windy 官方內建雷達回波圖層嵌入，具備流暢動態動畫且絕不破圖 -->
+                <div class="panel-title">🌧️ Windy 即時動態雨量與累積降雨預報</div>
                 <div class="box-container" style="background:#000;">
-                    <iframe src="https://embed.windy.com/embed2.5.0.html?lat=25.172&lon=121.445&zoom=7&level=surface&overlay=radar&product=radar&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>
+                    <iframe src="https://embed.windy.com/embed2.5.0.html?lat=25.766&lon=124.144&zoom=6&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>
                 </div>
             </div>
         </div>
@@ -170,15 +174,16 @@
         </div>
 
         <div class="panel">
+            <!-- 右上第一格：從現場照片改為 CWA 3天未來氣象預報 (F-D0047-069) -->
             <div class="sub-block">
                 <div class="panel-title">
-                    <span>📹 現場照片</span>
-                    <span style="color: #ffdd67; font-size: 8px;">[連動調閱]</span>
+                    <span>⛅ 新北市淡水區未來 3 天氣象預報</span>
+                    <span style="color: #ffdd67; font-size: 8px;">[F-D0047-069]</span>
                 </div>
-                <div class="box-container" id="incident-photo-box" onclick="projectCurrentIncidentToCenter()">
-                    <div class="cctv-osd-top" id="incident-osd">08-08-2026 Sat 04:41:00 C09017B 淡水區<br>淡水區文化路、新生街口</div>
-                    <div class="cctv-osd-right">TWIPCAM.COM</div>
-                    <img src="https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80" id="incident-img" class="full-fit-img" alt="現場">
+                <div class="box-container">
+                    <div id="weather-forecast-container" class="forecast-box">
+                        正在載入氣象署未來3天預報資料...
+                    </div>
                 </div>
             </div>
             <div class="sub-block">
@@ -357,6 +362,45 @@
                 }
             })
             .catch(err => console.log("氣象站連線等待中..."));
+
+        // 擷取未來 3 天天氣預報 (F-D0047-069) 填入右上角面板
+        const forecastUrl = `https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-069?Authorization=${CWA_API_KEY}&format=JSON&locationName=淡水區`;
+        fetch(forecastUrl)
+            .then(res => res.json())
+            .then(data => {
+                try {
+                    const location = data.records.Locations[0].Location[0];
+                    const weatherElements = location.WeatherElement;
+                    
+                    let wxElem = weatherElements.find(e => e.ElementName === "Wx");
+                    let tempElem = weatherElements.find(e => e.ElementName === "T");
+                    let popElem = weatherElements.find(e => e.ElementName === "PoP6h") || weatherElements.find(e => e.ElementName === "PoP");
+
+                    let timeSeries = wxElem.Time;
+                    let htmlContent = "";
+
+                    for (let i = 0; i < Math.min(timeSeries.length, 6); i++) {
+                        let startTime = timeSeries[i].StartTime.replace('T', ' ').substring(5, 16);
+                        let wx = timeSeries[i].ElementValue[0].Weather || "正常";
+                        let tVal = tempElem ? tempElem.Time[i].ElementValue[0].Temperature : "--";
+                        let popVal = popElem ? (popElem.Time[i].ElementValue[0].ProbabilityOfPrecipitation || popElem.Time[i].ElementValue[0].PrecipitationProbability || "0") : "0";
+
+                        htmlContent += `
+                            <div class="forecast-item">
+                                <div class="forecast-time">⏱️ ${startTime}</div>
+                                <div class="forecast-desc">☁️ ${wx} ｜ 🌡️ 氣溫: ${tVal}°C ｜ ☔ 降雨機率: ${popVal}%</div>
+                            </div>
+                        `;
+                    }
+                    document.getElementById('weather-forecast-container').innerHTML = htmlContent;
+                } catch (e) {
+                    console.error("預報資料解析錯誤", e);
+                    document.getElementById('weather-forecast-container').innerHTML = `<div style="padding:10px; color:#ff4d4d;">氣象預報資料載入中或格式更新...</div>`;
+                }
+            })
+            .catch(err => {
+                console.log("預報 API 連線等待中...");
+            });
     }
 
     function fetchGoogleSheetData() {
@@ -439,15 +483,6 @@
         }
         content.innerHTML = `<img src="${imgUrl}" referrerpolicy="no-referrer" style="${imgStyle}" alt="投影畫面">`;
         box.style.display = 'block';
-    }
-
-    function projectCurrentIncidentToCenter() {
-        const photoBox = document.getElementById('incident-photo-box');
-        const imgEl = photoBox.querySelector('img');
-        if (imgEl) {
-            let label = currentSelectedIncident ? `現場照片 - ${currentSelectedIncident["地點"]}` : "現場照片連動";
-            projectToCenter(label, imgEl.src, false);
-        }
     }
 
     function projectCCTVToCenter() {
@@ -567,14 +602,6 @@
         if (item["緯度"] && item["經度"]) {
             map.setView([item["緯度"], item["經度"]], 16);
         }
-
-        const photoBox = document.getElementById('incident-photo-box');
-        let imgUrl = item["照片網址"] || "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80";
-        photoBox.innerHTML = `
-            <div class="cctv-osd-top" id="incident-osd">${item["受理時間"] || ''} 淡水區<br>${item["地點"]}</div>
-            <div class="cctv-osd-right">TWIPCAM.COM</div>
-            <img src="${imgUrl}" class="full-fit-img" alt="現場">
-        `;
     }
 
     function closeToast() { document.getElementById('earthquake-toast').style.display = 'none'; }

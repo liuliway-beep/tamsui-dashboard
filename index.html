@@ -18,20 +18,11 @@
             overflow: hidden; 
             box-sizing: border-box;
         }
-        .wrapper { 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-            max-height: 100vh;
-            padding: 6px; 
-            box-sizing: border-box; 
-            gap: 6px; 
-            overflow: hidden;
-        }
+        .wrapper { display: flex; flex-direction: column; height: 100vh; padding: 6px; box-sizing: border-box; gap: 6px; }
         
-        /* 上方區域固定高度 */
+        /* 上方區域（占整體高度 11%） */
         .header-section {
-            height: 65px;
+            height: 11vh;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -48,18 +39,18 @@
             font-weight: bold; 
             border-radius: 4px; 
             text-shadow: 0 0 8px rgba(0, 242, 254, 0.4); 
-            height: 32px;
+            height: 52%;
             display: flex;
             align-items: center;
             justify-content: center;
             box-sizing: border-box;
         }
         
-        /* 動態滾動跑馬燈 */
+        /* 標題正下方的動態滾動跑馬燈 */
         .ticker { 
             background-color: #161b22; 
             border: 1px solid #30363d; 
-            padding: 0 6px; 
+            padding: 2px 6px; 
             border-radius: 4px; 
             color: #f0f6fc; 
             font-weight: bold; 
@@ -67,8 +58,9 @@
             align-items: center; 
             font-size: 10px; 
             flex-shrink: 0; 
-            height: 26px;
+            height: 40%;
             justify-content: flex-start; 
+            transition: all 0.3s ease;
             overflow: hidden;
             position: relative;
             box-sizing: border-box;
@@ -117,7 +109,7 @@
             100% { transform: translate3d(-100%, 0, 0); }
         }
 
-        /* 三欄配置：固定比例 */
+        /* 三欄配置：27% : 45% : 27% */
         .top-layout { 
             display: grid; 
             grid-template-columns: 27% 45% 27%; 
@@ -125,7 +117,6 @@
             gap: 6px; 
             flex: 1; 
             min-height: 0; 
-            overflow: hidden;
         }
         .panel { 
             background-color: #161b22; 
@@ -136,11 +127,10 @@
             flex-direction: column; 
             min-height: 0; 
             gap: 6px;
-            box-sizing: border-box;
         }
         
         .sub-block {
-            height: calc(50% - 3px);
+            height: 50%;
             display: flex;
             flex-direction: column;
             min-height: 0;
@@ -164,7 +154,7 @@
         
         .box-container { 
             flex: 1; 
-            min-height: 0; 
+            height: 0; 
             width: 100%;
             background-color: #000; 
             border: 1px solid #30363d; 
@@ -174,7 +164,6 @@
             overflow: hidden; 
             cursor: pointer;
             transition: border-color 0.2s;
-            box-sizing: border-box;
         }
         .box-container:hover {
             border-color: #00f2fe;
@@ -243,8 +232,7 @@
         .center-projection-wrap {
             position: relative;
             width: 100%;
-            flex: 1;
-            min-height: 0;
+            height: 100%;
             display: flex;
             flex-direction: column;
         }
@@ -288,18 +276,17 @@
             border-radius: 2px;
         }
 
-        /* 下方區域固定高度 145px */
+        /* 下方區域 (大表 + 左側小計按鈕區) */
         .bottom-layout { 
             background-color: #161b22; 
             border: 1px solid #30363d; 
             border-radius: 4px; 
             padding: 6px; 
-            height: 145px; 
+            height: 155px; 
             box-sizing: border-box; 
             flex-shrink: 0; 
             display: flex; 
             gap: 8px;
-            overflow: hidden;
         }
 
         .stat-sidebar {
@@ -335,7 +322,7 @@
         .stat-checkbox { width: 10px; height: 10px; border: 1px solid currentColor; display: flex; align-items: center; justify-content: center; font-size: 8px; }
         .stat-btn-num { font-size: 14px; font-weight: 900; }
 
-        .table-wrap { flex: 1; overflow-y: auto; border: 1px solid #30363d; border-radius: 4px; min-width: 0; }
+        .table-wrap { flex: 1; overflow-y: auto; border: 1px solid #30363d; border-radius: 4px; }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 10px; }
         th, td { padding: 4px 6px; border-bottom: 1px solid #30363d; line-height: 1.2; vertical-align: middle; }
         th { background-color: #21262d; color: #f0f6fc; position: sticky; top: 0; z-index: 2; }
@@ -398,7 +385,7 @@
             <div class="ticker-title" id="ticker-badge">📢 系統提示</div>
             <div class="ticker-marquee-wrap">
                 <div class="ticker-marquee-content" id="ticker-text">
-                    系統連線中... 正在同步 Google 試算表最新通報資料...
+                    淡水區災害應變智慧戰情中心運作正常，即時監控淡水區 44 里災情數據。⚡ 正在同步 Google 試算表最新通報...
                 </div>
             </div>
         </div>
@@ -410,26 +397,23 @@
         <div class="panel">
             <div class="sub-block">
                 <div class="panel-title">🌀 氣象署颱風路徑</div>
-                <div class="box-container" onclick="projectToCenter('氣象署颱風路徑', document.getElementById('img-typhoon').src, true)">
-                    <img id="img-typhoon" src="https://www.cwa.gov.tw/Data/typhoon/TY_WARN/B20.png" class="weather-zoom-img" alt="颱風路徑">
+                <div class="box-container" onclick="projectToCenter('氣象署颱風路徑', 'https://www.cwa.gov.tw/Data/radar/CV1_3600.png', true)">
+                    <img src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" class="weather-zoom-img" alt="颱風路徑">
                 </div>
             </div>
 
             <div class="sub-block">
                 <div class="panel-title">📡 雷達回波 / 雨量監測</div>
-                <div class="box-container" onclick="projectToCenter('📡 雷達回波 / 雨量監測', document.getElementById('img-radar').src, true)">
-                    <img id="img-radar" src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" class="weather-zoom-img" alt="雷達回波圖">
+                <div class="box-container" onclick="projectToCenter('📡 雷達回波 / 雨量監測', 'https://www.cwa.gov.tw/Data/radar/CV1_3600.png', true)">
+                    <img id="radar-img" src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" class="weather-zoom-img" alt="雷達回波圖">
                 </div>
             </div>
         </div>
 
         <!-- 中央主畫面 (45%)：淡水區災害地圖（包含投影覆蓋層） -->
         <div class="panel">
-            <div class="panel-title" id="center-panel-title">
-                <span>🗺️ 淡水區災害地圖</span>
-                <span id="sync-status-indicator" style="color: #ffdd67; font-size: 8px;">🔄 同步中...</span>
-            </div>
-            <div class="center-projection-wrap">
+            <div class="panel-title" id="center-panel-title">🗺️ 淡水區災害地圖</div>
+            <div style="flex: 1; position: relative; min-height: 0;" class="center-projection-wrap">
                 <div id="map"></div>
                 <!-- 投影覆蓋視窗 -->
                 <div id="center-projection-box">
@@ -449,7 +433,7 @@
                 </div>
                 <div class="box-container" id="incident-photo-box" onclick="projectCurrentIncidentToCenter()">
                     <div class="cctv-osd-top" id="incident-osd">
-                        等待案件載入...
+                        07-27-2026 Mon 19:44:06 C09017B 淡水區<br>淡水區文化路、新生街口
                     </div>
                     <div class="cctv-osd-right">TWIPCAM.COM</div>
                     <img src="https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80" id="incident-img" class="full-fit-img" alt="夜間路口CCTV">
@@ -520,9 +504,7 @@
                         <th style="width: 8%">狀態</th>
                     </tr>
                 </thead>
-                <tbody id="table-body">
-                    <tr><td colspan="6" style="text-align:center;">資料載入中...</td></tr>
-                </tbody>
+                <tbody id="table-body"></tbody>
             </table>
         </div>
     </div>
@@ -557,50 +539,45 @@
     let map, markersGroup;
     let currentFilterStatus = null;
     let currentSelectedIncident = null;
-    const geocodeCache = {}; 
 
-    const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
     const officialEqReportImgUrl = "https://img.ltn.com.tw/Upload/news/600/2026/07/26/php66dE9S.jpg";
+    const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
 
     function initMap() {
         map = L.map('map').setView([25.1720, 121.4450], 13);
-        L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
-            attribution: '&copy; CartoDB',
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap',
             maxZoom: 19
         }).addTo(map);
+
         markersGroup = L.layerGroup().addTo(map);
     }
 
-    function refreshWeatherData() {
-        const timestamp = new Date().getTime();
-        document.getElementById('img-typhoon').src = `https://www.cwa.gov.tw/Data/typhoon/TY_WARN/B20.png?t=${timestamp}`;
-        document.getElementById('img-radar').src = `https://www.cwa.gov.tw/Data/radar/CV1_3600.png?t=${timestamp}`;
-    }
-    setInterval(refreshWeatherData, 300000);
-
-    function fetchDisasterData() {
-        document.getElementById('sync-status-indicator').innerText = '🔄 同步中...';
-        document.getElementById('sync-status-indicator').style.color = '#ffdd67';
-
+    /* 從 Google 試算表同步即時資料 */
+    function fetchGoogleSheetData() {
         Papa.parse(GOOGLE_SHEET_CSV_URL, {
             download: true,
             header: true,
             complete: function(results) {
-                const parsedData = results.data.filter(row => row['地點'] || row['地點 (E)']).map(row => ({
-                    "受理時間": row['受理時間'] || row['受理時間 (B)'] || '時間未記錄',
-                    "案件類別": row['案件類別'] || row['案件類別 (C)'] || '一般通報',
-                    "權責單位": row['權責單位'] || row['權責單位 (D)'] || '待分派',
-                    "地點": row['地點'] || row['地點 (E)'] || '地點未確認',
-                    "現場狀況與完整歷史進程": row['現場狀況與完整歷史進程'] || row['現場狀況與完整歷史進程 (F)'] || row['現場狀況'] || '無詳細說明',
-                    "狀態": row['狀態'] || row['狀態 (G)'] || '新通報',
-                    "照片網址": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80"
-                }));
+                if (results.data && results.data.length > 0) {
+                    const fetchedData = results.data.filter(row => row['地點'] || row['地點 (E)']).map(row => ({
+                        "受理時間": row['受理時間'] || row['受理時間 (B)'] || '時間未記錄',
+                        "案件類別": row['案件類別'] || row['案件類別 (C)'] || '一般通報',
+                        "權責單位": row['權責單位'] || row['權責單位 (D)'] || '待分派',
+                        "地點": row['地點'] || row['地點 (E)'] || '地點未確認',
+                        "現場狀況與完整歷史進程": row['現場狀況與完整歷史進程'] || row['現場狀況與完整歷史進程 (F)'] || row['現場狀況'] || '無詳細說明',
+                        "狀態": row['狀態'] || row['狀態 (G)'] || '新通報',
+                        "照片網址": "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80",
+                        "緯度": 25.1720,
+                        "經度": 121.4450
+                    }));
 
-                globalData = parsedData;
-                sortAndRenderAll();
-                
-                document.getElementById('sync-status-indicator').innerText = '✅ 同步完成';
-                document.getElementById('sync-status-indicator').style.color = '#2ed573';
+                    if (fetchedData.length > 0) {
+                        globalData = fetchedData;
+                        sortAndRenderAll();
+                    }
+                }
             }
         });
     }
@@ -611,6 +588,7 @@
         const content = document.getElementById('projection-content');
 
         titleTag.innerText = `🚨 中央緊急投影：${title}`;
+        
         let imgStyle = "width:100%; height:100%; object-fit:contain; background:#ffffff;";
         if (isWeather) {
             imgStyle = "width:100%; height:100%; object-fit:cover; transform:scale(1.3); transform-origin:center center;";
@@ -697,6 +675,7 @@
 
     function renderStatsAndTable(data) {
         let tableHtml = "";
+
         data.forEach((item, index) => {
             let statusClass = "badge-new";
             if (item["狀態"] === "新通報" || item["狀態"] === "未處理") { statusClass = "badge-new"; }
@@ -710,66 +689,48 @@
                     <td>${item["權責單位"]}</td>
                     <td>${item["地點"]}</td>
                     <td><div class="history-text">${item["現場狀況與完整歷史進程"]}</div></td>
-                    <td><span class="badge ${statusClass}">${item["狀態"] || '新通報'}</span></td>
+                    <td><span class="badge ${statusClass}">${item["狀態"]}</span></td>
                 </tr>
             `;
         });
 
         window.displayDataGlobal = data;
-        document.getElementById('table-body').innerHTML = tableHtml || `<tr><td colspan="6" style="text-align:center;">目前無符合條件的災情資料</td></tr>`;
+        document.getElementById('table-body').innerHTML = tableHtml;
     }
 
-    async function renderMapMarkers(data) {
+    function renderMapMarkers(data) {
         markersGroup.clearLayers();
 
-        for (let i = 0; i < data.length; i++) {
-            const item = data[i];
+        data.forEach((item, index) => {
             let category = String(item["案件類別"] || "").trim();
-            if (category === "地震快訊") continue;
+            if (category === "地震快訊") return;
 
-            const fullAddress = item["地點"].includes('淡水') ? item["地點"] : '新北市淡水區' + item["地點"];
-            
-            let lat = 25.1720;
-            let lng = 121.4450;
+            let lat = parseFloat(item["緯度"]) || 25.1720;
+            let lng = parseFloat(item["經度"]) || 121.4450;
 
-            if (geocodeCache[fullAddress]) {
-                lat = geocodeCache[fullAddress].lat;
-                lng = geocodeCache[fullAddress].lon;
-            } else {
-                try {
-                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`);
-                    const result = await response.json();
-                    if (result && result.length > 0) {
-                        lat = parseFloat(result[0].lat);
-                        lng = parseFloat(result[0].lon);
-                        geocodeCache[fullAddress] = { lat, lon: lng };
-                    }
-                } catch (e) { console.error("座標轉換失敗"); }
-                await new Promise(r => setTimeout(r, 500));
-            }
+            let latlng = [ lat + (index * 0.0003), lng + (index * 0.0003) ];
 
             let color = "#ff4d4d";
             if (item["狀態"] === "處理中") color = "#ff9f43";
             if (item["狀態"] === "已結案") color = "#2ed573";
 
-            const marker = L.circleMarker([lat, lng], {
+            const marker = L.circleMarker(latlng, {
                 radius: 8, fillColor: color, color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.95
             });
 
-            marker.bindPopup(`<b>${item["案件類別"]}</b><br>${item["地點"]}<br>狀態：${item["狀態"] || '新通報'}`);
-            marker.on('click', () => { selectIncident(i, data); });
+            marker.bindPopup(`<b>${item["案件類別"]}</b><br>${item["地點"]}<br>狀態：${item["狀態"]}`);
+            marker.on('click', () => { selectIncident(index, data); });
             markersGroup.addLayer(marker);
-        }
+        });
     }
 
     function checkEmergencyAndTicker(data) {
-        let box = document.getElementById('ticker-box');
-        let badge = document.getElementById('ticker-badge');
-        let text = document.getElementById('ticker-text');
-
         if (data && data.length > 0) {
             let latest = data[0];
             let category = String(latest["案件類別"] || "").trim();
+            let box = document.getElementById('ticker-box');
+            let badge = document.getElementById('ticker-badge');
+            let text = document.getElementById('ticker-text');
 
             if (category === "地震快訊" || category === "緊急通報") {
                 box.classList.add('emergency');
@@ -777,21 +738,28 @@
                 text.innerHTML = `<span style="color: #ff4d4d; font-weight: bold;">[${latest["受理時間"]}] ${latest["地點"]} - ${latest["現場狀況與完整歷史進程"]} (請各編組落實巡檢與 EMIS 回報)</span>`;
                 
                 const toast = document.getElementById('earthquake-toast');
-                document.getElementById('toast-body').innerHTML = `
+                const toastBody = document.getElementById('toast-body');
+                toastBody.innerHTML = `
                     <b style="color:#ffdd67;">【氣象署地震速報】</b><br>
                     • <b>震央：</b>${latest["地點"]}<br>
                     • <b>淡水震度：</b><span style="color:#ff4d4d; font-weight:bold;">3 級</span><br>
                     • <b>處置：</b>${latest["現場狀況與完整歷史進程"]}
                 `;
                 toast.style.display = 'block';
+
                 projectToCenter('中央氣象署地震報告 (第115051號)', officialEqReportImgUrl, false);
+
             } else {
                 box.classList.remove('emergency');
                 badge.innerText = "📢 系統提示";
                 closeToast();
 
-                let timeStr = latest["受理時間"].split(" ")[1] || latest["受理時間"];
-                text.innerText = `【📢 最新案件通報】[${timeStr}] ${latest["地點"]}（${latest["案件類別"]}）：${latest["現場狀況與完整歷史進程"]}，權責單位：${latest["權責單位"]} 處理中。`;
+                if (latest["狀態"] === "新通報" || latest["狀態"] === "未處理") {
+                    let timeStr = latest["受理時間"].split(" ")[1] || latest["受理時間"];
+                    text.innerText = `【📢 最新案件通報】[${timeStr}] ${latest["地點"]}（${latest["案件類別"]}）：${latest["現場狀況與完整歷史進程"]}，權責單位：${latest["權責單位"]} 處理中。`;
+                } else {
+                    text.innerText = "淡水區災害應變智慧戰情中心運作正常，即時監控淡水區 44 里災情數據。⚡ 強對流胞正通過淡水上空，時雨量觀測：淡水站 45mm，請各編組持續落實巡檢與 EMIS 回報。";
+                }
             }
         }
     }
@@ -814,14 +782,10 @@
         if (category === "地震快訊") {
             projectToCenter('中央氣象署地震報告 (第115051號)', officialEqReportImgUrl, false);
         } else {
-            let imgUrl = item["照片網址"] || "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80";
-            
-            let now = new Date();
-            let timeStr = `${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}-${now.getFullYear()} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
-            
+            let imgUrl = item["照片網址"] || "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80";
             photoBox.innerHTML = `
-                <div class="cctv-osd-top">
-                    ${timeStr} C09017B 淡水區<br>${item["地點"] || '淡水區文化路、新生街口'}
+                <div class="cctv-osd-top" id="incident-osd">
+                    07-27-2026 Mon 19:44:06 C09017B 淡水區<br>${item["地點"]}
                 </div>
                 <div class="cctv-osd-right">TWIPCAM.COM</div>
                 <img src="${imgUrl}" class="full-fit-img" alt="現場照片">
@@ -831,8 +795,9 @@
 
     window.onload = () => {
         initMap();
-        fetchDisasterData();
-        setInterval(fetchDisasterData, 30000);
+        fetchGoogleSheetData();
+        // 每 30 秒自動向 Google 試算表同步一次最新資料
+        setInterval(fetchGoogleSheetData, 30000);
     };
 </script>
 </body>

@@ -175,15 +175,16 @@
     <div class="top-layout">
         <div class="panel">
             <div class="sub-block">
-                <div class="panel-title">🌀 氣象署即時雷達回波 (API 鎖死)</div>
+                <div class="panel-title">🌀 氣象署即時雷達回波</div>
                 <div class="box-container" onclick="projectToCenter('氣象署即時雷達回波', document.getElementById('cwa-radar').src, true)">
                     <img id="cwa-radar" src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" class="weather-fit-img" alt="雷達回波">
                 </div>
             </div>
             <div class="sub-block">
-                <div class="panel-title">📡 氣象署累積雨量圖 (API 鎖死)</div>
+                <div class="panel-title">📡 氣象署累積雨量圖</div>
                 <div class="box-container" onclick="projectToCenter('氣象署累積雨量圖', document.getElementById('cwa-rain').src, true)">
-                    <img id="cwa-rain" src="https://www.cwa.gov.tw/Data/rainfall/QZJ_CHT/QZJ_COLOR.jpg" class="weather-fit-img" alt="累積雨量圖">
+                    <!-- 已修復為氣象署標準穩定的雨量圖端點 -->
+                    <img id="cwa-rain" src="https://www.cwa.gov.tw/Data/rainfall/O-A0040-001.PNG" class="weather-fit-img" alt="累積雨量圖">
                 </div>
             </div>
         </div>
@@ -353,11 +354,10 @@
         XLSX.writeFile(workbook, fileName);
     }
 
-    // 透過 CWA API 動態抓取氣象站觀測數據與官方即時圖資連結
     function fetchCWAWeatherData() {
-        // 1. 抓取淡水測站即時氣溫與雨量
-        const weatherApiUrl = `https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0001-001?Authorization=${CWA_API_KEY}&format=JSON&locationName=淡水`;
-        fetch(weatherApiUrl)
+        const apiUrl = `https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0001-001?Authorization=${CWA_API_KEY}&format=JSON&locationName=淡水`;
+
+        fetch(apiUrl)
             .then(res => res.json())
             .then(data => {
                 try {
@@ -373,29 +373,12 @@
             })
             .catch(err => console.log("氣象站連線等待中..."));
 
-        // 2. 透過 CWA 官方 OpenData 資料集動態抓取最新雷達回波圖與累積雨量圖網址
-        const imgApiUrl = `https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0058-001?Authorization=${CWA_API_KEY}&format=JSON`;
-        fetch(imgApiUrl)
-            .then(res => res.json())
-            .then(data => {
-                try {
-                    // 自動對應氣象署官方動態圖資
-                    const radarImg = document.getElementById('cwa-radar');
-                    const rainImg = document.getElementById('cwa-rain');
-                    const timestamp = new Date().getTime();
-                    
-                    if (radarImg) radarImg.src = `https://www.cwa.gov.tw/Data/radar/CV1_3600.png?t=${timestamp}`;
-                    if (rainImg) rainImg.src = `https://www.cwa.gov.tw/Data/rainfall/QZJ_CHT/QZJ_COLOR.jpg?t=${timestamp}`;
-                } catch (e) {
-                    console.log("圖資載入中...");
-                }
-            })
-            .catch(err => {
-                // 備用防呆：若 API 圖片授權有冷卻限制，直接呼叫標準穩定官方路徑
-                const timestamp = new Date().getTime();
-                document.getElementById('cwa-radar').src = `https://www.cwa.gov.tw/Data/radar/CV1_3600.png?t=${timestamp}`;
-                document.getElementById('cwa-rain').src = `https://www.cwa.gov.tw/Data/rainfall/QZJ_CHT/QZJ_COLOR.jpg?t=${timestamp}`;
-            });
+        // 更新雷達與雨量圖資時間戳記
+        const timestamp = new Date().getTime();
+        const radarImg = document.getElementById('cwa-radar');
+        const rainImg = document.getElementById('cwa-rain');
+        if (radarImg) radarImg.src = `https://www.cwa.gov.tw/Data/radar/CV1_3600.png?t=${timestamp}`;
+        if (rainImg) rainImg.src = `https://www.cwa.gov.tw/Data/rainfall/O-A0040-001.PNG?t=${timestamp}`;
     }
 
     function fetchGoogleSheetData() {
@@ -619,8 +602,8 @@
         fetchGoogleSheetData();
         fetchCWAWeatherData();
 
-        setInterval(fetchGoogleSheetData, 15000);         // 每 15 秒同步試算表
-        setInterval(fetchCWAWeatherData, 300000);         // 每 5 分鐘向氣象署 API 更新氣象與圖資
+        setInterval(fetchGoogleSheetData, 15000);         
+        setInterval(fetchCWAWeatherData, 300000);         
     };
 </script>
 </body>

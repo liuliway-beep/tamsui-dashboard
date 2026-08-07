@@ -5,91 +5,75 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>淡水區災害應變智慧戰情中心</title>
     
-    <!-- 引入 Bootstrap CSS (排版) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- 引入 Leaflet CSS (地圖) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
-        body { background-color: #121212; color: #ffffff; overflow-x: hidden; font-family: "Microsoft JhengHei", sans-serif; }
-        .header { background-color: #1f1f1f; padding: 15px 20px; border-bottom: 2px solid #0d6efd; }
-        
-        /* 版面高度設定 */
+        body { background-color: #121212; color: #ffffff; overflow: hidden; font-family: "Microsoft JhengHei", sans-serif; }
+        .header { background-color: #1a1a1a; padding: 15px 20px; border-bottom: 2px solid #0dcaf0; }
         .dashboard-container { height: calc(100vh - 70px); padding: 15px; }
         
-        /* 側邊監測面板 */
-        .monitor-panel { background-color: #1f1f1f; border-radius: 8px; padding: 10px; height: 31%; margin-bottom: 3%; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative; overflow: hidden; }
-        .monitor-panel:hover { transform: scale(1.02); box-shadow: 0 0 15px rgba(13, 110, 253, 0.5); border: 1px solid #0d6efd; }
-        .monitor-title { font-size: 1rem; font-weight: bold; margin-bottom: 8px; border-left: 4px solid #0d6efd; padding-left: 8px; }
+        /* 側邊氣象面板 */
+        .monitor-panel { background-color: #1a1a1a; border-radius: 8px; padding: 10px; height: 31%; margin-bottom: 3%; position: relative; border: 1px solid #333; }
+        .monitor-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 8px; color: #0dcaf0; display: flex; align-items: center; }
+        .monitor-title span { margin-right: 8px; }
+        .cwa-image { width: 100%; height: calc(100% - 35px); object-fit: contain; background-color: #000; border-radius: 4px; }
         
-        /* 氣象署 iframe/圖片 容器 */
-        .cwa-content { width: 100%; height: calc(100% - 30px); border: none; object-fit: cover; }
+        /* 中央地圖與資料面板 */
+        .main-map-container { background-color: #1a1a1a; border-radius: 8px; height: 100%; position: relative; border: 1px solid #333; }
+        #tamsui-map { width: 100%; height: 100%; border-radius: 8px; z-index: 1; }
         
-        /* 中央主地圖區 */
-        .main-map-container { background-color: #1f1f1f; border-radius: 8px; height: 100%; padding: 10px; position: relative; }
-        #tamsui-map { width: 100%; height: calc(100% - 40px); border-radius: 4px; z-index: 1; }
+        /* 防呆機制：文字通報列表 (顯示在右下角) */
+        .data-list-panel { position: absolute; bottom: 20px; right: 20px; width: 350px; max-height: 40%; background-color: rgba(26, 26, 26, 0.9); border: 1px solid #0dcaf0; border-radius: 8px; padding: 15px; z-index: 1000; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .data-list-panel h6 { color: #0dcaf0; border-bottom: 1px solid #444; padding-bottom: 8px; margin-bottom: 10px; }
+        .report-item { background-color: #2a2a2a; padding: 10px; border-radius: 4px; margin-bottom: 8px; font-size: 0.9rem; border-left: 4px solid #dc3545; }
         
-        /* 放大顯示用的覆蓋層 (Overlay) */
-        #focus-overlay { display: none; position: absolute; top: 10px; left: 10px; right: 10px; bottom: 10px; background-color: rgba(0, 0, 0, 0.9); z-index: 9999; border-radius: 4px; text-align: center; }
-        #focus-content { max-width: 100%; max-height: 100%; object-fit: contain; margin-top: 40px; }
-        .close-btn { position: absolute; top: 15px; right: 20px; background: #dc3545; color: white; border: none; padding: 8px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; z-index: 10000; }
-        .close-btn:hover { background: #c82333; }
-        
-        /* 地圖彈出視窗(Popup)的文字顏色 */
-        .leaflet-popup-content { color: #333; font-size: 14px; }
+        /* 系統狀態標籤 */
+        #sync-status { font-size: 0.9rem; padding: 5px 10px; border-radius: 4px; }
     </style>
 </head>
 <body>
 
-<!-- 頂部標題列 -->
 <div class="header d-flex justify-content-between align-items-center">
-    <h3 class="m-0">🌐 淡水區災害應變智慧戰情中心</h3>
+    <h4 class="m-0 text-white">🌐 淡水區災害應變智慧戰情中心</h4>
     <div>
-        <span id="data-status" class="fs-6 me-3 text-secondary">資料未連線</span>
+        <span id="sync-status" class="bg-secondary text-white me-3">系統初始化中...</span>
         <span id="clock" class="fs-5 fw-bold text-info"></span>
     </div>
 </div>
 
-<!-- 主要內容區塊 -->
 <div class="container-fluid dashboard-container">
     <div class="row h-100">
         
-        <!-- 左側面板：氣象署監測 -->
+        <!-- 左側面板：強制更新的氣象圖 -->
         <div class="col-md-3 h-100">
-            <!-- 模組 1：雷達回波 -->
-            <div class="monitor-panel" onclick="focusWidget('https://www.cwa.gov.tw/Data/radar/CV1_3600.png')">
-                <div class="monitor-title">📡 雷達回波即時監測</div>
-                <img src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" class="cwa-content" alt="雷達回波">
+            <div class="monitor-panel">
+                <div class="monitor-title"><span>🌀</span> 氣象署颱風路徑</div>
+                <img id="img-typhoon" src="https://www.cwa.gov.tw/Data/typhoon/TY_WARN/B20.png" class="cwa-image" alt="颱風路徑">
             </div>
             
-            <!-- 模組 2：累積雨量 -->
-            <div class="monitor-panel" onclick="focusWidget('https://www.cwa.gov.tw/Data/rainfall/QZJ.png')">
-                <div class="monitor-title">🌧️ 全台累積雨量圖</div>
-                <img src="https://www.cwa.gov.tw/Data/rainfall/QZJ.png" class="cwa-content" alt="雨量圖">
+            <div class="monitor-panel">
+                <div class="monitor-title"><span>📡</span> 雷達回波監測</div>
+                <img id="img-radar" src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" class="cwa-image" alt="雷達回波">
             </div>
             
-            <!-- 模組 3：颱風路徑 -->
-            <div class="monitor-panel" onclick="focusWidget('https://www.cwa.gov.tw/Data/typhoon/TY_WARN/B20.png')">
-                <div class="monitor-title">🌀 颱風路徑潛勢預報</div>
-                <img src="https://www.cwa.gov.tw/Data/typhoon/TY_WARN/B20.png" class="cwa-content" alt="颱風路徑">
+            <div class="monitor-panel">
+                <div class="monitor-title"><span>🌧️</span> 累積雨量圖</div>
+                <img id="img-rainfall" src="https://www.cwa.gov.tw/Data/rainfall/QZJ.png" class="cwa-image" alt="雨量圖">
             </div>
         </div>
 
-        <!-- 中央主控面板：淡水區災害地圖 -->
+        <!-- 中央主控面板 -->
         <div class="col-md-9 h-100">
             <div class="main-map-container">
-                <div class="monitor-title fs-5 mb-2 d-flex justify-content-between">
-                    <span>🗺️ 淡水區即時災害地圖</span>
-                    <button class="btn btn-sm btn-outline-info" onclick="fetchDisasterData()">手動更新災情</button>
-                </div>
-                
-                <!-- 預設顯示的地圖容器 -->
                 <div id="tamsui-map"></div>
                 
-                <!-- 點擊左側氣象圖後，用來放大顯示的圖層 -->
-                <div id="focus-overlay">
-                    <button class="close-btn" onclick="closeFocus()">關閉 (返回地圖)</button>
-                    <img id="focus-content" src="" alt="放大預覽">
+                <!-- 防呆列表：就算地圖不亮燈，這裡也會顯示資料 -->
+                <div class="data-list-panel">
+                    <h6>即時通報文字紀錄</h6>
+                    <div id="text-reports-container">
+                        <div class="text-secondary text-center my-3">等待資料同步...</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -97,138 +81,125 @@
     </div>
 </div>
 
-<!-- 引入所需 JavaScript 函式庫 -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <script>
-    /* ==========================================
-       1. 基礎設定與介面連動
-       ========================================== */
-    
-    // 右上角時鐘
+    // 1. 右上角時鐘
     function updateClock() {
-        const now = new Date();
-        document.getElementById('clock').innerText = now.toLocaleString('zh-TW', { hour12: false });
+        document.getElementById('clock').innerText = new Date().toLocaleString('zh-TW', { hour12: false });
     }
     setInterval(updateClock, 1000);
     updateClock();
 
-    // 氣象圖表點擊放大與關閉
-    function focusWidget(sourceUrl) {
-        document.getElementById('focus-content').src = sourceUrl;
-        document.getElementById('focus-overlay').style.display = 'block';
+    // 2. 強制刷新氣象圖 (破解瀏覽器快取)
+    function refreshWeatherData() {
+        const timestamp = new Date().getTime(); // 取得當下毫秒數
+        document.getElementById('img-typhoon').src = `https://www.cwa.gov.tw/Data/typhoon/TY_WARN/B20.png?t=${timestamp}`;
+        document.getElementById('img-radar').src = `https://www.cwa.gov.tw/Data/radar/CV1_3600.png?t=${timestamp}`;
+        document.getElementById('img-rainfall').src = `https://www.cwa.gov.tw/Data/rainfall/QZJ.png?t=${timestamp}`;
+        console.log("氣象圖表已強制更新");
     }
-    function closeFocus() {
-        document.getElementById('focus-overlay').style.display = 'none';
-        document.getElementById('focus-content').src = '';
-    }
+    // 每 5 分鐘自動刷新一次氣象圖
+    setInterval(refreshWeatherData, 300000); 
 
-    /* ==========================================
-       2. 地圖初始化 (聚焦於淡水區)
-       ========================================== */
-    
-    // 預設座標設定在淡水區公所周邊
+    // 3. 地圖初始化 (暗色系地圖更適合戰情中心)
     const map = L.map('tamsui-map').setView([25.1705, 121.4395], 13);
-    
-    // 使用 OpenStreetMap 圖層 (可替換為其他暗色系或內政部 TGOS 圖層)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
-        maxZoom: 19
+    L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
+        attribution: '&copy; CartoDB', maxZoom: 19
     }).addTo(map);
-
-    // 建立一個專門用來放災情標記(Marker)的群組
     const markerLayer = L.layerGroup().addTo(map);
 
-    /* ==========================================
-       3. 介接 Google 試算表災情資料
-       ========================================== */
-    
-    // ⚠️⚠️⚠️ 關鍵步驟：請將下方網址替換成你 Google 試算表「發布到網路 -> CSV」的網址
-    const GOOGLE_SHEET_CSV_URL = '請替換為你的_Google_Sheet_CSV_網址'; 
+    // 4. 讀取 Google 試算表資料 (網址已為你設定完畢)
+    const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
 
     function fetchDisasterData() {
-        if (GOOGLE_SHEET_CSV_URL === '請替換為你的_Google_Sheet_CSV_網址') {
-            console.warn("尚未填寫 Google 試算表網址！");
+        if (!GOOGLE_SHEET_CSV_URL || GOOGLE_SHEET_CSV_URL === '') {
+            document.getElementById('sync-status').innerText = '未設定 CSV 網址';
+            document.getElementById('sync-status').className = 'bg-danger text-white me-3 px-2 py-1 rounded';
             return;
         }
 
-        document.getElementById('data-status').innerText = '資料更新中...';
-        document.getElementById('data-status').className = 'fs-6 me-3 text-warning';
+        document.getElementById('sync-status').innerText = '同步中...';
+        document.getElementById('sync-status').className = 'bg-warning text-dark me-3 px-2 py-1 rounded';
 
         Papa.parse(GOOGLE_SHEET_CSV_URL, {
             download: true,
             header: true,
             complete: function(results) {
                 const data = results.data;
-                plotMarkersOnMap(data);
+                console.log("成功抓取試算表資料：", data); 
+                processData(data);
                 
-                document.getElementById('data-status').innerText = '資料已同步';
-                document.getElementById('data-status').className = 'fs-6 me-3 text-success';
+                document.getElementById('sync-status').innerText = '資料已同步';
+                document.getElementById('sync-status').className = 'bg-success text-white me-3 px-2 py-1 rounded';
             },
-            error: function(error) {
-                document.getElementById('data-status').innerText = '連線失敗';
-                document.getElementById('data-status').className = 'fs-6 me-3 text-danger';
+            error: function() {
+                document.getElementById('sync-status').innerText = '連線失敗';
+                document.getElementById('sync-status').className = 'bg-danger text-white me-3 px-2 py-1 rounded';
             }
         });
     }
 
-    // 將資料轉換為地圖上的圖釘
-    async function plotMarkersOnMap(data) {
-        // 清空舊的標記，避免重複繪製
+    async function processData(data) {
         markerLayer.clearLayers();
+        const listContainer = document.getElementById('text-reports-container');
+        listContainer.innerHTML = ''; 
 
-        for (const row of data) {
-            // 略過沒有地點或地點空白的無效資料
-            if (!row['地點'] || row['地點'].trim() === '') continue;
+        // 將陣列反轉，讓最新的通報在最上面
+        const reversedData = [...data].reverse();
 
-            // 組合完整地址，提升轉換座標的成功率
-            const fullAddress = row['地點'].includes('淡水') ? row['地點'] : '新北市淡水區' + row['地點'];
+        for (const row of reversedData) {
+            // 防呆：如果這一列完全沒資料，就跳過
+            if (!row['地點'] && !row['案件類別']) continue;
 
-            // 呼叫免費開源的 Nominatim 服務將地址轉為座標 (Geocoding)
-            // 備註：實務上若地址寫「學府路10號前」這種不標準格式，轉換可能會失敗。
-            try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`);
-                const result = await response.json();
-                
-                if (result && result.length > 0) {
-                    const lat = result[0].lat;
-                    const lon = result[0].lon;
+            // 處理試算表欄位名稱可能不同的問題
+            const location = row['地點'] || row['地點 (E)'] || '地點未確認';
+            const type = row['案件類別'] || row['案件類別 (C)'] || '一般通報';
+            const condition = row['現場狀況與完整歷史進程'] || row['現場狀況與完整歷史進程 (F)'] || row['現場狀況'] || '無詳細說明';
+            const time = row['受理時間'] || row['受理時間 (B)'] || '時間未記錄';
+            const unit = row['權責單位'] || row['權責單位 (D)'] || '待分派';
 
-                    // 設計點擊圖釘後彈出的災情資訊卡
-                    const popupContent = `
-                        <div style="min-width: 200px;">
-                            <h6 style="color: #dc3545; font-weight: bold; border-bottom: 1px solid #ccc; padding-bottom: 5px;">
-                                ⚠️ ${row['案件類別'] || '災情通報'}
-                            </h6>
-                            <b>受理時間：</b>${row['受理時間'] || '未紀錄'}<br>
-                            <b>通報里別：</b>${row['通報里別'] || '待確認'}<br>
-                            <b>地點：</b>${row['地點']}<br>
-                            <b>現場狀況：</b>${row['現場狀況'] || '無詳細說明'}<br>
-                            <b>權責單位：</b><span style="color: #0d6efd; font-weight: bold;">${row['權責單位'] || '待分派'}</span><br>
-                            <b>目前狀態：</b>${row['狀態'] || '處理中'}
-                        </div>
-                    `;
+            // 1. 寫入右下角的文字列表
+            const itemHtml = `
+                <div class="report-item">
+                    <strong class="text-danger">${type}</strong><br>
+                    <small class="text-muted">${time}</small><br>
+                    <b>地點：</b>${location}<br>
+                    <b>狀況：</b>${condition}<br>
+                    <span class="badge bg-primary mt-1">${unit}</span>
+                </div>
+            `;
+            listContainer.innerHTML += itemHtml;
 
-                    // 將圖釘加到地圖上
-                    L.marker([lat, lon]).addTo(markerLayer).bindPopup(popupContent);
+            // 2. 嘗試在地圖上打圖釘
+            if (location !== '地點未確認') {
+                const fullAddress = location.includes('淡水') ? location : '新北市淡水區' + location;
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`);
+                    const result = await response.json();
+                    
+                    if (result && result.length > 0) {
+                        L.marker([result[0].lat, result[0].lon]).addTo(markerLayer)
+                         .bindPopup(`<b>${type}</b><br>${location}`);
+                    }
+                } catch (error) {
+                    console.error("地址轉換失敗:", fullAddress);
                 }
-            } catch (error) {
-                console.error(`地址轉換座標失敗: ${fullAddress}`);
+                // 延遲 1 秒避免被圖資伺服器封鎖
+                await new Promise(r => setTimeout(r, 1000)); 
             }
-
-            // 加入延遲，避免連續請求被開源伺服器阻擋 (Rate Limiting)
-            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        
+        if (listContainer.innerHTML === '') {
+            listContainer.innerHTML = '<div class="text-secondary text-center my-3">目前無災情通報</div>';
         }
     }
 
-    // 網頁開啟時自動抓取一次資料
+    // 網頁開啟時抓取一次，之後每 30 秒抓一次
     fetchDisasterData();
-    
-    // 設定每 60 秒自動背景同步一次資料庫
-    setInterval(fetchDisasterData, 60000);
+    setInterval(fetchDisasterData, 30000);
 
 </script>
-
 </body>
 </html>

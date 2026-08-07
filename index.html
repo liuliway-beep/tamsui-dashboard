@@ -140,10 +140,31 @@
                 </div>
             </div>
             <div class="sub-block">
-                <div class="panel-title">📡 氣象署累積雨量分佈圖</div>
-                <div class="box-container" onclick="projectToCenter('氣象署累積雨量分佈圖', document.getElementById('cwa-rain').src, true)">
-                    <!-- 使用氣象署公開穩定且正確的累積雨量圖端點 -->
-                    <img id="cwa-rain" src="https://www.cwa.gov.tw/Data/rainfall/QX_COLOR.jpg" class="weather-fit-img" alt="累積雨量圖">
+                <div class="panel-title">📡 CWA 氣象署淡水測站即時雨量與溫濕度</div>
+                <!-- 採用 API 直接串接的實時數值看板，徹底解決破圖問題 -->
+                <div class="box-container" style="background: linear-gradient(135deg, #161b22, #0d1117); display: flex; flex-direction: column; justify-content: center; padding: 10px; box-sizing: border-box; cursor: default;">
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #30363d; padding-bottom: 3px; margin-bottom: 4px;">
+                        <span style="color: #00f2fe; font-size: 10px; font-weight: bold;">📍 淡水自動氣象站 (API 鎖死)</span>
+                        <span style="color: #2ed573; font-size: 9px;" id="weather-time">連線中</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 10px;">
+                        <div style="background: rgba(0,0,0,0.4); padding: 4px 6px; border-radius: 3px; border-left: 2px solid #00f2fe;">
+                            <div style="color: #8b949e; font-size: 8px;">即時氣溫</div>
+                            <div id="card-temp" style="color: #fff; font-size: 12px; font-weight: bold;">-- °C</div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.4); padding: 4px 6px; border-radius: 3px; border-left: 2px solid #ff9f43;">
+                            <div style="color: #8b949e; font-size: 8px;">累積雨量</div>
+                            <div id="card-rain" style="color: #fff; font-size: 12px; font-weight: bold;">-- mm</div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.4); padding: 4px 6px; border-radius: 3px; border-left: 2px solid #2ed573;">
+                            <div style="color: #8b949e; font-size: 8px;">相對濕度</div>
+                            <div id="card-humid" style="color: #fff; font-size: 11px; font-weight: bold;">-- %</div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.4); padding: 4px 6px; border-radius: 3px; border-left: 2px solid #a29bfe;">
+                            <div style="color: #8b949e; font-size: 8px;">風向狀況</div>
+                            <div id="card-wind" style="color: #fff; font-size: 10px; font-weight: bold;">監測中</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -330,6 +351,15 @@
                     const temp = weather.AirTemperature;
                     const humid = weather.RelativeHumidity;
                     const rain = weather.Now.Precipitation;
+                    const windDir = weather.WindDirection;
+                    const windSpeed = weather.WindSpeed;
+
+                    document.getElementById('card-temp').innerText = `${temp} °C`;
+                    document.getElementById('card-rain').innerText = `${rain} mm`;
+                    document.getElementById('card-humid').innerText = `${humid} %`;
+                    document.getElementById('card-wind').innerText = `${windSpeed} m/s (${windDir}°)`;
+                    document.getElementById('weather-time').innerText = `更新時間: ${station.ObsTime.DateTime.substring(11, 16)}`;
+
                     cwaWeatherString = `【🌀 CWA 氣象即時回報】淡水測站：氣溫 ${temp}°C，濕度 ${humid}%，累積雨量 ${rain} mm`;
                 } catch (e) {
                     console.error("氣象站資料解析錯誤", e);
@@ -337,12 +367,9 @@
             })
             .catch(err => console.log("氣象站連線等待中..."));
 
-        // 更新雷達圖與雨量圖時間戳記
         const timestamp = new Date().getTime();
         const radarImg = document.getElementById('cwa-radar');
-        const rainImg = document.getElementById('cwa-rain');
         if (radarImg) radarImg.src = `https://www.cwa.gov.tw/Data/radar/CV1_3600.png?t=${timestamp}`;
-        if (rainImg) rainImg.src = `https://www.cwa.gov.tw/Data/rainfall/QX_COLOR.jpg?t=${timestamp}`;
     }
 
     function fetchGoogleSheetData() {

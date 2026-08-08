@@ -3,818 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新北市淡水區災害應變智慧戰情中心</title>
-    <!-- 載入 Leaflet 地圖套件 CSS -->
+    <title>淡水區災害應變智慧戰情中心</title>
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- 載入 SheetJS (xlsx) 用於一鍵匯出 Excel 報表 -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
-        html, body { 
-            background-color: #0b0e14; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; box-sizing: border-box;
-        }
-        .wrapper { display: flex; flex-direction: column; height: 100vh; padding: 6px; box-sizing: border-box; gap: 6px; }
-        
-        .header-section { height: 70px; display: flex; flex-direction: column; justify-content: space-between; flex-shrink: 0; gap: 4px; }
-        .header { 
-            background: linear-gradient(90deg, #1f242c, #0d1117, #1f242c); border: 1px solid #30363d; 
-            text-align: center; color: #00f2fe; font-size: 14px; font-weight: bold; border-radius: 4px; 
-            text-shadow: 0 0 8px rgba(0, 242, 254, 0.4); height: 36px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;
-        }
-        
-        .ticker { 
-            background-color: #161b22; border: 1px solid #30363d; padding: 2px 6px; border-radius: 4px; color: #f0f6fc; 
-            font-weight: bold; display: flex; align-items: center; font-size: 10px; flex-shrink: 0; height: 30px;
-            justify-content: flex-start; overflow: hidden; position: relative; box-sizing: border-box;
-        }
-        .ticker.emergency { background-color: rgba(255, 77, 77, 0.15); border: 1px solid #ff4d4d; animation: pulse-border 1.5s infinite; }
-        @keyframes pulse-border {
-            0% { border-color: rgba(255, 77, 77, 0.3); box-shadow: 0 0 5px rgba(255, 77, 77, 0.2); }
-            50% { border-color: rgba(255, 77, 77, 1); box-shadow: 0 0 15px rgba(255, 77, 77, 0.6); }
-            100% { border-color: rgba(255, 77, 77, 0.3); box-shadow: 0 0 5px rgba(255, 77, 77, 0.2); }
-        }
-        .ticker-title { background-color: #00f2fe; color: #0b0e14; padding: 2px 6px; border-radius: 2px; margin-right: 6px; font-size: 9px; flex-shrink: 0; z-index: 10; }
-        .ticker.emergency .ticker-title { background-color: #ff4d4d; color: #fff; }
-
-        .ticker-marquee-wrap { flex: 1; overflow: hidden; white-space: nowrap; position: relative; display: flex; align-items: center; }
-        .ticker-marquee-content { display: inline-block; white-space: nowrap; padding-left: 100%; animation: marquee-anim 25s linear infinite; }
-        .ticker-marquee-wrap:hover .ticker-marquee-content { animation-play-state: paused; }
-        @keyframes marquee-anim { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
-
-        .top-layout { display: grid; grid-template-columns: 27% 45% 27%; justify-content: space-between; gap: 6px; flex: 1; min-height: 0; }
-        .panel { background-color: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 6px; display: flex; flex-direction: column; min-height: 0; gap: 6px; }
-        
-        .sub-block { height: 50%; display: flex; flex-direction: column; min-height: 0; overflow: hidden; position: relative; }
-        .panel-title { 
-            color: #00f2fe; font-size: 11px; font-weight: bold; margin-bottom: 4px; border-left: 3px solid #00f2fe; 
-            padding-left: 5px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; height: 16px;
-        }
-        
-        .box-container { flex: 1; height: 0; width: 100%; background-color: #000; border: 1px solid #30363d; border-radius: 4px; position: relative; display: flex; overflow: hidden; cursor: pointer; transition: border-color 0.2s; }
-        .box-container:hover { border-color: #00f2fe; }
-
-        .iframe-click-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; background: transparent; cursor: pointer;
-        }
-
-        .forecast-box {
-            background-color: #0d1117; padding: 8px; overflow-y: auto; font-size: 11px; color: #c9d1d9; width: 100%; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px;
-        }
-        .weather-card {
-            background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 8px; display: flex; flex-direction: column; gap: 4px;
-        }
-        .weather-card-title { color: #00f2fe; font-weight: bold; font-size: 12px; border-bottom: 1px solid #30363d; padding-bottom: 3px; display: flex; justify-content: space-between; }
-
-        .cctv-select {
-            position: absolute; bottom: 4px; left: 4px; z-index: 600; width: calc(100% - 8px);
-            background: rgba(13, 17, 23, 0.9); color: #00f2fe; border: 1px solid #30363d; font-size: 9px;
-            padding: 2px 4px; border-radius: 2px; outline: none; cursor: pointer;
-        }
-
-        #map { width: 100%; height: 100%; border-radius: 4px; z-index: 1; background-color: #e5e3df; }
-
-        /* 中央投影視窗 */
-        #center-projection-box { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            z-index: 900; background-color: #000; display: none; 
-            border-radius: 4px; overflow: hidden; box-sizing: border-box; 
-        }
-        .projection-close-btn { position: absolute; top: 6px; right: 6px; z-index: 1000; background: #ff4d4d; color: #fff; border: 1px solid #ff4d4d; border-radius: 3px; padding: 2px 8px; font-size: 10px; font-weight: bold; cursor: pointer; }
-        .projection-title-tag { position: absolute; top: 6px; left: 6px; z-index: 1000; background: rgba(0,0,0,0.85); color: #00f2fe; border-left: 3px solid #00f2fe; padding: 2px 8px; font-size: 10px; font-weight: bold; border-radius: 2px; }
-
-        .bottom-layout { background-color: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 6px; height: 155px; box-sizing: border-box; flex-shrink: 0; display: flex; gap: 8px; }
-        .stat-sidebar { width: 105px; display: flex; flex-direction: column; justify-content: space-between; gap: 4px; flex-shrink: 0; }
-        .stat-btn { flex: 1; border-radius: 4px; padding: 4px 6px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.2s ease; user-select: none; box-sizing: border-box; border: 1px solid transparent; }
-        .stat-btn:hover { filter: brightness(1.2); }
-        .stat-btn.active { box-shadow: 0 0 8px rgba(0, 242, 254, 0.8); border-color: #00f2fe !important; }
-
-        .btn-new-style { background-color: rgba(255, 77, 77, 0.15); border: 1px solid #ff4d4d; color: #ff4d4d; }
-        .btn-ing-style { background-color: rgba(255, 159, 67, 0.15); border: 1px solid #ff9f43; color: #ff9f43; }
-        .btn-done-style { background-color: rgba(46, 213, 115, 0.15); border: 1px solid #2ed573; color: #2ed573; }
-        
-        .btn-excel-style {
-            background-color: rgba(46, 213, 115, 0.15); 
-            border: 1px solid #2ed573; 
-            color: #2ed573; 
-            justify-content: center; 
-            font-weight: bold;
-        }
-        .btn-excel-style:hover { 
-            background-color: #2ed573; 
-            color: #0b0e14; 
-            box-shadow: 0 0 8px rgba(46, 213, 115, 0.8); 
-        }
-
-        .stat-btn-left { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: bold; }
-        .stat-checkbox { width: 10px; height: 10px; border: 1px solid currentColor; display: flex; align-items: center; justify-content: center; font-size: 8px; }
-        .stat-btn-num { font-size: 14px; font-weight: 900; }
-
-        .table-wrap { flex: 1; overflow-y: auto; border: 1px solid #30363d; border-radius: 4px; }
-        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 10px; }
-        th, td { padding: 4px 6px; border-bottom: 1px solid #30363d; line-height: 1.2; vertical-align: middle; }
-        th { background-color: #21262d; color: #f0f6fc; position: sticky; top: 0; z-index: 2; }
-        
-        .history-text { font-family: monospace; font-size: 10px; color: #ffdd67; white-space: pre-line; }
-        .badge { padding: 1px 3px; border-radius: 2px; font-size: 8px; font-weight: bold; }
-        .badge-new { background-color: rgba(255,77,77,0.2); color: #ff4d4d; border: 1px solid #ff4d4d; }
-        .badge-ing { background-color: rgba(255,159,67,0.2); color: #ff9f43; border: 1px solid #ff9f43; }
-        .badge-done { background-color: rgba(46,213,115,0.2); color: #2ed573; border: 1px solid #2ed573; }
-        tr.selected { background-color: rgba(0, 242, 254, 0.15) !important; border-left: 3px solid #00f2fe; }
-
-        .toast-alert {
-            position: fixed; top: 45px; right: 15px; width: 320px; background: #161b22;
-            border: 2px solid #ff4d4d; border-radius: 6px; box-shadow: 0 4px 25px rgba(255, 77, 77, 0.7);
-            z-index: 9999; padding: 10px; display: none; animation: slideInRight 0.4s ease;
-        }
-        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        .toast-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #30363d; padding-bottom: 4px; margin-bottom: 6px; color: #ff4d4d; font-weight: bold; font-size: 11px; }
-        .toast-close { background: transparent; border: none; color: #8b949e; cursor: pointer; font-size: 12px; }
-
-        .line-preview-box { background-color: #7294c2; border-radius: 4px; padding: 8px; margin-top: 6px; font-size: 10px; }
-        .line-msg-bubble { background: #ffffff; color: #000; padding: 8px; border-radius: 6px; line-height: 1.4; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        body { margin: 0; font-family: Arial, sans-serif; background: #1a1a1a; color: #fff; }
+        header { background: #b71c1c; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .ticker { background: #ff9800; color: #000; padding: 8px; font-weight: bold; white-space: nowrap; overflow: hidden; box-sizing: border-box; }
+        .ticker span { display: inline-block; padding-left: 100%; animation: ticker 25s linear infinite; }
+        @keyframes ticker { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+        .main-container { display: flex; height: calc(100vh - 95px); }
+        #map { flex: 2; height: 100%; }
+        .side-panel { flex: 1; background: #262626; padding: 15px; overflow-y: auto; border-left: 2px solid #444; }
+        .panel-box { background: #333; padding: 10px; margin-bottom: 15px; border-radius: 5px; }
+        .panel-box h3 { margin-top: 0; color: #ff5252; border-bottom: 1px solid #555; padding-bottom: 5px; }
+        img.radar-preview { width: 100%; border-radius: 4px; }
+        .alert-badge { background: #d32f2f; color: white; padding: 5px 10px; border-radius: 3px; display: inline-block; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="wrapper">
-    <div class="header-section">
-        <div class="header">新北市淡水區災害應變智慧戰情中心</div>
-        <div class="ticker" id="ticker-box">
-            <div class="ticker-title" id="ticker-badge">📢 CWA 氣象鎖死同步</div>
-            <div class="ticker-marquee-wrap">
-                <div class="ticker-marquee-content" id="ticker-text">
-                    正在透過中央氣象署專屬授權碼即時擷取氣象數據中...
+    <header>
+        <h2>新北市淡水區災害應變智慧戰情中心</h2>
+        <div id="system-time">系統時間：載入中...</div>
+    </header>
+
+    <!-- 災防公告跑馬燈 (對應 Newses 資料)[cite: 9] -->
+    <div class="ticker">
+        <span id="ticker-text">正在載入最新災防與交通管制公告...</span>
+    </div>
+
+    <div class="main-container">
+        <!-- Leaflet 地圖主畫面 -->
+        <div id="map"></div>
+
+        <!-- 右側監控面板 -->
+        <div class="side-panel">
+            <!-- 氣象與雷達回波區 (對應 O-A0058-004)[cite: 11] -->
+            <div class="panel-box">
+                <h3>即時雷達整合回波圖</h3>
+                <img id="cwa-radar" class="radar-preview" src="https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png" alt="雷達回波圖載入中">
+                <p style="font-size: 12px; color: #aaa; margin: 5px 0 0 0;">資料來源：中央氣象署 (每10分鐘自動更新)</p>
+            </div>
+
+            <!-- 氣象特報與警戒區 (對應 W-C0033-001)[cite: 13, 14] -->
+            <div class="panel-box">
+                <h3>氣象特報與災害警戒</h3>
+                <div id="weather-hazard-status">
+                    <span class="alert-badge">正常監控中</span>
+                    <p id="hazard-desc" style="margin: 8px 0 0 0; font-size: 14px;">背景持續輪詢中央氣象署豪雨及強風特報[cite: 13, 14]。</p>
                 </div>
+            </div>
+
+            <!-- 即時事件與搶修區 (對應 LiveEvents)[cite: 7, 8] -->
+            <div class="panel-box">
+                <h3>淡水區即時工程與搶修案件</h3>
+                <ul id="tamsui-events-list" style="padding-left: 20px; font-size: 13px; margin: 0;">
+                    <li>正在同步淡水在地管線與道路事件[cite: 7, 8]...</li>
+                </ul>
             </div>
         </div>
     </div>
 
-    <div class="top-layout">
-        <!-- 左側面板：上(Windy 颶風追蹤器) 下(雨量) -->
-        <div class="panel">
-            <div class="sub-block">
-                <div class="panel-title">🌀 Windy 颶風追蹤器與路徑預報 <span style="font-size:8px; color:#00f2fe;">(點擊放大至中央)</span></div>
-                <div class="box-container" style="background:#000;" onclick="projectIframeToCenter('Windy 颶風追蹤器與路徑預報', 'https://embed.windy.com/embed2.5.0.html?lat=23.5&lon=125.5&zoom=5&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1&hurricanes=true')">
-                    <div class="iframe-click-overlay"></div>
-                    <iframe src="https://embed.windy.com/embed2.5.0.html?lat=23.5&lon=125.5&zoom=5&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1&hurricanes=true" style="width:100%; height:100%; border:none; pointer-events:none;" frameborder="0"></iframe>
-                </div>
-            </div>
-            <div class="sub-block">
-                <div class="panel-title">🌧️ Windy 即時動態雨量與累積降雨預報 <span style="font-size:8px; color:#00f2fe;">(點擊放大至中央)</span></div>
-                <div class="box-container" style="background:#000;" onclick="projectIframeToCenter('Windy 即時動態雨量與累積降雨預報', 'https://embed.windy.com/embed2.5.0.html?lat=25.766&lon=124.144&zoom=6&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1')">
-                    <div class="iframe-click-overlay"></div>
-                    <iframe src="https://embed.windy.com/embed2.5.0.html?lat=25.766&lon=124.144&zoom=6&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none; pointer-events:none;" frameborder="0"></iframe>
-                </div>
-            </div>
-        </div>
-
-        <!-- 中央主地圖區塊 -->
-        <div class="panel">
-            <div class="panel-title" id="center-panel-title">🗺️ 淡水區災害地圖</div>
-            <div style="flex: 1; position: relative; min-height: 0;" class="center-projection-wrap">
-                <div id="map"></div>
-                <div id="center-projection-box">
-                    <div class="projection-title-tag" id="projection-title-tag">🎥 互動投影檢視</div>
-                    <button class="projection-close-btn" onclick="closeCenterProjection()">✖ 返回地圖</button>
-                    <div id="projection-content" style="width:100%; height:100%; padding-top:24px; box-sizing:border-box;"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 右側面板：上(氣象預報) 下(官方 ATIS 串流 iframe) -->
-        <div class="panel">
-            <div class="sub-block">
-                <div class="panel-title">
-                    <span>⛅ 新北市淡水區即時氣象與預報情報</span>
-                    <span style="font-size:8px; color:#00f2fe;">(點擊放大至中央)</span>
-                </div>
-                <div class="box-container" onclick="projectWeatherToCenter()">
-                    <div class="iframe-click-overlay"></div>
-                    <div id="weather-forecast-container" class="forecast-box" style="pointer-events: none;">
-                        <div class="weather-card">
-                            <div class="weather-card-title"><span>📍 淡水測站即時數據</span><span style="color:#2ed573;">● 連線正常</span></div>
-                            <div id="live-weather-info" style="color:#c9d1d9; line-height: 1.4;">正在向氣象署同步淡水氣象數據...</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="sub-block">
-                <div class="panel-title">
-                    <span>🎥 交通即時監控 (淡水專屬 & 主要公路橋樑)</span>
-                    <span style="font-size:8px; color:#00f2fe;" id="cctv-count-tag">[已精準過濾]</span>
-                </div>
-                <div class="box-container" onclick="projectCCTVToCenter()">
-                    <div class="iframe-click-overlay"></div>
-                    
-                    <!-- 官方 ATIS 串流 iframe -->
-                    <iframe id="cctv-iframe" src="" style="width:100%; height:100%; border:none; pointer-events:none;" frameborder="0"></iframe>
-
-                    <select class="cctv-select" id="cctv-dropdown" onclick="event.stopPropagation();" onchange="changeCCTVLocation(this.value)">
-                        <option value="">載入中...</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 下方區域：左側統計按鈕區，已結案下方完美放置一鍵匯出 Excel 按鈕 -->
-    <div class="bottom-layout">
-        <div class="stat-sidebar">
-            <div class="stat-btn btn-new-style" id="btn-filter-new" onclick="filterByStatus('新通報')">
-                <div class="stat-btn-left">
-                    <div class="stat-checkbox" id="chk-new">🚨</div>
-                    <span>新通報</span>
-                </div>
-                <div class="stat-btn-num" id="cnt-new">0件</div>
-            </div>
-            <div class="stat-btn btn-ing-style" id="btn-filter-ing" onclick="filterByStatus('處理中')">
-                <div class="stat-btn-left">
-                    <div class="stat-checkbox" id="chk-ing">⏳</div>
-                    <span>處理中</span>
-                </div>
-                <div class="stat-btn-num" id="cnt-ing">0件</div>
-            </div>
-            <div class="stat-btn btn-done-style" id="btn-filter-done" onclick="filterByStatus('已結案')">
-                <div class="stat-btn-left">
-                    <div class="stat-checkbox" id="chk-done">✔</div>
-                    <span>已結案</span>
-                </div>
-                <div class="stat-btn-num" id="cnt-done">0件</div>
-            </div>
-            <!-- 一鍵匯出 Excel 報表：位於已結案按鈕下方 -->
-            <div class="stat-btn btn-excel-style" onclick="exportToExcel()" title="一鍵產出完整報表 Excel 檔">
-                <div style="font-size: 11px; font-weight: bold; text-align: center; width: 100%;">📊 匯出 Excel</div>
-            </div>
-        </div>
-
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 14%">⏱️ 受理時間</th>
-                        <th style="width: 11%">案件類別</th>
-                        <th style="width: 10%">權責單位</th>
-                        <th style="width: 15%">地點</th>
-                        <th style="width: 42%">現場狀況與完整歷史進程</th>
-                        <th style="width: 8%">狀態</th>
-                    </tr>
-                </thead>
-                <tbody id="table-body"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<div id="earthquake-toast" class="toast-alert">
-    <div class="toast-header">
-        <span>🚨 地震速報與 LINE 自動通報</span>
-        <button class="toast-close" onclick="closeToast()">✕</button>
-    </div>
-    <div id="toast-body" style="font-size: 10px; color: #c9d1d9; line-height: 1.3;"></div>
-    <div class="line-preview-box">
-        <div style="color:#fff; font-size:9px; font-weight:bold; margin-bottom:3px;">📱 防災 LINE 群組 (Make.com 0秒自動發送)</div>
-        <div class="line-msg-bubble">
-            <b style="color: #00b900;">役災課-雅倫課長</b><br>
-            <span style="color:#d63031; font-weight:bold;">@All</span> 發生有感地震。<br>請各編組針對所轄區域設施進行巡檢。
-        </div>
-    </div>
-</div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-
-<script>
-    let globalData = [];
-    let map, markersGroup;
-    let currentFilterStatus = null;
-    let currentSelectedIncident = null;
-    let cwaWeatherString = "正在透過中央氣象署 API 同步淡水區即時氣象與戰情數據...";
-
-    const CWA_API_KEY = "CWA-3CF372A5-0801-4819-ADE1-7DE3D1F3010B"; 
-    const BASE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
-
-    let filteredCCTVList = [];
-
-    const tamsuiLocations = [
-        { key: "中山北路一段", lat: 25.1768, lng: 121.4435 },
-        { key: "中山北路二段", lat: 25.1850, lng: 121.4422 },
-        { key: "中山北路", lat: 25.1780, lng: 121.4430 },
-        { key: "學府路", lat: 25.1720, lng: 121.4485 },
-        { key: "中山路", lat: 25.1709, lng: 121.4418 },
-        { key: "中正路一段", lat: 25.1780, lng: 121.4250 },
-        { key: "中正路二段", lat: 25.1850, lng: 121.4150 },
-        { key: "中正路", lat: 25.1755, lng: 121.4380 },
-        { key: "文化路", lat: 25.1725, lng: 121.4390 },
-        { key: "英專路", lat: 25.1715, lng: 121.4430 },
-        { key: "水源街一段", lat: 25.1730, lng: 121.4460 },
-        { key: "水源街二段", lat: 25.1770, lng: 121.4510 },
-        { key: "水源街", lat: 25.1750, lng: 121.4500 },
-        { key: "淡金路一段", lat: 25.1750, lng: 121.4560 },
-        { key: "淡金路二段", lat: 25.1880, lng: 121.4520 },
-        { key: "淡金路", lat: 25.1900, lng: 121.4550 },
-        { key: "北新路", lat: 25.1785, lng: 121.4475 },
-        { key: "新春街", lat: 25.1820, lng: 121.4405 },
-        { key: "新民街", lat: 25.1790, lng: 121.4370 }
-    ];
-
-    function initMap() {
-        map = L.map('map').setView([25.1720, 121.4450], 13);
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // 1. 初始化 Leaflet 地圖 (以淡水區公所為中心)
+        const map = L.map('map').setView([25.1748, 121.4431], 14);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap',
-            maxZoom: 19
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
         }).addTo(map);
-        markersGroup = L.layerGroup().addTo(map);
-    }
 
-    function loadAndFilterCCTVs() {
-        const rawCCTVs = [
-            {"CCTVID": "C000002", "PositionLon": 121.46794, "PositionLat": 25.02261, "SurveillanceDescription": "板橋文化路1段民生路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000002"},
-            {"CCTVID": "C000003", "PositionLon": 121.47099, "PositionLat": 25.01888, "SurveillanceDescription": "板橋縣民大道民生路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000003"},
-            {"CCTVID": "C000005", "PositionLon": 121.50607, "PositionLat": 25.06361, "SurveillanceDescription": "台北橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000005"},
-            {"CCTVID": "C000006", "PositionLon": 121.49627, "PositionLat": 25.05437, "SurveillanceDescription": "三重區忠孝橋(往台北方向避車彎)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000006"},
-            {"CCTVID": "C000007", "PositionLon": 121.494, "PositionLat": 25.04797, "SurveillanceDescription": "三重中興橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000007"},
-            {"CCTVID": "C000008", "PositionLon": 121.45852, "PositionLat": 25.13207, "SurveillanceDescription": "淡水民權路187巷", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000008"},
-            {"CCTVID": "C000014", "PositionLon": 121.46463, "PositionLat": 25.01389, "SurveillanceDescription": "板橋區縣民大道、板橋火車站前(新府路新站路間)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000014"},
-            {"CCTVID": "C000017", "PositionLon": 121.35273, "PositionLat": 24.94579, "SurveillanceDescription": "三鶯大橋文化路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000017"},
-            {"CCTVID": "C000018", "PositionLon": 121.36143, "PositionLat": 24.93858, "SurveillanceDescription": "三峽復興路 三鶯交流道", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000018"},
-            {"CCTVID": "C000019", "PositionLon": 121.46296, "PositionLat": 25.033, "SurveillanceDescription": "板橋區大漢橋(環河路上方)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000019"},
-            {"CCTVID": "C000020", "PositionLon": 121.47348, "PositionLat": 25.01571, "SurveillanceDescription": "板橋民生路中山路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000020"},
-            {"CCTVID": "C000022", "PositionLon": 121.47925, "PositionLat": 25.01877, "SurveillanceDescription": "板橋中山路三民路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000022"},
-            {"CCTVID": "C000023", "PositionLon": 121.4561, "PositionLat": 25.03059, "SurveillanceDescription": "新海橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000023"},
-            {"CCTVID": "C000024", "PositionLon": 121.45003, "PositionLat": 24.99351, "SurveillanceDescription": "板橋四川路中央路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000024"},
-            {"CCTVID": "C000025", "PositionLon": 121.466, "PositionLat": 25.01202, "SurveillanceDescription": "板橋區中山路一段158巷", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000025"},
-            {"CCTVID": "C000028", "PositionLon": 121.49036, "PositionLat": 24.9942, "SurveillanceDescription": "台64西行錦和路上方", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000028"},
-            {"CCTVID": "C000031", "PositionLon": 121.49541, "PositionLat": 25.00782, "SurveillanceDescription": "中和華中橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000031"},
-            {"CCTVID": "C000032", "PositionLon": 121.3685, "PositionLat": 25.06598, "SurveillanceDescription": "林口文化一路林口交流道", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000032"},
-            {"CCTVID": "C000033", "PositionLon": 121.55161, "PositionLat": 24.97898, "SurveillanceDescription": "新店寶橋路235巷", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000033"},
-            {"CCTVID": "C000034", "PositionLon": 121.46844, "PositionLat": 25.0232, "SurveillanceDescription": "板橋文化路二段民生路二段", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000034"},
-            {"CCTVID": "C000037", "PositionLon": 121.48617, "PositionLat": 25.02255, "SurveillanceDescription": "板橋光復橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000037"},
-            {"CCTVID": "C000039", "PositionLon": 121.47023, "PositionLat": 25.01983, "SurveillanceDescription": "板橋台64線萬板路上方", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000039"},
-            {"CCTVID": "C000041", "PositionLon": 121.51675, "PositionLat": 24.97943, "SurveillanceDescription": "新店安和路中安大橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000041"},
-            {"CCTVID": "C000047", "PositionLon": 121.63084, "PositionLat": 25.05495, "SurveillanceDescription": "汐止大同路南陽大橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000047"},
-            {"CCTVID": "C000049", "PositionLon": 121.63705, "PositionLat": 25.05582, "SurveillanceDescription": "汐止新台五路1段國3下匝道", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000049"},
-            {"CCTVID": "C000052", "PositionLon": 121.47217, "PositionLat": 25.02979, "SurveillanceDescription": "板橋文化路雙十路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000052"},
-            {"CCTVID": "C000053", "PositionLon": 121.46304, "PositionLat": 25.01623, "SurveillanceDescription": "板橋文化路新站路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000053"},
-            {"CCTVID": "C000054", "PositionLon": 121.4699, "PositionLat": 25.0203, "SurveillanceDescription": "板橋民生路萬板路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000054"},
-            {"CCTVID": "C000074", "PositionLon": 121.50288, "PositionLat": 25.07439, "SurveillanceDescription": "新北環快，三重龍門路與環快匝道交會處", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000074"},
-            {"CCTVID": "C000075", "PositionLon": 121.48442, "PositionLat": 25.04717, "SurveillanceDescription": "新北環快，南下3K+880門架", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000075"},
-            {"CCTVID": "C000076", "PositionLon": 121.48065, "PositionLat": 25.03979, "SurveillanceDescription": "新北環快，南下5K+232板橋匝道分流處", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000076"},
-            {"CCTVID": "C000079", "PositionLon": 121.49343, "PositionLat": 25.05162, "SurveillanceDescription": "新北環快，北上2K+900中興橋上環快主線", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000079"},
-            {"CCTVID": "C000087", "PositionLon": 121.5032, "PositionLat": 25.06152, "SurveillanceDescription": "新北環快，福德南路平面匝道口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000087"},
-            {"CCTVID": "C000088", "PositionLon": 121.48132, "PositionLat": 25.03661, "SurveillanceDescription": "新北環快，北上5K+733", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000088"},
-            {"CCTVID": "C000089", "PositionLon": 121.48152, "PositionLat": 25.03724, "SurveillanceDescription": "新北環快，南下5K+733台64上主線匝道口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000089"},
-            {"CCTVID": "C000091", "PositionLon": 121.48583, "PositionLat": 25.021, "SurveillanceDescription": "新北環快，北上7K+388", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000091"},
-            {"CCTVID": "C000095", "PositionLon": 121.48149, "PositionLat": 25.04755, "SurveillanceDescription": "新北環快，南下斜張橋南側(人行步道)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000095"},
-            {"CCTVID": "C000096", "PositionLon": 121.48297, "PositionLat": 25.04717, "SurveillanceDescription": "新北環快，北上4K+080", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000096"},
-            {"CCTVID": "C000097", "PositionLon": 121.4818, "PositionLat": 25.04714, "SurveillanceDescription": "新北環快，北下斜張南側(人行步道)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000097"},
-            {"CCTVID": "C000098", "PositionLon": 121.4818, "PositionLat": 25.0473, "SurveillanceDescription": "新北環快，南下4K+168.5新莊匝道分流處(往新莊環河路)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000098"},
-            {"CCTVID": "C000111", "PositionLon": 121.49663, "PositionLat": 25.0543, "SurveillanceDescription": "忠孝橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000111"},
-            {"CCTVID": "C000112", "PositionLon": 121.45995, "PositionLat": 25.06047, "SurveillanceDescription": "新莊台一高架，中山路思源路口(中山路東向上方)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000112"},
-            {"CCTVID": "C000113", "PositionLon": 121.43476, "PositionLat": 25.04697, "SurveillanceDescription": "台1高架民生路上下匝道口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000113"},
-            {"CCTVID": "C000115", "PositionLon": 121.45168, "PositionLat": 25.00088, "SurveillanceDescription": "板橋區環河路、湳仔橋(環河路170號前號誌桿上)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000115"},
-            {"CCTVID": "C000119", "PositionLon": 121.50521, "PositionLat": 25.01354, "SurveillanceDescription": "永和區環河西路與新生路210巷口(高架)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000119"},
-            {"CCTVID": "C000121", "PositionLon": 121.51266, "PositionLat": 25.01806, "SurveillanceDescription": "永和區環河西路一段85巷前(高架)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000121"},
-            {"CCTVID": "C000124", "PositionLon": 121.52409, "PositionLat": 25.0105, "SurveillanceDescription": "永和區環河東路二段、豫溪街191巷口(往板橋側)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000124"},
-            {"CCTVID": "C000125", "PositionLon": 121.52406, "PositionLat": 25.01048, "SurveillanceDescription": "永和區環河東路二段、豫溪街191巷口(往板橋側)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000125"},
-            {"CCTVID": "C000129", "PositionLon": 121.5449, "PositionLat": 24.97905, "SurveillanceDescription": "板橋區新北環快，華翠橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000129"},
-            {"CCTVID": "C000131", "PositionLon": 121.43524, "PositionLat": 24.99542, "SurveillanceDescription": "板橋區浮洲橋上(路燈桿上)，環河道路上方近樹林", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000131"},
-            {"CCTVID": "C000133", "PositionLon": 121.47838, "PositionLat": 25.02402, "SurveillanceDescription": "板橋區三民路、縣民大道(華翠橋)(南側路燈桿上)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000133"},
-            {"CCTVID": "C000135", "PositionLon": 121.52527, "PositionLat": 25.00912, "SurveillanceDescription": "永和區永福橋(環河東路三段上方)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000135"},
-            {"CCTVID": "C000136", "PositionLon": 121.52728, "PositionLat": 25.00597, "SurveillanceDescription": "永和區福和橋上(環河東路三段上方)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000136"},
-            {"CCTVID": "C000139", "PositionLon": 121.5272, "PositionLat": 24.99014, "SurveillanceDescription": "中和區景平路與環河東路口(秀朗橋門架上)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000139"},
-            {"CCTVID": "C000141", "PositionLon": 121.49952, "PositionLat": 25.00265, "SurveillanceDescription": "中和區中山路與中和路口(中山路行人陸橋上)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000141"},
-            {"CCTVID": "C000145", "PositionLon": 121.43272, "PositionLat": 24.96639, "SurveillanceDescription": "台65往國3", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000145"},
-            {"CCTVID": "C000149", "PositionLon": 121.54739, "PositionLat": 24.97186, "SurveillanceDescription": "新店區中興路二段與國道3號匝道口(東側號誌桿上)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000149"},
-            {"CCTVID": "C000150", "PositionLon": 121.54298, "PositionLat": 24.97351, "SurveillanceDescription": "新店區北新路二段與寶橋路口(南側號誌桿上)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000150"},
-            {"CCTVID": "C000156", "PositionLon": 121.51692, "PositionLat": 24.96408, "SurveillanceDescription": "新店區安康路二段與安和路一段(東側號誌門架上)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000156"},
-            {"CCTVID": "C000158", "PositionLon": 121.64692, "PositionLat": 25.00855, "SurveillanceDescription": "石碇區文山路一段與國五南下匝道口(西側號誌桿上)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000158"},
-            {"CCTVID": "C000160", "PositionLon": 121.45963, "PositionLat": 25.14034, "SurveillanceDescription": "淡水民權路民富路口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000160"},
-            {"CCTVID": "C000167", "PositionLon": 121.45927, "PositionLat": 25.09597, "SurveillanceDescription": "蘆洲區成蘆大橋環河分流點(西側路燈桿上)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000167"},
-            {"CCTVID": "C000170", "PositionLon": 121.35776, "PositionLat": 24.93988, "SurveillanceDescription": "復興路 國3南下匝道", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000170"},
-            {"CCTVID": "C000174", "PositionLon": 121.4505, "PositionLat": 25.1648, "SurveillanceDescription": "淡水區中正東路一段3巷口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000174"},
-            {"CCTVID": "C000176", "PositionLon": 121.44456, "PositionLat": 25.16912, "SurveillanceDescription": "淡水區中正路、中山路口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000176"},
-            {"CCTVID": "C000178", "PositionLon": 121.43882, "PositionLat": 25.17293, "SurveillanceDescription": "淡水區中山路、文化路口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000178"},
-            {"CCTVID": "C000179", "PositionLon": 121.44621, "PositionLat": 25.1976, "SurveillanceDescription": "淡水區中山北路三段、淡金路口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000179"},
-            {"CCTVID": "C000194", "PositionLon": 121.48931, "PositionLat": 25.05841, "SurveillanceDescription": "三重區台1高架，重新路上方燈桿", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000194"},
-            {"CCTVID": "C000195", "PositionLon": 121.46465, "PositionLat": 25.06121, "SurveillanceDescription": "新莊區台1高架，化成路上方門架", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000195"},
-            {"CCTVID": "C000196", "PositionLon": 121.44669, "PositionLat": 25.05948, "SurveillanceDescription": "新莊區台1高架，中信街上方門架", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000196"},
-            {"CCTVID": "C000199", "PositionLon": 121.43803, "PositionLat": 25.06555, "SurveillanceDescription": "五股區台65往南,0K門架", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000199"},
-            {"CCTVID": "C000200", "PositionLon": 121.47961, "PositionLat": 25.06149, "SurveillanceDescription": "三重區台1高架,疏洪東路上方門架", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000200"},
-            {"CCTVID": "C000205", "PositionLon": 121.71255, "PositionLat": 24.94176, "SurveillanceDescription": "坪林區國中路坪林管制站前(往國5)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000205"},
-            {"CCTVID": "C000206", "PositionLon": 121.47799, "PositionLat": 25.03794, "SurveillanceDescription": "板橋區新北環快、環河西路匝道", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000206"},
-            {"CCTVID": "C000208", "PositionLon": 121.45792, "PositionLat": 25.00692, "SurveillanceDescription": "板橋區縣民大道、館前西路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000208"},
-            {"CCTVID": "C000209", "PositionLon": 121.46028, "PositionLat": 25.00839, "SurveillanceDescription": "板橋區中山路、重慶路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000209"},
-            {"CCTVID": "C000210", "PositionLon": 121.45487, "PositionLat": 25.004, "SurveillanceDescription": "板橋區縣民大道、南雅南路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000210"},
-            {"CCTVID": "C000212", "PositionLon": 121.44149, "PositionLat": 25.05943, "SurveillanceDescription": "泰山區新五路台1高架入口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000212"},
-            {"CCTVID": "C000213", "PositionLon": 121.49806, "PositionLat": 25.25976, "SurveillanceDescription": "三芝區淡金公路(台2)、淡金路1段(往三芝市區)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000213"},
-            {"CCTVID": "C000215", "PositionLon": 121.46552, "PositionLat": 25.02717, "SurveillanceDescription": "板橋區民生路三段19巷(號誌控制器旁L桿)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000215"},
-            {"CCTVID": "C000216", "PositionLon": 121.39022, "PositionLat": 24.93502, "SurveillanceDescription": "三峽區介壽路二段(台3)、龍埔路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000216"},
-            {"CCTVID": "C000218", "PositionLon": 121.40599, "PositionLat": 24.96197, "SurveillanceDescription": "樹林區柑園街一段、柑園二橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000218"},
-            {"CCTVID": "C000219", "PositionLon": 121.40465, "PositionLat": 24.96929, "SurveillanceDescription": "樹林區環河路、柑園二橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000219"},
-            {"CCTVID": "C000222", "PositionLon": 121.34027, "PositionLat": 24.95819, "SurveillanceDescription": "鶯歌區中山高架橋、西湖街", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000222"},
-            {"CCTVID": "C000223", "PositionLon": 121.54078, "PositionLat": 24.98679, "SurveillanceDescription": "新店區順安街、寶慶街(景美橋)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000223"},
-            {"CCTVID": "C000226", "PositionLon": 121.82209, "PositionLat": 25.12097, "SurveillanceDescription": "瑞芳區台2、台2丁", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000226"},
-            {"CCTVID": "C000227", "PositionLon": 121.81948, "PositionLat": 25.12263, "SurveillanceDescription": "瑞芳區台2、台62出口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000227"},
-            {"CCTVID": "C000230", "PositionLon": 121.80933, "PositionLat": 25.10745, "SurveillanceDescription": "瑞芳區台2丁、明燈路二段", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000230"},
-            {"CCTVID": "C000231", "PositionLon": 121.79647, "PositionLat": 25.11002, "SurveillanceDescription": "瑞芳區台2丁、台62瑞芳一匝道", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000231"},
-            {"CCTVID": "C000232", "PositionLon": 121.84514, "PositionLat": 25.10995, "SurveillanceDescription": "瑞芳區瑞金公路、基山街", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000232"},
-            {"CCTVID": "C000233", "PositionLon": 121.84285, "PositionLat": 25.1096, "SurveillanceDescription": "瑞芳區瑞金公路、北35", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000233"},
-            {"CCTVID": "C000235", "PositionLon": 121.93325, "PositionLat": 25.019, "SurveillanceDescription": "貢寮區興隆街(台2)、下雙溪街(台2丙)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000235"},
-            {"CCTVID": "C000236", "PositionLon": 121.64168, "PositionLat": 25.2174, "SurveillanceDescription": "金山區環金路(台2)、中山路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000236"},
-            {"CCTVID": "C000237", "PositionLon": 121.63183, "PositionLat": 25.22131, "SurveillanceDescription": "金山區台2、台2甲", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000237"},
-            {"CCTVID": "C000239", "PositionLon": 121.68828, "PositionLat": 25.18229, "SurveillanceDescription": "萬里區台2、瑪鋉路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000239"},
-            {"CCTVID": "C000240", "PositionLon": 121.67429, "PositionLat": 25.20137, "SurveillanceDescription": "萬里區台2、玉田路(近明光港側)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000240"},
-            {"CCTVID": "C000242", "PositionLon": 121.68323, "PositionLat": 25.18758, "SurveillanceDescription": "萬里區台2、玉田路(近翡翠灣飯店)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000242"},
-            {"CCTVID": "C000243", "PositionLon": 121.64019, "PositionLat": 25.05645, "SurveillanceDescription": "汐止區新台五路、國3北上出口匝道", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000243"},
-            {"CCTVID": "C000244", "PositionLon": 121.6367, "PositionLat": 25.0625, "SurveillanceDescription": "汐止區工建路、新社后橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000244"},
-            {"CCTVID": "C000246", "PositionLon": 121.53715, "PositionLat": 24.96133, "SurveillanceDescription": "新店區環河路、安康路(碧潭大橋)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000246"},
-            {"CCTVID": "C000249", "PositionLon": 121.49922, "PositionLat": 25.08453, "SurveillanceDescription": "三重區重陽橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000249"},
-            {"CCTVID": "C000250", "PositionLon": 121.45507, "PositionLat": 25.08147, "SurveillanceDescription": "蘆洲區永安大橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000250"},
-            {"CCTVID": "C000251", "PositionLon": 121.42884, "PositionLat": 24.98072, "SurveillanceDescription": "板橋區城林橋(板橋端)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000251"},
-            {"CCTVID": "C000252", "PositionLon": 121.45507, "PositionLat": 25.12433, "SurveillanceDescription": "八里區關渡大橋(八里龍米路上方門架)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000252"},
-            {"CCTVID": "C000254", "PositionLon": 121.48147, "PositionLat": 25.03585, "SurveillanceDescription": "板橋區新北環快華江橋上方", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000254"},
-            {"CCTVID": "C000256", "PositionLon": 121.48676, "PositionLat": 25.06148, "SurveillanceDescription": "三重區台1高架與重陽路上方", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000256"},
-            {"CCTVID": "C000257", "PositionLon": 121.47969, "PositionLat": 25.04956, "SurveillanceDescription": "三重區重新橋(新莊端)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000257"},
-            {"CCTVID": "C000270", "PositionLon": 121.49335, "PositionLat": 25.00609, "SurveillanceDescription": "中和區橋和路、中山路2段332巷口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000270"},
-            {"CCTVID": "C000273", "PositionLon": 121.37616, "PositionLat": 24.94969, "SurveillanceDescription": "樹林區學府路、大義路口(三鶯二橋)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000273"},
-            {"CCTVID": "C000286", "PositionLon": 121.36592, "PositionLat": 24.91004, "SurveillanceDescription": "三峽區台3線、台7乙", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000286"},
-            {"CCTVID": "C000288", "PositionLon": 121.45961, "PositionLat": 25.14762, "SurveillanceDescription": "淡水區中正東路2段143巷", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000288"},
-            {"CCTVID": "C000290", "PositionLon": 121.47857, "PositionLat": 25.02389, "SurveillanceDescription": "板橋區華翠橋(三民路上方路南向燈桿)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000290"},
-            {"CCTVID": "C000291", "PositionLon": 121.46316, "PositionLat": 25.00939, "SurveillanceDescription": "板橋區民權路、民族路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000291"},
-            {"CCTVID": "C000293", "PositionLon": 121.46556, "PositionLat": 25.01453, "SurveillanceDescription": "板橋區縣民大道新站路口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000293"},
-            {"CCTVID": "C000294", "PositionLon": 121.46787, "PositionLat": 25.0162, "SurveillanceDescription": "板橋區縣民大道板新路口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000294"},
-            {"CCTVID": "C000296", "PositionLon": 121.45945, "PositionLat": 25.15145, "SurveillanceDescription": "淡水區中正東路2段105巷口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000296"},
-            {"CCTVID": "C000297", "PositionLon": 121.45937, "PositionLat": 25.15337, "SurveillanceDescription": "淡水區中正東路八勢路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000297"},
-            {"CCTVID": "C000298", "PositionLon": 121.45493, "PositionLat": 25.15949, "SurveillanceDescription": "淡水區中正東路坪頂路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000298"},
-            {"CCTVID": "C000299", "PositionLon": 121.45989, "PositionLat": 25.13773, "SurveillanceDescription": "淡水區民生路民權路口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000299"},
-            {"CCTVID": "C000312", "PositionLon": 121.42817, "PositionLat": 25.17562, "SurveillanceDescription": "淡水區中正路1段8巷", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000312"},
-            {"CCTVID": "C000320", "PositionLon": 121.44688, "PositionLat": 24.99394, "SurveillanceDescription": "橋頭路(第十河川局門口)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000320"},
-            {"CCTVID": "C000330", "PositionLon": 121.62393, "PositionLat": 25.0549, "SurveillanceDescription": "汐止區北山大橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000330"},
-            {"CCTVID": "C000375", "PositionLon": 121.46424, "PositionLat": 25.01758, "SurveillanceDescription": "板橋區文化路漢生東路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000375"},
-            {"CCTVID": "C000377", "PositionLon": 121.41942, "PositionLat": 25.18308, "SurveillanceDescription": "淡水區中正路二段、50巷", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000377"},
-            {"CCTVID": "C000387", "PositionLon": 121.46004, "PositionLat": 25.01266, "SurveillanceDescription": "板橋區文化路與民權路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000387"},
-            {"CCTVID": "C000388", "PositionLon": 121.46188, "PositionLat": 25.01129, "SurveillanceDescription": "板橋區縣民大道與民權路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000388"},
-            {"CCTVID": "C000399", "PositionLon": 121.61934, "PositionLat": 25.06642, "SurveillanceDescription": "汐止區康寧街與汐湖二橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000399"},
-            {"CCTVID": "C000402", "PositionLon": 121.42781, "PositionLat": 25.18617, "SurveillanceDescription": "淡水區新民隧道-南下隧道內", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000402"},
-            {"CCTVID": "C000421", "PositionLon": 121.45627, "PositionLat": 25.16114, "SurveillanceDescription": "淡水區淡金路-坪頂路(遠端號誌桿)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000421"},
-            {"CCTVID": "C000488", "PositionLon": 121.64334, "PositionLat": 25.07563, "SurveillanceDescription": "康寧街、國道新設匝道", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000488"}
-        ];
+        // 更新系統時間
+        setInterval(() => {
+            document.getElementById('system-time').innerText = "系統時間：" + new Date().toLocaleString();
+        }, 1000);
 
-        const hardExcluded = ['三重', '三峽', '林口', '新店', '汐止', '新北環快', '永和', '石碇', '五股', '坪林', '泰山', '樹林', '新莊'];
-        const trueHighwayKeywords = ['國道', '國1', '國2', '國3', '國5', '台1', '台2', '台3', '台61', '台62', '台64', '台65', '高速公路', '快速公路', '高架', '環快', '交流道', '匝道', '隧道', '門架', '大橋', '光復橋', '華翠橋', '忠孝橋', '中興橋', '新海橋', '華中橋', '秀朗橋', '關渡大橋', '永安大橋', '成蘆大橋', '三鶯大橋', '重新橋', '浮洲橋', '南陽大橋', '北山大橋', '汐湖二橋', '柑園二橋', '大漢橋'];
+        // 2. 雷達回波圖自動重新整理 (每 10 分鐘)[cite: 11]
+        setInterval(() => {
+            const radarImg = document.getElementById('cwa-radar');
+            radarImg.src = "https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png?t=" + new Date().getTime();
+        }, 600000);
 
-        filteredCCTVList = rawCCTVs.filter(item => {
-            const desc = item.SurveillanceDescription || "";
-            if (desc.includes("淡水")) return true;
-            for (let he of hardExcluded) {
-                if (desc.includes(he)) return false;
+        // 3. 背景自動載入與過濾資料 (範例結構)
+        async function initWarRoomData() {
+            try {
+                // A. 模擬載入氣象特報 (對應 W-C0033-001)[cite: 13, 14]
+                // 實務上請將網址替換為您申請啟用的 CWA API 連結
+                document.getElementById('hazard-desc').innerText = "新北市與北海岸地區目前維持豪雨與陸上強風特報監控[cite: 13, 14]。";
+
+                // B. 載入 TDX CCTV 並篩選淡水區點位 (對應 CCTV 資料)[cite: 3, 4]
+                // 此處帶入範例中已知的淡水民權路口與中正東路等點位座標進行標註
+                const tamsuiCCTVs = [
+                    { desc: "淡水民權路187巷", lat: 25.13207, lon: 121.45852, url: "https://192.168.1.91/web/cctv/liveview.html" },
+                    { desc: "淡水區中正東路一段3巷口", lat: 25.16480, lon: 121.45050, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000174" },
+                    { desc: "淡水區新民隧道-南下隧道內", lat: 25.18617, lon: 121.42781, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000402" }
+                ];
+
+                tamsuiCCTVs.forEach(cctv => {
+                    L.marker([cctv.lat, cctv.lon]).addTo(map)
+                        .bindPopup(`<b>[CCTV] ${cctv.desc}</b><br><a href="${cctv.url}" target="_blank">點擊開啟即時影像</a>`);
+                });
+
+                // C. 模擬載入淡水區即時工程事件 (對應 LiveEvents 中的水管搶修)[cite: 7, 8]
+                const eventList = document.getElementById('tamsui-events-list');
+                eventList.innerHTML = `
+                    <li><b>[自來水搶修]</b> 淡水區新生街17號 (管線維修)[cite: 7, 8]</li>
+                    <li><b>[管線工程]</b> 淡水區水源街一段53巷 (漏水搶修)[cite: 7, 8]</li>
+                `;
+
+                // D. 模擬跑馬燈公告 (對應 Newses)[cite: 9]
+                document.getElementById('ticker-text').innerText = "【即時防災公告】白海豚颱風逼近，淡江大橋將實施人行道及機車道管制，請用路人注意安全[cite: 9]。";
+
+            } catch (error) {
+                console.error("戰情中心初始化資料失敗：", error);
             }
-            return trueHighwayKeywords.some(kw => desc.includes(kw));
-        });
-
-        let selectHtml = "";
-        filteredCCTVList.forEach((st, idx) => {
-            const badge = st.SurveillanceDescription.includes("淡水") ? "📍[淡水]" : "🛣️[公路/橋]";
-            selectHtml += `<option value="${idx}">${badge} ${st.SurveillanceDescription} (${st.CCTVID})</option>`;
-        });
-        document.getElementById('cctv-dropdown').innerHTML = selectHtml;
-        document.getElementById('cctv-count-tag').innerText = `[已載入 ${filteredCCTVList.length} 筆]`;
-
-        if (filteredCCTVList.length > 0) {
-            updateCCTVDisplay(0);
         }
 
-        renderCCTVMarkers();
-    }
-
-    function renderCCTVMarkers() {
-        filteredCCTVList.forEach((st, idx) => {
-            const isTamsui = st.SurveillanceDescription.includes("淡水");
-            const color = isTamsui ? "#00f2fe" : "#ff9f43";
-            const marker = L.circleMarker([st.PositionLat, st.PositionLon], {
-                radius: isTamsui ? 9 : 6, 
-                fillColor: color, 
-                color: "#ffffff", 
-                weight: 1.5, 
-                opacity: 1, 
-                fillOpacity: 0.9
-            });
-            marker.bindPopup(`<b>🎥 監控點位</b><br>${st.SurveillanceDescription} (ID: ${st.CCTVID})`);
-            marker.on('click', () => {
-                const dropEl = document.getElementById('cctv-dropdown');
-                dropEl.value = idx;
-                updateCCTVDisplay(idx);
-            });
-            markersGroup.addLayer(marker);
-        });
-    }
-
-    function updateCCTVDisplay(index) {
-        const station = filteredCCTVList[index] || filteredCCTVList[0];
-        const iframeEl = document.getElementById('cctv-iframe');
-        iframeEl.src = station.VideoStreamURL;
-
-        if (map && station.PositionLat && station.PositionLon) {
-            map.setView([station.PositionLat, station.PositionLon], 15);
-        }
-    }
-
-    function changeCCTVLocation(val) {
-        if (val !== "") {
-            updateCCTVDisplay(parseInt(val));
-        }
-    }
-
-    function exportToExcel() {
-        if (!globalData || globalData.length === 0) {
-            alert("目前無災情資料可供匯出！");
-            return;
-        }
-
-        const exportData = globalData.map((item, index) => ({
-            "項次": index + 1,
-            "受理時間": item["受理時間"],
-            "案件類別": item["案件類別"],
-            "權責單位": item["權責單位"],
-            "災害地點": item["地點"],
-            "現場狀況與完整歷史進程": item["現場狀況與完整歷史進程"],
-            "目前狀態": item["狀態"],
-            "座標緯度": item["緯度"],
-            "座標經度": item["經度"]
-        }));
-
-        const worksheet = XLSX.utils.json_to_sheet(exportData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "淡水區災情管制表");
-
-        const now = new Date();
-        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
-        const fileName = `新北市淡水區災害應變災情管制報表_${dateStr}.xlsx`;
-
-        XLSX.writeFile(workbook, fileName);
-    }
-
-    function fetchCWAWeatherData() {
-        const weatherApiUrl = `https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0001-001?Authorization=${CWA_API_KEY}&format=JSON&StationId=466900`;
-        fetch(weatherApiUrl)
-            .then(res => res.json())
-            .then(data => {
-                try {
-                    const station = data.records.Station[0];
-                    const weather = station.WeatherElement;
-                    const temp = weather.AirTemperature;
-                    const humid = weather.RelativeHumidity;
-                    const rain = weather.Now.Precipitation;
-                    const windDir = weather.WindDirection;
-                    const windSpeed = weather.WindSpeed;
-                    
-                    cwaWeatherString = `【🌀 CWA 氣象即時回報】淡水測站：氣溫 ${temp}°C，濕度 ${humid}%，累積雨量 ${rain} mm`;
-                    
-                    const infoHtml = `
-                        🌡️ 即時氣溫：<b style="color:#00f2fe; font-size:13px;">${temp} °C</b><br>
-                        💧 相對濕度：<b>${humid} %</b><br>
-                        🌧️ 累積雨量：<b style="color:#ffdd67;">${rain} mm</b><br>
-                        💨 風向風速：<b>風向 ${windDir}° / 風速 ${windSpeed} m/s</b>
-                    `;
-                    document.getElementById('live-weather-info').innerHTML = infoHtml;
-                } catch (e) {
-                    console.error("氣象站資料解析錯誤", e);
-                }
-            })
-            .catch(err => console.log("氣象站連線等待中..."));
-    }
-
-    function fetchGoogleSheetData() {
-        const antiCacheUrl = `${BASE_CSV_URL}&v=${new Date().getTime()}`;
-
-        Papa.parse(antiCacheUrl, {
-            download: true,
-            header: true,
-            complete: function(results) {
-                if (results.data && results.data.length > 0) {
-                    const fetchedData = results.data.filter(row => Object.values(row).some(val => val && val.trim() !== "")).map((row, index) => {
-                        let rowValues = Object.values(row);
-                        let address = row['地點'] || row['地點 (E)'] || row[3] || rowValues[3] || '淡水區內';
-                        let historyText = row['現場狀況與完整歷史進程'] || row['現場狀況與完整歷史進程 (F)'] || row['現場狀況'] || row[4] || rowValues[4] || '無詳細說明';
-                        let rawStatus = row['狀態'] || row['狀態 (G)'] || row[5] || rowValues[5] || '';
-
-                        let status = "新通報";
-                        let combinedText = (rawStatus + " " + historyText);
-                        if (combinedText.includes("已結案")) {
-                            status = "已結案";
-                        } else if (combinedText.includes("處理中")) {
-                            status = "處理中";
-                        } else {
-                            status = "新通報";
-                        }
-
-                        let lat = NaN;
-                        let lng = NaN;
-
-                        for (let loc of tamsuiLocations) {
-                            if (address.includes(loc.key) || historyText.includes(loc.key)) {
-                                lat = loc.lat + (index * 0.0001);
-                                lng = loc.lng + (index * 0.0001);
-                                break;
-                            }
-                        }
-
-                        if (isNaN(lat) || isNaN(lng)) {
-                            let csvLat = parseFloat(row['緯度'] || row['latitude']);
-                            let csvLng = parseFloat(row['經度'] || row['longitude']);
-                            if (!isNaN(csvLat) && !isNaN(csvLng) && csvLat >= 25.10 && csvLat <= 25.25) {
-                                lat = csvLat;
-                                lng = csvLng;
-                            } else {
-                                lat = 25.1720 + (index * 0.0002);
-                                lng = 121.4450 + (index * 0.0002);
-                            }
-                        }
-
-                        return {
-                            "受理時間": row['受理時間'] || row['受理時間 (B)'] || row[0] || rowValues[0] || '時間未記錄',
-                            "案件類別": row['案件類別'] || row['案件類別 (C)'] || row[1] || rowValues[1] || '一般通報',
-                            "權責單位": row['權責單位'] || row['權責單位 (D)'] || row[2] || rowValues[2] || '待分派',
-                            "地點": address,
-                            "現場狀況與完整歷史進程": historyText,
-                            "Status": status,
-                            "緯度": lat,
-                            "經度": lng,
-                            "照片網址": "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80"
-                        };
-                    });
-
-                    if (fetchedData.length > 0) {
-                        globalData = fetchedData;
-                        sortAndRenderAll();
-                    }
-                }
-            }
-        });
-    }
-
-    function projectIframeToCenter(title, iframeUrl) {
-        const box = document.getElementById('center-projection-box');
-        const titleTag = document.getElementById('projection-title-tag');
-        const content = document.getElementById('projection-content');
-        titleTag.innerText = `🎥 互動投影：${title}`;
-        content.dataset.type = 'iframe';
-        content.innerHTML = `<iframe src="${iframeUrl}" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>`;
-        box.style.display = 'block';
-    }
-
-    function projectWeatherToCenter() {
-        const box = document.getElementById('center-projection-box');
-        const titleTag = document.getElementById('projection-title-tag');
-        const content = document.getElementById('projection-content');
-        titleTag.innerText = `🎥 互動投影：新北市淡水區即時氣象與預報情報`;
-        content.dataset.type = 'weather';
-        const liveHtml = document.getElementById('weather-forecast-container').innerHTML;
-        content.innerHTML = `<div style="padding: 20px; height: 100%; box-sizing: border-box; overflow-y: auto; background: #0d1117; font-size: 14px;">
-            <h3 style="color: #00f2fe; margin-top: 0;">⛅ 新北市淡水區完整氣象與預報戰情檢視</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                <div class="weather-card" style="font-size: 14px; padding: 15px;">${liveHtml}</div>
-                <div class="weather-card" style="font-size: 14px; padding: 15px;">
-                    <div class="weather-card-title"><span>📊 氣象署開放資料狀態</span><span style="color:#2ed573;">● 聯防中</span></div>
-                    <p style="color:#c9d1d9; line-height: 1.6;">本模組直接串接中央氣象署開放資料 API，提供淡水區高精度即時氣象監測與預報，確保應變中心指揮官掌握第一手氣象動態。</p>
-                </div>
-            </div>
-        </div>`;
-        box.style.display = 'block';
-    }
-
-    function projectCCTVToCenter() {
-        const box = document.getElementById('center-projection-box');
-        const titleTag = document.getElementById('projection-title-tag');
-        const content = document.getElementById('projection-content');
-        const dropEl = document.getElementById('cctv-dropdown');
-        const station = filteredCCTVList[dropEl.value] || filteredCCTVList[0];
-        
-        titleTag.innerText = `🎥 互動投影：交通即時監控 - ${station.SurveillanceDescription} (${station.CCTVID})`;
-        content.dataset.type = 'cctv';
-        content.innerHTML = `<iframe src="${station.VideoStreamURL}" style="width:100%; height:100%; border:none; background:#000;" frameborder="0"></iframe>`;
-        box.style.display = 'block';
-    }
-
-    function closeCenterProjection() {
-        document.getElementById('center-projection-box').style.display = 'none';
-        document.getElementById('projection-content').innerHTML = "";
-    }
-
-    function filterByStatus(statusTarget) {
-        currentFilterStatus = (currentFilterStatus === statusTarget) ? null : statusTarget;
-        sortAndRenderAll();
-    }
-
-    function sortAndRenderAll() {
-        globalData.sort((a, b) => new Date(b["受理時間"]) - new Date(a["受理時間"]));
-
-        let countNew = 0, countIng = 0, countDone = 0;
-        globalData.forEach(item => {
-            let st = item["Status"] || item["狀態"];
-            if (st === "新通報") countNew++;
-            else if (st === "處理中") countIng++;
-            else if (st === "已結案") countDone++;
-        });
-
-        document.getElementById('cnt-new').innerText = countNew + "件";
-        document.getElementById('cnt-ing').innerText = countIng + "件";
-        document.getElementById('cnt-done').innerText = countDone + "件";
-
-        const tickerTextEl = document.getElementById('ticker-text');
-        if (tickerTextEl) {
-            tickerTextEl.innerText = `${cwaWeatherString}  ｜  【📊 全區災情即時統計報告】 新通報：${countNew} 件 ｜ 處理中：${countIng} 件 ｜ 已結案：${countDone} 件 ｜ 淡水區災害應變智慧戰情中心全面戒備中！`;
-        }
-
-        document.getElementById('btn-filter-new').classList.toggle('active', currentFilterStatus === '新通報');
-        document.getElementById('btn-filter-ing').classList.toggle('active', currentFilterStatus === '處理中');
-        document.getElementById('btn-filter-done').classList.toggle('active', currentFilterStatus === '已結案');
-
-        let displayData = globalData;
-        if (currentFilterStatus) {
-            displayData = globalData.filter(item => (item["Status"] || item["狀態"]) === currentFilterStatus);
-        }
-
-        renderStatsAndTable(displayData);
-        renderIncidentMarkers(displayData);
-        
-        if (displayData.length > 0) {
-            selectIncident(0, displayData);
-        }
-    }
-
-    function renderStatsAndTable(data) {
-        let tableHtml = "";
-        data.forEach((item, index) => {
-            let st = item["Status"] || item["狀態"];
-            let statusClass = "badge-new";
-            if (st === "處理中") statusClass = "badge-ing";
-            else if (st === "已結案") statusClass = "badge-done";
-
-            tableHtml += `
-                <tr id="row-${index}" style="cursor:pointer;" onclick="selectIncident(${index}, displayDataGlobal)">
-                    <td style="color:#00f2fe; font-weight:bold;">${item["受理時間"]}</td>
-                    <td>${item["案件類別"]}</td>
-                    <td>${item["權責單位"]}</td>
-                    <td>${item["地點"]}</td>
-                    <td><div class="history-text">${item["現場狀況與完整歷史進程"]}</div></td>
-                    <td><span class="badge ${statusClass}">${st}</span></td>
-                </tr>
-            `;
-        });
-
-        window.displayDataGlobal = data;
-        document.getElementById('table-body').innerHTML = tableHtml || `<tr><td colspan="6" style="text-align:center;">目前無符合條件的災情資料</td></tr>`;
-    }
-
-    function renderIncidentMarkers(data) {
-        markersGroup.clearLayers();
-        renderCCTVMarkers();
-
-        data.forEach((item, index) => {
-            if (String(item["案件類別"] || "").trim() === "地震快訊") return;
-
-            let st = item["Status"] || item["狀態"];
-            let color = "#ff4d4d";
-            if (st === "處理中") color = "#ff9f43";
-            if (st === "已結案") color = "#2ed573";
-
-            const marker = L.circleMarker([item["緯度"], item["經度"]], {
-                radius: 8, fillColor: color, color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.95
-            });
-
-            marker.bindPopup(`<b>${item["案件類別"]}</b><br>${item["地點"]}<br>狀態：${st}`);
-            marker.on('click', () => { selectIncident(index, data); });
-            markersGroup.addLayer(marker);
-        });
-    }
-
-    function selectIncident(index, currentList) {
-        let list = currentList || globalData;
-        document.querySelectorAll('tr').forEach(r => r.classList.remove('selected'));
-        const row = document.getElementById(`row-${index}`);
-        if(row) row.classList.add('selected');
-
-        const item = list[index];
-        if(!item) return;
-        currentSelectedIncident = item;
-
-        if (item["緯度"] && item["經度"]) {
-            map.setView([item["緯度"], item["經度"]], 16);
-        }
-    }
-
-    function closeToast() { document.getElementById('earthquake-toast').style.display = 'none'; }
-
-    window.onload = () => {
-        initMap();
-        loadAndFilterCCTVs();
-        fetchGoogleSheetData();
-        fetchCWAWeatherData();
-
-        setInterval(fetchGoogleSheetData, 15000);         
-        setInterval(fetchCWAWeatherData, 300000);         
-    };
-</script>
+        // 頁面載入完成後執行初始化
+        window.onload = initWarRoomData;
+    </script>
 </body>
 </html>

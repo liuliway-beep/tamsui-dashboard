@@ -202,12 +202,12 @@
             display: block;
         }
 
+        /* 修正：改用 contain 確保雷達與氣象圖完整呈現不被切掉 */
         .weather-zoom-img { 
             width: 100%; 
             height: 100%; 
-            object-fit: cover;
-            transform: scale(1.6);
-            transform-origin: center center;
+            object-fit: contain;
+            background-color: #000;
             display: block;
         }
 
@@ -375,12 +375,9 @@
 <body>
 
 <div class="wrapper">
-    <!-- 上方區域（含抬頭標題 + 標題正下方跑馬燈） -->
+    <!-- 上方區域 -->
     <div class="header-section">
-        <!-- 主標題 -->
         <div class="header">新北市淡水區災害應變智慧戰情中心</div>
-
-        <!-- 跑馬燈（已整合即時新聞公告與白海豚颱風交管資訊[cite: 9]） -->
         <div class="ticker" id="ticker-box">
             <div class="ticker-title" id="ticker-badge">📢 災防即時公告</div>
             <div class="ticker-marquee-wrap">
@@ -391,9 +388,9 @@
         </div>
     </div>
 
-    <!-- 中間主要內容區（三欄 27% : 45% : 27% 配置） -->
+    <!-- 中間三欄配置 -->
     <div class="top-layout">
-        <!-- 左欄 (27%)：氣象署颱風路徑 + 官方雷達回波圖 -->
+        <!-- 左欄：颱風路徑 + 官方雷達回波圖 -->
         <div class="panel">
             <div class="sub-block">
                 <div class="panel-title">🌀 颱風動態監控 (白海豚颱風)</div>
@@ -404,19 +401,17 @@
 
             <div class="sub-block">
                 <div class="panel-title">📡 CWA 官方雷達回波圖</div>
-                <!-- 串接 O-A0058-004 雷達回波圖來源 -->
                 <div class="box-container" onclick="projectToCenter('📡 CWA 官方雷達回波圖', 'https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png', true)">
                     <img id="radar-img" src="https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png" class="weather-zoom-img" alt="雷達回波圖">
                 </div>
             </div>
         </div>
 
-        <!-- 中央主畫面 (45%)：淡水區災害地圖（包含投影覆蓋層） -->
+        <!-- 中央主畫面：地圖 -->
         <div class="panel">
             <div class="panel-title" id="center-panel-title">🗺️ 淡水區災害應變地圖 (含里別圖資)</div>
             <div style="flex: 1; position: relative; min-height: 0;" class="center-projection-wrap">
                 <div id="map"></div>
-                <!-- 投影覆蓋視窗 -->
                 <div id="center-projection-box">
                     <div class="projection-title-tag" id="projection-title-tag">🎥 投影連動監控</div>
                     <button class="projection-close-btn" onclick="closeCenterProjection()">✖ 返回地圖</button>
@@ -425,7 +420,7 @@
             </div>
         </div>
 
-        <!-- 右欄 (27%)：現場照片 + 轄區 TDX CCTV 巡邏監控 -->
+        <!-- 右欄：現場照片 + CCTV 巡邏監控 -->
         <div class="panel">
             <div class="sub-block">
                 <div class="panel-title">
@@ -462,9 +457,8 @@
         </div>
     </div>
 
-    <!-- 下方管制大表與左側小計按鈕區 -->
+    <!-- 下方管制大表與小計 -->
     <div class="bottom-layout">
-        <!-- 小計按鈕欄 -->
         <div class="stat-sidebar">
             <div class="stat-btn btn-new-style" id="btn-filter-new" onclick="filterByStatus('新通報')">
                 <div class="stat-btn-left">
@@ -491,7 +485,6 @@
             </div>
         </div>
 
-        <!-- 管制大表 (已整合淡水在地水管搶修、路基改善等實戰事件[cite: 7, 8]) -->
         <div class="table-wrap">
             <table>
                 <thead>
@@ -510,7 +503,7 @@
     </div>
 </div>
 
-<!-- 右上角地震告警 + LINE 自動發送預覽彈窗 -->
+<!-- 地震告警彈窗 -->
 <div id="earthquake-toast" class="toast-alert">
     <div class="toast-header">
         <span>🚨 地震速報與 LINE 自動通報</span>
@@ -524,9 +517,6 @@
             <b style="color: #00b900;">役災課-立偉</b><br>
             <span style="color:#d63031; font-weight:bold;">@All</span> 本市於<b>07月26日 20時36分</b>發生規模<b>5.6</b>有感地震，震央位於新北市雙溪區，<b>淡水區最大震度 3 級</b>，EOC已進行相關災情查通報聯繫事宜[cite: 1, 2]。<br><br>
             請各編組針對所轄區域設施進行巡檢，如有災情請上傳 EMIS。
-            <div style="margin-top:4px; background:#f0f0f0; padding:3px; border-radius:3px; text-align:center; color:#666; font-size:8px;">
-                🖼️ [已自動附加中央氣象署地震報告圖]
-            </div>
         </div>
     </div>
 </div>
@@ -542,7 +532,6 @@
 
     const officialEqReportImgUrl = "https://img.ltn.com.tw/Upload/news/600/2026/07/26/php66dE9S.jpg";
 
-    // 結合了初始模擬資料以及從 TDX / 災害通報匯入的淡水區水管搶修、路樹倒塌等實戰案件
     const initialDemoData = [
         {
             "受理時間": "2026-08-08 08:47",
@@ -605,17 +594,15 @@
         markersGroup = L.layerGroup().addTo(map);
     }
 
+    /* 修正：放大投影圖改用 object-fit: contain，確保整張圖完整不被切掉 */
     function projectToCenter(title, imgUrl, isWeather = false) {
         const box = document.getElementById('center-projection-box');
         const titleTag = document.getElementById('projection-title-tag');
         const content = document.getElementById('projection-content');
 
-        titleTag.innerText = `🚨 中央緊急投影：${title}`;
+        titleTag.innerText = `🎥 中央緊急投影：${title}`;
         
-        let imgStyle = "width:100%; height:100%; object-fit:contain; background:#ffffff;";
-        if (isWeather) {
-            imgStyle = "width:100%; height:100%; object-fit:cover; transform:scale(1.3); transform-origin:center center;";
-        }
+        const imgStyle = "width:100%; height:100%; object-fit:contain; background:#000;";
 
         content.innerHTML = `<img src="${imgUrl}" style="${imgStyle}" alt="投影畫面">`;
         box.style.display = 'block';
@@ -650,6 +637,8 @@
         const imgEl = document.getElementById('cctv-img');
         if(locationName.includes("隧道")) {
             imgEl.src = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80";
+        } else if(locationName.includes("老街") || locationName.includes("關渡")) {
+            imgEl.src = "https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1200&q=80";
         } else {
             imgEl.src = "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80";
         }
@@ -689,7 +678,6 @@
 
         renderStatsAndTable(displayData);
         renderMapMarkers(displayData);
-        checkEmergencyAndTicker(globalData);
         
         if (displayData.length > 0) {
             selectIncident(0, displayData);
@@ -747,18 +735,6 @@
         });
     }
 
-    function checkEmergencyAndTicker(data) {
-        if (data && data.length > 0) {
-            // 定期自動重新整理 CWA 雷達圖（對應 O-A0058-004 來源）[cite: 11]
-            const radarImg = document.getElementById('radar-img');
-            if(radarImg && !radarImg.src.includes('?t=')) {
-                radarImg.src = "https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png?t=" + new Date().getTime();
-            }
-        }
-    }
-
-    function closeToast() { document.getElementById('earthquake-toast').style.display = 'none'; }
-
     function selectIncident(index, currentList) {
         let list = currentList || globalData;
         document.querySelectorAll('tr').forEach(r => r.classList.remove('selected'));
@@ -784,6 +760,14 @@
         initMap();
         globalData = JSON.parse(JSON.stringify(initialDemoData));
         sortAndRenderAll();
+
+        // 雷達回波圖定時重新整理 (對應 O-A0058-004)[cite: 11]
+        setInterval(() => {
+            const radarImg = document.getElementById('radar-img');
+            if(radarImg) {
+                radarImg.src = "https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png?t=" + new Date().getTime();
+            }
+        }, 600000);
     };
 </script>
 </body>

@@ -46,7 +46,7 @@
             box-sizing: border-box;
         }
         
-        /* 標題正下方的動態滾動跑馬燈 */
+        /* 跑馬燈 */
         .ticker { 
             background-color: #161b22; 
             border: 1px solid #30363d; 
@@ -202,11 +202,13 @@
             display: block;
         }
 
-        /* 確保圖片完整呈現不被切掉 */
-        .weather-zoom-img { 
+        /* 關鍵修正：透過放大與位移原點，將全台回波圖精準聚焦至【北台灣與淡水】 */
+        .north-taiwan-focus { 
             width: 100%; 
             height: 100%; 
-            object-fit: contain;
+            object-fit: cover;
+            transform: scale(2.3);
+            transform-origin: 38% 28%; /* 鎖定北臺灣/淡水區域 */
             background-color: #000;
             display: block;
         }
@@ -404,21 +406,25 @@
 
     <!-- 中間三欄配置 -->
     <div class="top-layout">
-        <!-- 左欄：頂部為颱風路徑圖(聚焦北台灣)，底部為雷達回波降雨動態圖(Java動圖迴圈) -->
+        <!-- 左欄：頂部為颱風動態(北台灣聚焦)，底部為雷達回波降雨動態圖(北台灣/淡水) -->
         <div class="panel">
             <div class="sub-block">
                 <div class="panel-title">🌀 颱風路徑與北台灣警戒區</div>
-                <div class="box-container" onclick="projectToCenter('颱風路徑與北台灣警戒區', 'https://www.cwa.gov.tw/Data/typhoon/TY_NEWS.png', true)">
-                    <!-- 聚焦北台灣與颱風路徑示意圖 -->
-                    <img src="https://www.cwa.gov.tw/Data/typhoon/TY_NEWS.png" class="weather-zoom-img" alt="颱風路徑圖" onerror="this.src='https://www.cwa.gov.tw/Data/radar/CV1_3600.png'">
+                <div class="box-container" onclick="projectToCenter('颱風路徑與北台灣警戒區', 'https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png', true)">
+                    <!-- 使用具備北台灣放大聚焦效果的容器 -->
+                    <div style="width:100%; height:100%; overflow:hidden; position:relative;">
+                        <img src="https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png" class="north-taiwan-focus" alt="颱風與北台灣警戒">
+                    </div>
                 </div>
             </div>
 
             <div class="sub-block">
                 <div class="panel-title">📡 雷達回波降雨動態圖 (北台灣/淡水)</div>
-                <div class="box-container" onclick="projectToCenter('北台灣雷達回波動態圖', document.getElementById('animated-radar-img').src, true)">
-                    <!-- 具備 JavaScript 動態迴圈播放的雷達回波圖 -->
-                    <img id="animated-radar-img" src="https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png" class="weather-zoom-img" alt="雷達動態回波圖">
+                <div class="box-container" onclick="projectToCenter('北台灣雷達回波降雨動態圖', document.getElementById('animated-radar-img').src, true)">
+                    <!-- 動態雷達迴圈容器 -->
+                    <div style="width:100%; height:100%; overflow:hidden; position:relative;">
+                        <img id="animated-radar-img" src="https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png" class="north-taiwan-focus" alt="雷達動態回波圖">
+                    </div>
                     <div class="radar-badge" id="radar-status-badge">▶ 動態撥放中 (Frame 1/4)</div>
                 </div>
             </div>
@@ -432,7 +438,7 @@
                 <div id="center-projection-box">
                     <div class="projection-title-tag" id="projection-title-tag">🎥 投影連動監控</div>
                     <button class="projection-close-btn" onclick="closeCenterProjection()">✖ 返回地圖</button>
-                    <div id="projection-content" style="width:100%; height:100%;"></div>
+                    <div id="projection-content" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; overflow:hidden;"></div>
                 </div>
             </div>
         </div>
@@ -609,15 +615,23 @@
         markersGroup = L.layerGroup().addTo(map);
     }
 
-    function projectToCenter(title, imgUrl, isWeather = false) {
+    // 修正投影：讓放大後的氣象圖同樣具備北台灣聚焦效果
+    function projectToCenter(title, imgUrl, isNorthFocus = false) {
         const box = document.getElementById('center-projection-box');
         const titleTag = document.getElementById('projection-title-tag');
         const content = document.getElementById('projection-content');
 
         titleTag.innerText = `🎥 中央緊急投影：${title}`;
-        const imgStyle = "width:100%; height:100%; object-fit:contain; background:#000;";
-
-        content.innerHTML = `<img src="${imgUrl}" style="${imgStyle}" alt="投影畫面">`;
+        
+        if (isNorthFocus) {
+            content.innerHTML = `
+                <div style="width:100%; height:100%; overflow:hidden; position:relative; background:#000;">
+                    <img src="${imgUrl}" class="north-taiwan-focus" alt="投影畫面">
+                </div>
+            `;
+        } else {
+            content.innerHTML = `<img src="${imgUrl}" style="width:100%; height:100%; object-fit:contain; background:#000;" alt="投影畫面">`;
+        }
         box.style.display = 'block';
     }
 
@@ -769,10 +783,9 @@
         `;
     }
 
-    /* JavaScript 雷達回波動態圖迴圈播放機制 (仿 Java 動圖效果) */
+    /* 雷達動態迴圈與即時影格同步更新機制 */
     function initAnimatedRadarLoop() {
         const baseUrl = "https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png";
-        // 透過時間參數模擬氣象局多個時間影格的動態迴圈
         const frames = [
             baseUrl + "?frame=1",
             baseUrl + "?frame=2",
@@ -781,15 +794,21 @@
         ];
         
         let currentFrame = 0;
-        const imgElement = document.getElementById('animated-radar-img');
+        const imgElements = document.querySelectorAll('#animated-radar-img');
         const badgeElement = document.getElementById('radar-status-badge');
 
         setInterval(() => {
             currentFrame = (currentFrame + 1) % frames.length;
-            // 加上時間戳記確保每次讀取最新與影格切換
-            imgElement.src = frames[currentFrame] + "&t=" + new Date().getTime();
-            badgeElement.innerText = `▶ 動態撥放中 (Frame ${currentFrame + 1}/4)`;
-        }, 2000); // 每 2 秒切換一格影格
+            let currentUrl = frames[currentFrame] + "&t=" + new Date().getTime();
+            
+            imgElements.forEach(img => {
+                img.src = currentUrl;
+            });
+            
+            if(badgeElement) {
+                badgeElement.innerText = `▶ 動態撥放中 (Frame ${currentFrame + 1}/4)`;
+            }
+        }, 2000); // 每 2 秒切換影格
     }
 
     window.onload = () => {
@@ -797,7 +816,6 @@
         globalData = JSON.parse(JSON.stringify(initialDemoData));
         sortAndRenderAll();
         
-        // 啟動雷達動態圖迴圈
         initAnimatedRadarLoop();
     };
 </script>

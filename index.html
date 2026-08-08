@@ -169,6 +169,19 @@
             border-color: #00f2fe;
         }
 
+        /* 颱風情資面板內部樣式 */
+        .typhoon-info-panel {
+            padding: 8px;
+            font-size: 10px;
+            line-height: 1.5;
+            color: #c9d1d9;
+            overflow-y: auto;
+            width: 100%;
+            box-sizing: border-box;
+            background: #0d1117;
+        }
+        .typhoon-info-panel b { color: #00f2fe; }
+
         .window-label { position: absolute; top: 4px; left: 4px; background-color: rgba(0,0,0,0.85); color: #ffdd67; padding: 1px 5px; font-size: 9px; font-weight: bold; border-radius: 2px; border-left: 2px solid #ffdd67; z-index: 500; }
         .window-tag { position: absolute; bottom: 4px; right: 4px; padding: 1px 4px; font-size: 8px; border-radius: 2px; font-weight: bold; color: #fff; z-index: 500; background: #da3633; }
 
@@ -202,18 +215,28 @@
             display: block;
         }
 
-        /* 關鍵修正：透過放大與位移原點，將全台回波圖精準聚焦至【北台灣與淡水】 */
+        /* 北台灣聚焦縮放樣式 */
         .north-taiwan-focus { 
             width: 100%; 
             height: 100%; 
             object-fit: cover;
             transform: scale(2.3);
-            transform-origin: 38% 28%; /* 鎖定北臺灣/淡水區域 */
+            transform-origin: 38% 28%; 
             background-color: #000;
             display: block;
         }
 
-        /* 雷達動態圖標籤 */
+        /* 雷達動態效果 */
+        @keyframes radar-pulse {
+            0% { filter: brightness(1) contrast(1); transform: scale(2.3); }
+            50% { filter: brightness(1.25) contrast(1.15); transform: scale(2.35); }
+            100% { filter: brightness(1) contrast(1); transform: scale(2.3); }
+        }
+        .radar-animated-effect {
+            animation: radar-pulse 3s infinite ease-in-out;
+            transform-origin: 38% 28%;
+        }
+
         .radar-badge {
             position: absolute;
             bottom: 4px;
@@ -292,7 +315,7 @@
             border-radius: 2px;
         }
 
-        /* 下方區域 (大表 + 左側小計按鈕區) */
+        /* 下方區域 */
         .bottom-layout { 
             background-color: #161b22; 
             border: 1px solid #30363d; 
@@ -406,14 +429,19 @@
 
     <!-- 中間三欄配置 -->
     <div class="top-layout">
-        <!-- 左欄：頂部為颱風動態(北台灣聚焦)，底部為雷達回波降雨動態圖(北台灣/淡水) -->
+        <!-- 左欄：頂部為氣旋/颱風結構化數據面板，底部為雷達回波降雨動態圖(北台灣/淡水) -->
         <div class="panel">
             <div class="sub-block">
-                <div class="panel-title">🌀 颱風路徑與北台灣警戒區</div>
-                <div class="box-container" onclick="projectToCenter('颱風路徑與北台灣警戒區', 'https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png', true)">
-                    <!-- 使用具備北台灣放大聚焦效果的容器 -->
-                    <div style="width:100%; height:100%; overflow:hidden; position:relative;">
-                        <img src="https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png" class="north-taiwan-focus" alt="颱風與北台灣警戒">
+                <div class="panel-title">🌀 颱風路徑與氣旋情資 (白海豚颱風)</div>
+                <div class="box-container" onclick="projectTyphoonInfoToCenter()">
+                    <div class="typhoon-info-panel">
+                        <b>【CWA 氣旋即時監控】</b><br>
+                        • <b>颱風名稱：</b>白海豚 (DOLPHIN / 輕颱)[cite: 15]<br>
+                        • <b>中心位置：</b>東經 124.8° / 北緯 27.0°[cite: 15]<br>
+                        • <b>近中心最大風速：</b>35 m/s (陣風 45 m/s)[cite: 15]<br>
+                        • <b>中心氣壓：</b>962 hPa[cite: 15]<br>
+                        • <b>移動方向：</b>以時速 16 公里向西北西轉西進行[cite: 15]<br>
+                        • <b>北台灣影響：</b>北海岸與淡水河口強風豪雨特報[cite: 13, 14]
                     </div>
                 </div>
             </div>
@@ -421,11 +449,11 @@
             <div class="sub-block">
                 <div class="panel-title">📡 雷達回波降雨動態圖 (北台灣/淡水)</div>
                 <div class="box-container" onclick="projectToCenter('北台灣雷達回波降雨動態圖', document.getElementById('animated-radar-img').src, true)">
-                    <!-- 動態雷達迴圈容器 -->
+                    <!-- 左下雷達回波圖加入北台灣放大聚焦與脈衝動畫 -->
                     <div style="width:100%; height:100%; overflow:hidden; position:relative;">
-                        <img id="animated-radar-img" src="https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png" class="north-taiwan-focus" alt="雷達動態回波圖">
+                        <img id="animated-radar-img" src="https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png" class="north-taiwan-focus radar-animated-effect" alt="雷達回波圖">
                     </div>
-                    <div class="radar-badge" id="radar-status-badge">▶ 動態撥放中 (Frame 1/4)</div>
+                    <div class="radar-badge" id="radar-status-badge">▶ 動態監控中 (Live Loop)</div>
                 </div>
             </div>
         </div>
@@ -615,7 +643,6 @@
         markersGroup = L.layerGroup().addTo(map);
     }
 
-    // 修正投影：讓放大後的氣象圖同樣具備北台灣聚焦效果
     function projectToCenter(title, imgUrl, isNorthFocus = false) {
         const box = document.getElementById('center-projection-box');
         const titleTag = document.getElementById('projection-title-tag');
@@ -632,6 +659,27 @@
         } else {
             content.innerHTML = `<img src="${imgUrl}" style="width:100%; height:100%; object-fit:contain; background:#000;" alt="投影畫面">`;
         }
+        box.style.display = 'block';
+    }
+
+    function projectTyphoonInfoToCenter() {
+        const box = document.getElementById('center-projection-box');
+        const titleTag = document.getElementById('projection-title-tag');
+        const content = document.getElementById('projection-content');
+
+        titleTag.innerText = `🎥 中央緊急投影：颱風路徑與氣旋情資 (白海豚颱風)`;
+        content.innerHTML = `
+            <div style="padding: 20px; font-size: 14px; color: #c9d1d9; line-height: 1.8; background:#0d1117; width:100%; height:100%; box-sizing:border-box; overflow-y:auto;">
+                <h3 style="color:#00f2fe; margin-top:0;">🌀 白海豚颱風 (DOLPHIN) 完整情資[cite: 15]</h3>
+                • <b>發布單位：</b>中央氣象署 (CWA)[cite: 15]<br>
+                • <b>目前位置：</b>東經 124.8° / 北緯 27.0°[cite: 15]<br>
+                • <b>近中心最大風速：</b>35 m/s (相當於 12 級風)[cite: 15]<br>
+                • <b>瞬間最大陣風：</b>45 m/s (相當於 14 級風)[cite: 15]<br>
+                • <b>中心氣壓：</b>962 hPa[cite: 15]<br>
+                • <b>移動方向與速度：</b>以每小時 16 公里速度向西北西轉西進行[cite: 15]<br>
+                • <b>北台灣防汛重點：</b>淡水河口、北海岸地區受外圍環流影響，已發布豪雨與陸上強風特報，請各防災編組加強抽水站及低窪地區巡檢[cite: 13, 14]。
+            </div>
+        `;
         box.style.display = 'block';
     }
 
@@ -783,40 +831,26 @@
         `;
     }
 
-    /* 雷達動態迴圈與即時影格同步更新機制 */
-    function initAnimatedRadarLoop() {
-        const baseUrl = "https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png";
-        const frames = [
-            baseUrl + "?frame=1",
-            baseUrl + "?frame=2",
-            baseUrl + "?frame=3",
-            baseUrl + "?frame=4"
-        ];
-        
-        let currentFrame = 0;
-        const imgElements = document.querySelectorAll('#animated-radar-img');
+    // 雷達圖動態更新與時間戳刷新
+    function initDynamicRadar() {
+        const radarImg = document.getElementById('animated-radar-img');
         const badgeElement = document.getElementById('radar-status-badge');
+        let count = 1;
 
         setInterval(() => {
-            currentFrame = (currentFrame + 1) % frames.length;
-            let currentUrl = frames[currentFrame] + "&t=" + new Date().getTime();
-            
-            imgElements.forEach(img => {
-                img.src = currentUrl;
-            });
-            
+            count++;
+            radarImg.src = "https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png?t=" + new Date().getTime();
             if(badgeElement) {
-                badgeElement.innerText = `▶ 動態撥放中 (Frame ${currentFrame + 1}/4)`;
+                badgeElement.innerText = `▶ 動態監控中 (Live Update #${count})`;
             }
-        }, 2000); // 每 2 秒切換影格
+        }, 5000); // 每 5 秒更新一次畫面
     }
 
     window.onload = () => {
         initMap();
         globalData = JSON.parse(JSON.stringify(initialDemoData));
         sortAndRenderAll();
-        
-        initAnimatedRadarLoop();
+        initDynamicRadar();
     };
 </script>
 </body>

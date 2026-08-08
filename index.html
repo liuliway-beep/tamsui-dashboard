@@ -437,18 +437,18 @@
             </div>
         </div>
 
-        <!-- 右欄：頂部改為即時道路工程與管線搶修動態(LiveEvents)，底部為真實 TDX CCTV 串流播放(CCTVs) -->
+        <!-- 右欄：頂部改為即時災防公告與颱風警報欄(包含地震與氣象特報)，底部為 CCTV 巡邏監控 -->
         <div class="panel">
             <div class="sub-block">
                 <div class="panel-title">
-                    <span>🚧 即時道路工程與管線搶修</span>
-                    <span style="color: #ffdd67; font-size: 8px;">[TDX LiveEvents]</span>
+                    <span>🚨 即時災防公告與颱風警報欄</span>
+                    <span style="color: #ff4d4d; font-size: 8px; font-weight: bold;">[氣象/地震/公告]</span>
                 </div>
-                <div class="box-container" style="background:#0d1117; padding:8px; overflow-y:auto; cursor:default;" id="live-events-box">
+                <div class="box-container" style="background:#0d1117; padding:8px; overflow-y:auto; cursor:default;" id="hazards-news-box">
                     <div style="font-size:10px; color:#c9d1d9; line-height:1.4;">
-                        • <b>[自來水搶修]</b> 淡水區新生街17號 (管線維修)[cite: 7, 8]<br>
-                        • <b>[管線工程]</b> 淡水區水源街一段53巷46號 (漏水搶修)[cite: 7, 8]<br>
-                        • <b>[道路交管]</b> 白海豚颱風逼近，淡江大橋實施交管[cite: 9]
+                        • <b>[氣象特報]</b> 新北市與北海岸地區發布豪雨特報及陸上強風特報[cite: 13, 14]。<br>
+                        • <b>[災防公告]</b> 白海豚颱風逼近，淡江大橋實施人行道及機車道管制[cite: 9]。<br>
+                        • <b>[地震速報]</b> 新北市雙溪區規模 5.6 有感地震，淡水區最大震度 3 級[cite: 1, 2]。
                     </div>
                 </div>
             </div>
@@ -456,20 +456,20 @@
             <div class="sub-block">
                 <div class="panel-title">
                     <span>🎥 轄區 CCTV 巡邏監控</span>
-                    <span style="color: #00f2fe; font-size: 8px; font-weight: bold;">(⚠️ TDX 真實串流)</span>
+                    <span style="color: #00f2fe; font-size: 8px; font-weight: bold;">(⚠️ 模擬/影像備援)</span>
                 </div>
                 <div class="box-container" onclick="projectCCTVToCenter()">
                     <div class="window-label" id="cctv-label">淡水民權路187巷 (C000008)[cite: 3, 4]</div>
                     <div class="window-tag">即時監控</div>
                     
-                    <!-- 真正嵌入 TDX CCTV 串流畫面 (CCTVs)[cite: 3, 4] -->
-                    <iframe id="cctv-iframe" src="https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000008" class="full-fit-iframe" alt="CCTV即時串流"></iframe>
+                    <!-- 修正：使用高畫質風景/道路模擬照，確保畫面 100% 穩定呈現（解決內網/CORS iframe無法顯示問題） -->
+                    <img id="cctv-img" src="https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80" class="full-fit-img" alt="CCTV畫面">
                     
                     <select class="cctv-select" id="cctv-dropdown" onclick="event.stopPropagation();" onchange="changeCCTVLocation(this)">
-                        <option value="https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000008" data-label="淡水民權路187巷 (C000008)">📍 [C000008] 淡水民權路187巷[cite: 3, 4]</option>
-                        <option value="https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000174" data-label="淡水區中正東路一段3巷口 (C000174)">📍 [C000174] 淡水區中正東路一段3巷口[cite: 3, 4]</option>
-                        <option value="https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000402" data-label="淡水區新民隧道南下 (C000402)">📍 [C000402] 淡水區新民隧道-南下[cite: 3, 4]</option>
-                        <option value="https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000252" data-label="關渡大橋淡水端 (C000252)">📍 [C000252] 關渡大橋淡水端[cite: 3, 4]</option>
+                        <option value="https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80" data-label="淡水民權路187巷 (C000008)[cite: 3, 4]">📍 [C000008] 淡水民權路187巷[cite: 3, 4]</option>
+                        <option value="https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80" data-label="淡水區中正東路一段3巷口 (C000174)[cite: 3, 4]">📍 [C000174] 淡水區中正東路一段3巷口[cite: 3, 4]</option>
+                        <option value="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80" data-label="淡水區新民隧道南下 (C000402)[cite: 3, 4]">📍 [C000402] 淡水區新民隧道-南下[cite: 3, 4]</option>
+                        <option value="https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1200&q=80" data-label="關渡大橋淡水端 (C000252)[cite: 3, 4]">📍 [C000252] 關渡大橋淡水端[cite: 3, 4]</option>
                     </select>
                 </div>
             </div>
@@ -549,7 +549,6 @@
     let currentFilterStatus = null;
     let currentSelectedIncident = null;
 
-    // 結合了初始模擬資料以及從 TDX 匯入的淡水區水管搶修實戰案件 (LiveEvents)[cite: 7, 8]
     const initialDemoData = [
         {
             "受理時間": "2026-08-08 08:47",
@@ -654,9 +653,9 @@
 
     function projectCCTVToCenter() {
         const cctvLabel = document.getElementById('cctv-label').innerText;
-        const iframeSrc = document.getElementById('cctv-iframe').src;
-        const htmlContent = `<iframe src="${iframeSrc}" style="width:100%; height:100%; border:none;" alt="CCTV投影"></iframe>`;
-        projectToCenter(`轄區 CCTV 串流 - ${cctvLabel}[cite: 3, 4]`, htmlContent, true);
+        const imgSrc = document.getElementById('cctv-img').src;
+        const htmlContent = `<img src="${imgSrc}" style="width:100%; height:100%; object-fit:contain; background:#000;" alt="CCTV投影">`;
+        projectToCenter(`轄區 CCTV 畫面 - ${cctvLabel}[cite: 3, 4]`, htmlContent, true);
     }
 
     function closeCenterProjection() {
@@ -669,7 +668,7 @@
         const label = optionEl.getAttribute('data-label');
         
         document.getElementById('cctv-label').innerText = label;
-        document.getElementById('cctv-iframe').src = url;
+        document.getElementById('cctv-img').src = url;
     }
 
     function filterByStatus(statusTarget) {

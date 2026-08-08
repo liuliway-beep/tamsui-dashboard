@@ -65,8 +65,6 @@
         }
         .weather-card-title { color: #00f2fe; font-weight: bold; font-size: 12px; border-bottom: 1px solid #30363d; padding-bottom: 3px; display: flex; justify-content: space-between; }
 
-        .full-fit-img { width: 100%; height: 100%; object-fit: cover !important; display: block; }
-
         .cctv-select {
             position: absolute; bottom: 4px; left: 4px; z-index: 600; width: calc(100% - 8px);
             background: rgba(13, 17, 23, 0.9); color: #00f2fe; border: 1px solid #30363d; font-size: 9px;
@@ -183,7 +181,7 @@
             </div>
         </div>
 
-        <!-- 右側面板：上(氣象預報) 下(官方路況 CCTV 聯防) -->
+        <!-- 右側面板：上(氣象預報) 下(官方 ATIS 串流 iframe) -->
         <div class="panel">
             <div class="sub-block">
                 <div class="panel-title">
@@ -203,15 +201,13 @@
             <div class="sub-block">
                 <div class="panel-title">
                     <span>🎥 交通即時監控 (淡水 & 高速快速公路)</span>
-                    <span style="font-size:8px; color:#00f2fe;" id="cctv-count-tag">[已過濾載入]</span>
+                    <span style="font-size:8px; color:#00f2fe;" id="cctv-count-tag">[官方串流連線]</span>
                 </div>
                 <div class="box-container" onclick="projectCCTVToCenter()">
                     <div class="iframe-click-overlay"></div>
-                    <div class="window-label" id="cctv-label" style="position: absolute; top: 4px; left: 6px; z-index: 20; color: #fff; font-family: monospace; font-size: 9px; text-shadow: 1px 1px 3px #000;">載入中...</div>
                     
-                    <div style="width:100%; height:100%; position:relative; background:#0b0e14; display:flex; align-items:center; justify-content:center;">
-                        <img id="cctv-img" src="https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80" class="full-fit-img" alt="CCTV" referrerpolicy="no-referrer">
-                    </div>
+                    <!-- 採用官方 ATIS 串流 iframe 確保 100% 播放成功 -->
+                    <iframe id="cctv-iframe" src="" style="width:100%; height:100%; border:none; pointer-events:none;" frameborder="0"></iframe>
 
                     <select class="cctv-select" id="cctv-dropdown" onclick="event.stopPropagation();" onchange="changeCCTVLocation(this.value)">
                         <option value="">載入中...</option>
@@ -297,7 +293,7 @@
     const CWA_API_KEY = "CWA-3CF372A5-0801-4819-ADE1-7DE3D1F3010B"; 
     const BASE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
 
-    // 官方過濾後的 CCTV 點位清單（僅保留淡水區 + 高速快速公路/橋樑/匝道）
+    // 官方過濾後的 CCTV 點位清單（淡水區 + 高速快速公路/橋樑）
     let filteredCCTVList = [];
 
     // 精準對照淡水區主要路段座標
@@ -334,141 +330,139 @@
 
     // 載入並過濾官方 CCTV 資料 (僅保留淡水區與高速/快速公路/橋樑)
     function loadAndFilterCCTVs() {
-        // 內嵌您上傳的完整官方 CCTV 資料
         const rawCCTVs = [
-            {"CCTVID": "C000002", "PositionLon": 121.46794, "PositionLat": 25.02261, "SurveillanceDescription": "板橋文化路1段民生路"},
-            {"CCTVID": "C000003", "PositionLon": 121.47099, "PositionLat": 25.01888, "SurveillanceDescription": "板橋縣民大道民生路"},
-            {"CCTVID": "C000005", "PositionLon": 121.50607, "PositionLat": 25.06361, "SurveillanceDescription": "台北橋"},
-            {"CCTVID": "C000006", "PositionLon": 121.49627, "PositionLat": 25.05437, "SurveillanceDescription": "三重區忠孝橋(往台北方向避車彎)"},
-            {"CCTVID": "C000007", "PositionLon": 121.494, "PositionLat": 25.04797, "SurveillanceDescription": "三重中興橋"},
-            {"CCTVID": "C000008", "PositionLon": 121.45852, "PositionLat": 25.13207, "SurveillanceDescription": "淡水民權路187巷"},
-            {"CCTVID": "C000014", "PositionLon": 121.46463, "PositionLat": 25.01389, "SurveillanceDescription": "板橋區縣民大道、板橋火車站前(新府路新站路間)"},
-            {"CCTVID": "C000017", "PositionLon": 121.35273, "PositionLat": 24.94579, "SurveillanceDescription": "三鶯大橋文化路"},
-            {"CCTVID": "C000018", "PositionLon": 121.36143, "PositionLat": 24.93858, "SurveillanceDescription": "三峽復興路 三鶯交流道"},
-            {"CCTVID": "C000019", "PositionLon": 121.46296, "PositionLat": 25.033, "SurveillanceDescription": "板橋區大漢橋(環河路上方)"},
-            {"CCTVID": "C000020", "PositionLon": 121.47348, "PositionLat": 25.01571, "SurveillanceDescription": "板橋民生路中山路"},
-            {"CCTVID": "C000022", "PositionLon": 121.47925, "PositionLat": 25.01877, "SurveillanceDescription": "板橋中山路三民路"},
-            {"CCTVID": "C000023", "PositionLon": 121.4561, "PositionLat": 25.03059, "SurveillanceDescription": "新海橋"},
-            {"CCTVID": "C000024", "PositionLon": 121.45003, "PositionLat": 24.99351, "SurveillanceDescription": "板橋四川路中央路"},
-            {"CCTVID": "C000025", "PositionLon": 121.466, "PositionLat": 25.01202, "SurveillanceDescription": "板橋區中山路一段158巷"},
-            {"CCTVID": "C000028", "PositionLon": 121.49036, "PositionLat": 24.9942, "SurveillanceDescription": "台64西行錦和路上方"},
-            {"CCTVID": "C000031", "PositionLon": 121.49541, "PositionLat": 25.00782, "SurveillanceDescription": "中和華中橋"},
-            {"CCTVID": "C000032", "PositionLon": 121.3685, "PositionLat": 25.06598, "SurveillanceDescription": "林口文化一路林口交流道"},
-            {"CCTVID": "C000033", "PositionLon": 121.55161, "PositionLat": 24.97898, "SurveillanceDescription": "新店寶橋路235巷"},
-            {"CCTVID": "C000034", "PositionLon": 121.46844, "PositionLat": 25.0232, "SurveillanceDescription": "板橋文化路二段民生路二段"},
-            {"CCTVID": "C000037", "PositionLon": 121.48617, "PositionLat": 25.02255, "SurveillanceDescription": "板橋光復橋"},
-            {"CCTVID": "C000039", "PositionLon": 121.47023, "PositionLat": 25.01983, "SurveillanceDescription": "板橋台64線萬板路上方"},
-            {"CCTVID": "C000041", "PositionLon": 121.51675, "PositionLat": 24.97943, "SurveillanceDescription": "新店安和路中安大橋"},
-            {"CCTVID": "C000047", "PositionLon": 121.63084, "PositionLat": 25.05495, "SurveillanceDescription": "汐止大同路南陽大橋"},
-            {"CCTVID": "C000049", "PositionLon": 121.63705, "PositionLat": 25.05582, "SurveillanceDescription": "汐止新台五路1段國3下匝道"},
-            {"CCTVID": "C000052", "PositionLon": 121.47217, "PositionLat": 25.02979, "SurveillanceDescription": "板橋文化路雙十路"},
-            {"CCTVID": "C000053", "PositionLon": 121.46304, "PositionLat": 25.01623, "SurveillanceDescription": "板橋文化路新站路"},
-            {"CCTVID": "C000054", "PositionLon": 121.4699, "PositionLat": 25.0203, "SurveillanceDescription": "板橋民生路萬板路"},
-            {"CCTVID": "C000074", "PositionLon": 121.50288, "PositionLat": 25.07439, "SurveillanceDescription": "新北環快，三重龍門路與環快匝道交會處"},
-            {"CCTVID": "C000075", "PositionLon": 121.48442, "PositionLat": 25.04717, "SurveillanceDescription": "新北環快，南下3K+880門架"},
-            {"CCTVID": "C000076", "PositionLon": 121.48065, "PositionLat": 25.03979, "SurveillanceDescription": "新北環快，南下5K+232板橋匝道分流處"},
-            {"CCTVID": "C000079", "PositionLon": 121.49343, "PositionLat": 25.05162, "SurveillanceDescription": "新北環快，北上2K+900中興橋上環快主線"},
-            {"CCTVID": "C000087", "PositionLon": 121.5032, "PositionLat": 25.06152, "SurveillanceDescription": "新北環快，福德南路平面匝道口"},
-            {"CCTVID": "C000088", "PositionLon": 121.48132, "PositionLat": 25.03661, "SurveillanceDescription": "新北環快，北上5K+733"},
-            {"CCTVID": "C000089", "PositionLon": 121.48152, "PositionLat": 25.03724, "SurveillanceDescription": "新北環快，南下5K+733台64上主線匝道口"},
-            {"CCTVID": "C000091", "PositionLon": 121.48583, "PositionLat": 25.021, "SurveillanceDescription": "新北環快，北上7K+388"},
-            {"CCTVID": "C000095", "PositionLon": 121.48149, "PositionLat": 25.04755, "SurveillanceDescription": "新北環快，南下斜張橋南側(人行步道)"},
-            {"CCTVID": "C000096", "PositionLon": 121.48297, "PositionLat": 25.04717, "SurveillanceDescription": "新北環快，北上4K+080"},
-            {"CCTVID": "C000097", "PositionLon": 121.4818, "PositionLat": 25.04714, "SurveillanceDescription": "新北環快，北下斜張南側(人行步道)"},
-            {"CCTVID": "C000098", "PositionLon": 121.4818, "PositionLat": 25.0473, "SurveillanceDescription": "新北環快，南下4K+168.5新莊匝道分流處(往新莊環河路)"},
-            {"CCTVID": "C000111", "PositionLon": 121.49663, "PositionLat": 25.0543, "SurveillanceDescription": "忠孝橋"},
-            {"CCTVID": "C000112", "PositionLon": 121.45995, "PositionLat": 25.06047, "SurveillanceDescription": "新莊台一高架，中山路思源路口(中山路東向上方)"},
-            {"CCTVID": "C000113", "PositionLon": 121.43476, "PositionLat": 25.04697, "SurveillanceDescription": "台1高架民生路上下匝道口"},
-            {"CCTVID": "C000115", "PositionLon": 121.45168, "PositionLat": 25.00088, "SurveillanceDescription": "板橋區環河路、湳仔橋(環河路170號前號誌桿上)"},
-            {"CCTVID": "C000119", "PositionLon": 121.50521, "PositionLat": 25.01354, "SurveillanceDescription": "永和區環河西路與新生路210巷口(高架)"},
-            {"CCTVID": "C000121", "PositionLon": 121.51266, "PositionLat": 25.01806, "SurveillanceDescription": "永和區環河西路一段85巷前(高架)"},
-            {"CCTVID": "C000124", "PositionLon": 121.52409, "PositionLat": 25.0105, "SurveillanceDescription": "永和區環河東路二段、豫溪街191巷口(往板橋側)"},
-            {"CCTVID": "C000125", "PositionLon": 121.52406, "PositionLat": 25.01048, "SurveillanceDescription": "永和區環河東路二段、豫溪街191巷口(往板橋側)"},
-            {"CCTVID": "C000129", "PositionLon": 121.5449, "PositionLat": 24.97905, "SurveillanceDescription": "板橋區新北環快，華翠橋"},
-            {"CCTVID": "C000131", "PositionLon": 121.43524, "PositionLat": 24.99542, "SurveillanceDescription": "板橋區浮洲橋上(路燈桿上)，環河道路上方近樹林"},
-            {"CCTVID": "C000133", "PositionLon": 121.47838, "PositionLat": 25.02402, "SurveillanceDescription": "板橋區三民路、縣民大道(華翠橋)(南側路燈桿上)"},
-            {"CCTVID": "C000135", "PositionLon": 121.52527, "PositionLat": 25.00912, "SurveillanceDescription": "永和區永福橋(環河東路三段上方)"},
-            {"CCTVID": "C000136", "PositionLon": 121.52728, "PositionLat": 25.00597, "SurveillanceDescription": "永和區福和橋上(環河東路三段上方)"},
-            {"CCTVID": "C000139", "PositionLon": 121.5272, "PositionLat": 24.99014, "SurveillanceDescription": "中和區景平路與環河東路口(秀朗橋門架上)"},
-            {"CCTVID": "C000141", "PositionLon": 121.49952, "PositionLat": 25.00265, "SurveillanceDescription": "中和區中山路與中和路口(中山路行人陸橋上)"},
-            {"CCTVID": "C000145", "PositionLon": 121.43272, "PositionLat": 24.96639, "SurveillanceDescription": "台65往國3"},
-            {"CCTVID": "C000149", "PositionLon": 121.54739, "PositionLat": 24.97186, "SurveillanceDescription": "新店區中興路二段與國道3號匝道口(東側號誌桿上)"},
-            {"CCTVID": "C000150", "PositionLon": 121.54298, "PositionLat": 24.97351, "SurveillanceDescription": "新店區北新路二段與寶橋路口(南側號誌桿上)"},
-            {"CCTVID": "C000156", "PositionLon": 121.51692, "PositionLat": 24.96408, "SurveillanceDescription": "新店區安康路二段與安和路一段(東側號誌門架上)"},
-            {"CCTVID": "C000158", "PositionLon": 121.64692, "PositionLat": 25.00855, "SurveillanceDescription": "石碇區文山路一段與國五南下匝道口(西側號誌桿上)"},
-            {"CCTVID": "C000160", "PositionLon": 121.45963, "PositionLat": 25.14034, "SurveillanceDescription": "淡水民權路民富路口"},
-            {"CCTVID": "C000167", "PositionLon": 121.45927, "PositionLat": 25.09597, "SurveillanceDescription": "蘆洲區成蘆大橋環河分流點(西側路燈桿上)"},
-            {"CCTVID": "C000170", "PositionLon": 121.35776, "PositionLat": 24.93988, "SurveillanceDescription": "復興路 國3南下匝道"},
-            {"CCTVID": "C000174", "PositionLon": 121.4505, "PositionLat": 25.1648, "SurveillanceDescription": "淡水區中正東路一段3巷口"},
-            {"CCTVID": "C000176", "PositionLon": 121.44456, "PositionLat": 25.16912, "SurveillanceDescription": "淡水區中正路、中山路口"},
-            {"CCTVID": "C000178", "PositionLon": 121.43882, "PositionLat": 25.17293, "SurveillanceDescription": "淡水區中山路、文化路口"},
-            {"CCTVID": "C000179", "PositionLon": 121.44621, "PositionLat": 25.1976, "SurveillanceDescription": "淡水區中山北路三段、淡金路口"},
-            {"CCTVID": "C000194", "PositionLon": 121.48931, "PositionLat": 25.05841, "SurveillanceDescription": "三重區台1高架，重新路上方燈桿"},
-            {"CCTVID": "C000195", "PositionLon": 121.46465, "PositionLat": 25.06121, "SurveillanceDescription": "新莊區台1高架，化成路上方門架"},
-            {"CCTVID": "C000196", "PositionLon": 121.44669, "PositionLat": 25.05948, "SurveillanceDescription": "新莊區台1高架，中信街上方門架"},
-            {"CCTVID": "C000199", "PositionLon": 121.43803, "PositionLat": 25.06555, "SurveillanceDescription": "五股區台65往南,0K門架"},
-            {"CCTVID": "C000200", "PositionLon": 121.47961, "PositionLat": 25.06149, "SurveillanceDescription": "三重區台1高架,疏洪東路上方門架"},
-            {"CCTVID": "C000205", "PositionLon": 121.71255, "PositionLat": 24.94176, "SurveillanceDescription": "坪林區國中路坪林管制站前(往國5)"},
-            {"CCTVID": "C000206", "PositionLon": 121.47799, "PositionLat": 25.03794, "SurveillanceDescription": "板橋區新北環快、環河西路匝道"},
-            {"CCTVID": "C000208", "PositionLon": 121.45792, "PositionLat": 25.00692, "SurveillanceDescription": "板橋區縣民大道、館前西路"},
-            {"CCTVID": "C000209", "PositionLon": 121.46028, "PositionLat": 25.00839, "SurveillanceDescription": "板橋區中山路、重慶路"},
-            {"CCTVID": "C000210", "PositionLon": 121.45487, "PositionLat": 25.004, "SurveillanceDescription": "板橋區縣民大道、南雅南路"},
-            {"CCTVID": "C000212", "PositionLon": 121.44149, "PositionLat": 25.05943, "SurveillanceDescription": "泰山區新五路台1高架入口"},
-            {"CCTVID": "C000213", "PositionLon": 121.49806, "PositionLat": 25.25976, "SurveillanceDescription": "三芝區淡金公路(台2)、淡金路1段(往三芝市區)"},
-            {"CCTVID": "C000215", "PositionLon": 121.46552, "PositionLat": 25.02717, "SurveillanceDescription": "板橋區民生路三段19巷(號誌控制器旁L桿)"},
-            {"CCTVID": "C000216", "PositionLon": 121.39022, "PositionLat": 24.93502, "SurveillanceDescription": "三峽區介壽路二段(台3)、龍埔路"},
-            {"CCTVID": "C000218", "PositionLon": 121.40599, "PositionLat": 24.96197, "SurveillanceDescription": "樹林區柑園街一段、柑園二橋"},
-            {"CCTVID": "C000219", "PositionLon": 121.40465, "PositionLat": 24.96929, "SurveillanceDescription": "樹林區環河路、柑園二橋"},
-            {"CCTVID": "C000222", "PositionLon": 121.34027, "PositionLat": 24.95819, "SurveillanceDescription": "鶯歌區中山高架橋、西湖街"},
-            {"CCTVID": "C000223", "PositionLon": 121.54078, "PositionLat": 24.98679, "SurveillanceDescription": "新店區順安街、寶慶街(景美橋)"},
-            {"CCTVID": "C000226", "PositionLon": 121.82209, "PositionLat": 25.12097, "SurveillanceDescription": "瑞芳區台2、台2丁"},
-            {"CCTVID": "C000227", "PositionLon": 121.81948, "PositionLat": 25.12263, "SurveillanceDescription": "瑞芳區台2、台62出口"},
-            {"CCTVID": "C000230", "PositionLon": 121.80933, "PositionLat": 25.10745, "SurveillanceDescription": "瑞芳區台2丁、明燈路二段"},
-            {"CCTVID": "C000231", "PositionLon": 121.79647, "PositionLat": 25.11002, "SurveillanceDescription": "瑞芳區台2丁、台62瑞芳一匝道"},
-            {"CCTVID": "C000235", "PositionLon": 121.93325, "PositionLat": 25.019, "SurveillanceDescription": "貢寮區興隆街(台2)、下雙溪街(台2丙)"},
-            {"CCTVID": "C000236", "PositionLon": 121.64168, "PositionLat": 25.2174, "SurveillanceDescription": "金山區環金路(台2)、中山路"},
-            {"CCTVID": "C000237", "PositionLon": 121.63183, "PositionLat": 25.22131, "SurveillanceDescription": "金山區台2、台2甲"},
-            {"CCTVID": "C000239", "PositionLon": 121.68828, "PositionLat": 25.18229, "SurveillanceDescription": "萬里區台2、瑪鋉路"},
-            {"CCTVID": "C000240", "PositionLon": 121.67429, "PositionLat": 25.20137, "SurveillanceDescription": "萬里區台2、玉田路(近明光港側)"},
-            {"CCTVID": "C000242", "PositionLon": 121.68323, "PositionLat": 25.18758, "SurveillanceDescription": "萬里區台2、玉田路(近翡翠灣飯店)"},
-            {"CCTVID": "C000243", "PositionLon": 121.64019, "PositionLat": 25.05645, "SurveillanceDescription": "汐止區新台五路、國3北上出口匝道"},
-            {"CCTVID": "C000244", "PositionLon": 121.6367, "PositionLat": 25.0625, "SurveillanceDescription": "汐止區工建路、新社后橋"},
-            {"CCTVID": "C000246", "PositionLon": 121.53715, "PositionLat": 24.96133, "SurveillanceDescription": "新店區環河路、安康路(碧潭大橋)"},
-            {"CCTVID": "C000249", "PositionLon": 121.49922, "PositionLat": 25.08453, "SurveillanceDescription": "三重區重陽橋"},
-            {"CCTVID": "C000250", "PositionLon": 121.45507, "PositionLat": 25.08147, "SurveillanceDescription": "蘆洲區永安大橋"},
-            {"CCTVID": "C000251", "PositionLon": 121.42884, "PositionLat": 24.98072, "SurveillanceDescription": "板橋區城林橋(板橋端)"},
-            {"CCTVID": "C000252", "PositionLon": 121.45507, "PositionLat": 25.12433, "SurveillanceDescription": "八里區關渡大橋(八里龍米路上方門架)"},
-            {"CCTVID": "C000254", "PositionLon": 121.48147, "PositionLat": 25.03585, "SurveillanceDescription": "板橋區新北環快華江橋上方"},
-            {"CCTVID": "C000256", "PositionLon": 121.48676, "PositionLat": 25.06148, "SurveillanceDescription": "三重區台1高架與重陽路上方"},
-            {"CCTVID": "C000257", "PositionLon": 121.47969, "PositionLat": 25.04956, "SurveillanceDescription": "三重區重新橋(新莊端)"},
-            {"CCTVID": "C000270", "PositionLon": 121.49335, "PositionLat": 25.00609, "SurveillanceDescription": "中和區橋和路、中山路2段332巷口"},
-            {"CCTVID": "C000273", "PositionLon": 121.37616, "PositionLat": 24.94969, "SurveillanceDescription": "樹林區學府路、大義路口(三鶯二橋)"},
-            {"CCTVID": "C000286", "PositionLon": 121.36592, "PositionLat": 24.91004, "SurveillanceDescription": "三峽區台3線、台7乙"},
-            {"CCTVID": "C000288", "PositionLon": 121.45961, "PositionLat": 25.14762, "SurveillanceDescription": "淡水區中正東路2段143巷"},
-            {"CCTVID": "C000290", "PositionLon": 121.47857, "PositionLat": 25.02389, "SurveillanceDescription": "板橋區華翠橋(三民路上方路南向燈桿)"},
-            {"CCTVID": "C000291", "PositionLon": 121.46316, "PositionLat": 25.00939, "SurveillanceDescription": "板橋區民權路、民族路"},
-            {"CCTVID": "C000293", "PositionLon": 121.46556, "PositionLat": 25.01453, "SurveillanceDescription": "板橋區縣民大道新站路口"},
-            {"CCTVID": "C000294", "PositionLon": 121.46787, "PositionLat": 25.0162, "SurveillanceDescription": "板橋區縣民大道板新路口"},
-            {"CCTVID": "C000296", "PositionLon": 121.45945, "PositionLat": 25.15145, "SurveillanceDescription": "淡水區中正東路2段105巷口"},
-            {"CCTVID": "C000297", "PositionLon": 121.45937, "PositionLat": 25.15337, "SurveillanceDescription": "淡水區中正東路八勢路"},
-            {"CCTVID": "C000298", "PositionLon": 121.45493, "PositionLat": 25.15949, "SurveillanceDescription": "淡水區中正東路坪頂路"},
-            {"CCTVID": "C000299", "PositionLon": 121.45989, "PositionLat": 25.13773, "SurveillanceDescription": "淡水區民生路民權路口"},
-            {"CCTVID": "C000232", "PositionLon": 121.84514, "PositionLat": 25.10995, "SurveillanceDescription": "瑞芳區瑞金公路、基山街"},
-            {"CCTVID": "C000233", "PositionLon": 121.84285, "PositionLat": 25.1096, "SurveillanceDescription": "瑞芳區瑞金公路、北35"},
-            {"CCTVID": "C000312", "PositionLon": 121.42817, "PositionLat": 25.17562, "SurveillanceDescription": "淡水區中正路1段8巷"},
-            {"CCTVID": "C000320", "PositionLon": 121.44688, "PositionLat": 24.99394, "SurveillanceDescription": "橋頭路(第十河川局門口)"},
-            {"CCTVID": "C000330", "PositionLon": 121.62393, "PositionLat": 25.0549, "SurveillanceDescription": "汐止區北山大橋"},
-            {"CCTVID": "C000375", "PositionLon": 121.46424, "PositionLat": 25.01758, "SurveillanceDescription": "板橋區文化路漢生東路"},
-            {"CCTVID": "C000377", "PositionLon": 121.41942, "PositionLat": 25.18308, "SurveillanceDescription": "淡水區中正路二段、50巷"},
-            {"CCTVID": "C000387", "PositionLon": 121.46004, "PositionLat": 25.01266, "SurveillanceDescription": "板橋區文化路與民權路"},
-            {"CCTVID": "C000388", "PositionLon": 121.46188, "PositionLat": 25.01129, "SurveillanceDescription": "板橋區縣民大道與民權路"},
-            {"CCTVID": "C000399", "PositionLon": 121.61934, "PositionLat": 25.06642, "SurveillanceDescription": "汐止區康寧街與汐湖二橋"},
-            {"CCTVID": "C000402", "PositionLon": 121.42781, "PositionLat": 25.18617, "SurveillanceDescription": "淡水區新民隧道-南下隧道內"},
-            {"CCTVID": "C000421", "PositionLon": 121.45627, "PositionLat": 25.16114, "SurveillanceDescription": "淡水區淡金路-坪頂路(遠端號誌桿)"},
-            {"CCTVID": "C000488", "PositionLon": 121.64334, "PositionLat": 25.07563, "SurveillanceDescription": "康寧街、國道新設匝道"}
+            {"CCTVID": "C000002", "PositionLon": 121.46794, "PositionLat": 25.02261, "SurveillanceDescription": "板橋文化路1段民生路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000002"},
+            {"CCTVID": "C000003", "PositionLon": 121.47099, "PositionLat": 25.01888, "SurveillanceDescription": "板橋縣民大道民生路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000003"},
+            {"CCTVID": "C000005", "PositionLon": 121.50607, "PositionLat": 25.06361, "SurveillanceDescription": "台北橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000005"},
+            {"CCTVID": "C000006", "PositionLon": 121.49627, "PositionLat": 25.05437, "SurveillanceDescription": "三重區忠孝橋(往台北方向避車彎)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000006"},
+            {"CCTVID": "C000007", "PositionLon": 121.494, "PositionLat": 25.04797, "SurveillanceDescription": "三重中興橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000007"},
+            {"CCTVID": "C000008", "PositionLon": 121.45852, "PositionLat": 25.13207, "SurveillanceDescription": "淡水民權路187巷", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000008"},
+            {"CCTVID": "C000014", "PositionLon": 121.46463, "PositionLat": 25.01389, "SurveillanceDescription": "板橋區縣民大道、板橋火車站前(新府路新站路間)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000014"},
+            {"CCTVID": "C000017", "PositionLon": 121.35273, "PositionLat": 24.94579, "SurveillanceDescription": "三鶯大橋文化路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000017"},
+            {"CCTVID": "C000018", "PositionLon": 121.36143, "PositionLat": 24.93858, "SurveillanceDescription": "三峽復興路 三鶯交流道", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000018"},
+            {"CCTVID": "C000019", "PositionLon": 121.46296, "PositionLat": 25.033, "SurveillanceDescription": "板橋區大漢橋(環河路上方)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000019"},
+            {"CCTVID": "C000020", "PositionLon": 121.47348, "PositionLat": 25.01571, "SurveillanceDescription": "板橋民生路中山路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000020"},
+            {"CCTVID": "C000022", "PositionLon": 121.47925, "PositionLat": 25.01877, "SurveillanceDescription": "板橋中山路三民路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000022"},
+            {"CCTVID": "C000023", "PositionLon": 121.4561, "PositionLat": 25.03059, "SurveillanceDescription": "新海橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000023"},
+            {"CCTVID": "C000024", "PositionLon": 121.45003, "PositionLat": 24.99351, "SurveillanceDescription": "板橋四川路中央路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000024"},
+            {"CCTVID": "C000025", "PositionLon": 121.466, "PositionLat": 25.01202, "SurveillanceDescription": "板橋區中山路一段158巷", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000025"},
+            {"CCTVID": "C000028", "PositionLon": 121.49036, "PositionLat": 24.9942, "SurveillanceDescription": "台64西行錦和路上方", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000028"},
+            {"CCTVID": "C000031", "PositionLon": 121.49541, "PositionLat": 25.00782, "SurveillanceDescription": "中和華中橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000031"},
+            {"CCTVID": "C000032", "PositionLon": 121.3685, "PositionLat": 25.06598, "SurveillanceDescription": "林口文化一路林口交流道", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000032"},
+            {"CCTVID": "C000033", "PositionLon": 121.55161, "PositionLat": 24.97898, "SurveillanceDescription": "新店寶橋路235巷", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000033"},
+            {"CCTVID": "C000034", "PositionLon": 121.46844, "PositionLat": 25.0232, "SurveillanceDescription": "板橋文化路二段民生路二段", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000034"},
+            {"CCTVID": "C000037", "PositionLon": 121.48617, "PositionLat": 25.02255, "SurveillanceDescription": "板橋光復橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000037"},
+            {"CCTVID": "C000039", "PositionLon": 121.47023, "PositionLat": 25.01983, "SurveillanceDescription": "板橋台64線萬板路上方", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000039"},
+            {"CCTVID": "C000041", "PositionLon": 121.51675, "PositionLat": 24.97943, "SurveillanceDescription": "新店安和路中安大橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000041"},
+            {"CCTVID": "C000047", "PositionLon": 121.63084, "PositionLat": 25.05495, "SurveillanceDescription": "汐止大同路南陽大橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000047"},
+            {"CCTVID": "C000049", "PositionLon": 121.63705, "PositionLat": 25.05582, "SurveillanceDescription": "汐止新台五路1段國3下匝道", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000049"},
+            {"CCTVID": "C000052", "PositionLon": 121.47217, "PositionLat": 25.02979, "SurveillanceDescription": "板橋文化路雙十路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000052"},
+            {"CCTVID": "C000053", "PositionLon": 121.46304, "PositionLat": 25.01623, "SurveillanceDescription": "板橋文化路新站路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000053"},
+            {"CCTVID": "C000054", "PositionLon": 121.4699, "PositionLat": 25.0203, "SurveillanceDescription": "板橋民生路萬板路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000054"},
+            {"CCTVID": "C000074", "PositionLon": 121.50288, "PositionLat": 25.07439, "SurveillanceDescription": "新北環快，三重龍門路與環快匝道交會處", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000074"},
+            {"CCTVID": "C000075", "PositionLon": 121.48442, "PositionLat": 25.04717, "SurveillanceDescription": "新北環快，南下3K+880門架", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000075"},
+            {"CCTVID": "C000076", "PositionLon": 121.48065, "PositionLat": 25.03979, "SurveillanceDescription": "新北環快，南下5K+232板橋匝道分流處", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000076"},
+            {"CCTVID": "C000079", "PositionLon": 121.49343, "PositionLat": 25.05162, "SurveillanceDescription": "新北環快，北上2K+900中興橋上環快主線", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000079"},
+            {"CCTVID": "C000087", "PositionLon": 121.5032, "PositionLat": 25.06152, "SurveillanceDescription": "新北環快，福德南路平面匝道口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000087"},
+            {"CCTVID": "C000088", "PositionLon": 121.48132, "PositionLat": 25.03661, "SurveillanceDescription": "新北環快，北上5K+733", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000088"},
+            {"CCTVID": "C000089", "PositionLon": 121.48152, "PositionLat": 25.03724, "SurveillanceDescription": "新北環快，南下5K+733台64上主線匝道口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000089"},
+            {"CCTVID": "C000091", "PositionLon": 121.48583, "PositionLat": 25.021, "SurveillanceDescription": "新北環快，北上7K+388", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000091"},
+            {"CCTVID": "C000095", "PositionLon": 121.48149, "PositionLat": 25.04755, "SurveillanceDescription": "新北環快，南下斜張橋南側(人行步道)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000095"},
+            {"CCTVID": "C000096", "PositionLon": 121.48297, "PositionLat": 25.04717, "SurveillanceDescription": "新北環快，北上4K+080", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000096"},
+            {"CCTVID": "C000097", "PositionLon": 121.4818, "PositionLat": 25.04714, "SurveillanceDescription": "新北環快，北下斜張南側(人行步道)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000097"},
+            {"CCTVID": "C000098", "PositionLon": 121.4818, "PositionLat": 25.0473, "SurveillanceDescription": "新北環快，南下4K+168.5新莊匝道分流處(往新莊環河路)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000098"},
+            {"CCTVID": "C000111", "PositionLon": 121.49663, "PositionLat": 25.0543, "SurveillanceDescription": "忠孝橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000111"},
+            {"CCTVID": "C000112", "PositionLon": 121.45995, "PositionLat": 25.06047, "SurveillanceDescription": "新莊台一高架，中山路思源路口(中山路東向上方)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000112"},
+            {"CCTVID": "C000113", "PositionLon": 121.43476, "PositionLat": 25.04697, "SurveillanceDescription": "台1高架民生路上下匝道口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000113"},
+            {"CCTVID": "C000115", "PositionLon": 121.45168, "PositionLat": 25.00088, "SurveillanceDescription": "板橋區環河路、湳仔橋(環河路170號前號誌桿上)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000115"},
+            {"CCTVID": "C000119", "PositionLon": 121.50521, "PositionLat": 25.01354, "SurveillanceDescription": "永和區環河西路與新生路210巷口(高架)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000119"},
+            {"CCTVID": "C000121", "PositionLon": 121.51266, "PositionLat": 25.01806, "SurveillanceDescription": "永和區環河西路一段85巷前(高架)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000121"},
+            {"CCTVID": "C000124", "PositionLon": 121.52409, "PositionLat": 25.0105, "SurveillanceDescription": "永和區環河東路二段、豫溪街191巷口(往板橋側)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000124"},
+            {"CCTVID": "C000125", "PositionLon": 121.52406, "PositionLat": 25.01048, "SurveillanceDescription": "永和區環河東路二段、豫溪街191巷口(往板橋側)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000125"},
+            {"CCTVID": "C000129", "PositionLon": 121.5449, "PositionLat": 24.97905, "SurveillanceDescription": "板橋區新北環快，華翠橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000129"},
+            {"CCTVID": "C000131", "PositionLon": 121.43524, "PositionLat": 24.99542, "SurveillanceDescription": "板橋區浮洲橋上(路燈桿上)，環河道路上方近樹林", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000131"},
+            {"CCTVID": "C000133", "PositionLon": 121.47838, "PositionLat": 25.02402, "SurveillanceDescription": "板橋區三民路、縣民大道(華翠橋)(南側路燈桿上)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000133"},
+            {"CCTVID": "C000135", "PositionLon": 121.52527, "PositionLat": 25.00912, "SurveillanceDescription": "永和區永福橋(環河東路三段上方)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000135"},
+            {"CCTVID": "C000136", "PositionLon": 121.52728, "PositionLat": 25.00597, "SurveillanceDescription": "永和區福和橋上(環河東路三段上方)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000136"},
+            {"CCTVID": "C000139", "PositionLon": 121.5272, "PositionLat": 24.99014, "SurveillanceDescription": "中和區景平路與環河東路口(秀朗橋門架上)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000139"},
+            {"CCTVID": "C000141", "PositionLon": 121.49952, "PositionLat": 25.00265, "SurveillanceDescription": "中和區中山路與中和路口(中山路行人陸橋上)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000141"},
+            {"CCTVID": "C000145", "PositionLon": 121.43272, "PositionLat": 24.96639, "SurveillanceDescription": "台65往國3", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000145"},
+            {"CCTVID": "C000149", "PositionLon": 121.54739, "PositionLat": 24.97186, "SurveillanceDescription": "新店區中興路二段與國道3號匝道口(東側號誌桿上)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000149"},
+            {"CCTVID": "C000150", "PositionLon": 121.54298, "PositionLat": 24.97351, "SurveillanceDescription": "新店區北新路二段與寶橋路口(南側號誌桿上)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000150"},
+            {"CCTVID": "C000156", "PositionLon": 121.51692, "PositionLat": 24.96408, "SurveillanceDescription": "新店區安康路二段與安和路一段(東側號誌門架上)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000156"},
+            {"CCTVID": "C000158", "PositionLon": 121.64692, "PositionLat": 25.00855, "SurveillanceDescription": "石碇區文山路一段與國五南下匝道口(西側號誌桿上)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000158"},
+            {"CCTVID": "C000160", "PositionLon": 121.45963, "PositionLat": 25.14034, "SurveillanceDescription": "淡水民權路民富路口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000160"},
+            {"CCTVID": "C000167", "PositionLon": 121.45927, "PositionLat": 25.09597, "SurveillanceDescription": "蘆洲區成蘆大橋環河分流點(西側路燈桿上)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000167"},
+            {"CCTVID": "C000170", "PositionLon": 121.35776, "PositionLat": 24.93988, "SurveillanceDescription": "復興路 國3南下匝道", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000170"},
+            {"CCTVID": "C000174", "PositionLon": 121.4505, "PositionLat": 25.1648, "SurveillanceDescription": "淡水區中正東路一段3巷口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000174"},
+            {"CCTVID": "C000176", "PositionLon": 121.44456, "PositionLat": 25.16912, "SurveillanceDescription": "淡水區中正路、中山路口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000176"},
+            {"CCTVID": "C000178", "PositionLon": 121.43882, "PositionLat": 25.17293, "SurveillanceDescription": "淡水區中山路、文化路口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000178"},
+            {"CCTVID": "C000179", "PositionLon": 121.44621, "PositionLat": 25.1976, "SurveillanceDescription": "淡水區中山北路三段、淡金路口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000179"},
+            {"CCTVID": "C000194", "PositionLon": 121.48931, "PositionLat": 25.05841, "SurveillanceDescription": "三重區台1高架，重新路上方燈桿", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000194"},
+            {"CCTVID": "C000195", "PositionLon": 121.46465, "PositionLat": 25.06121, "SurveillanceDescription": "新莊區台1高架，化成路上方門架", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000195"},
+            {"CCTVID": "C000196", "PositionLon": 121.44669, "PositionLat": 25.05948, "SurveillanceDescription": "新莊區台1高架，中信街上方門架", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000196"},
+            {"CCTVID": "C000199", "PositionLon": 121.43803, "PositionLat": 25.06555, "SurveillanceDescription": "五股區台65往南,0K門架", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000199"},
+            {"CCTVID": "C000200", "PositionLon": 121.47961, "PositionLat": 25.06149, "SurveillanceDescription": "三重區台1高架,疏洪東路上方門架", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000200"},
+            {"CCTVID": "C000205", "PositionLon": 121.71255, "PositionLat": 24.94176, "SurveillanceDescription": "坪林區國中路坪林管制站前(往國5)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000205"},
+            {"CCTVID": "C000206", "PositionLon": 121.47799, "PositionLat": 25.03794, "SurveillanceDescription": "板橋區新北環快、環河西路匝道", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000206"},
+            {"CCTVID": "C000208", "PositionLon": 121.45792, "PositionLat": 25.00692, "SurveillanceDescription": "板橋區縣民大道、館前西路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000208"},
+            {"CCTVID": "C000209", "PositionLon": 121.46028, "PositionLat": 25.00839, "SurveillanceDescription": "板橋區中山路、重慶路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000209"},
+            {"CCTVID": "C000210", "PositionLon": 121.45487, "PositionLat": 25.004, "SurveillanceDescription": "板橋區縣民大道、南雅南路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000210"},
+            {"CCTVID": "C000212", "PositionLon": 121.44149, "PositionLat": 25.05943, "SurveillanceDescription": "泰山區新五路台1高架入口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000212"},
+            {"CCTVID": "C000213", "PositionLon": 121.49806, "PositionLat": 25.25976, "SurveillanceDescription": "三芝區淡金公路(台2)、淡金路1段(往三芝市區)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000213"},
+            {"CCTVID": "C000215", "PositionLon": 121.46552, "PositionLat": 25.02717, "SurveillanceDescription": "板橋區民生路三段19巷(號誌控制器旁L桿)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000215"},
+            {"CCTVID": "C000216", "PositionLon": 121.39022, "PositionLat": 24.93502, "SurveillanceDescription": "三峽區介壽路二段(台3)、龍埔路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000216"},
+            {"CCTVID": "C000218", "PositionLon": 121.40599, "PositionLat": 24.96197, "SurveillanceDescription": "樹林區柑園街一段、柑園二橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000218"},
+            {"CCTVID": "C000219", "PositionLon": 121.40465, "PositionLat": 24.96929, "SurveillanceDescription": "樹林區環河路、柑園二橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000219"},
+            {"CCTVID": "C000222", "PositionLon": 121.34027, "PositionLat": 24.95819, "SurveillanceDescription": "鶯歌區中山高架橋、西湖街", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000222"},
+            {"CCTVID": "C000223", "PositionLon": 121.54078, "PositionLat": 24.98679, "SurveillanceDescription": "新店區順安街、寶慶街(景美橋)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000223"},
+            {"CCTVID": "C000226", "PositionLon": 121.82209, "PositionLat": 25.12097, "SurveillanceDescription": "瑞芳區台2、台2丁", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000226"},
+            {"CCTVID": "C000227", "PositionLon": 121.81948, "PositionLat": 25.12263, "SurveillanceDescription": "瑞芳區台2、台62出口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000227"},
+            {"CCTVID": "C000230", "PositionLon": 121.80933, "PositionLat": 25.10745, "SurveillanceDescription": "瑞芳區台2丁、明燈路二段", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000230"},
+            {"CCTVID": "C000231", "PositionLon": 121.79647, "PositionLat": 25.11002, "SurveillanceDescription": "瑞芳區台2丁、台62瑞芳一匝道", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000231"},
+            {"CCTVID": "C000232", "PositionLon": 121.84514, "PositionLat": 25.10995, "SurveillanceDescription": "瑞芳區瑞金公路、基山街", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000232"},
+            {"CCTVID": "C000233", "PositionLon": 121.84285, "PositionLat": 25.1096, "SurveillanceDescription": "瑞芳區瑞金公路、北35", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000233"},
+            {"CCTVID": "C000235", "PositionLon": 121.93325, "PositionLat": 25.019, "SurveillanceDescription": "貢寮區興隆街(台2)、下雙溪街(台2丙)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000235"},
+            {"CCTVID": "C000236", "PositionLon": 121.64168, "PositionLat": 25.2174, "SurveillanceDescription": "金山區環金路(台2)、中山路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000236"},
+            {"CCTVID": "C000237", "PositionLon": 121.63183, "PositionLat": 25.22131, "SurveillanceDescription": "金山區台2、台2甲", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000237"},
+            {"CCTVID": "C000239", "PositionLon": 121.68828, "PositionLat": 25.18229, "SurveillanceDescription": "萬里區台2、瑪鋉路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000239"},
+            {"CCTVID": "C000240", "PositionLon": 121.67429, "PositionLat": 25.20137, "SurveillanceDescription": "萬里區台2、玉田路(近明光港側)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000240"},
+            {"CCTVID": "C000242", "PositionLon": 121.68323, "PositionLat": 25.18758, "SurveillanceDescription": "萬里區台2、玉田路(近翡翠灣飯店)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000242"},
+            {"CCTVID": "C000243", "PositionLon": 121.64019, "PositionLat": 25.05645, "SurveillanceDescription": "汐止區新台五路、國3北上出口匝道", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000243"},
+            {"CCTVID": "C000244", "PositionLon": 121.6367, "PositionLat": 25.0625, "SurveillanceDescription": "汐止區工建路、新社后橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000244"},
+            {"CCTVID": "C000246", "PositionLon": 121.53715, "PositionLat": 24.96133, "SurveillanceDescription": "新店區環河路、安康路(碧潭大橋)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000246"},
+            {"CCTVID": "C000249", "PositionLon": 121.49922, "PositionLat": 25.08453, "SurveillanceDescription": "三重區重陽橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000249"},
+            {"CCTVID": "C000250", "PositionLon": 121.45507, "PositionLat": 25.08147, "SurveillanceDescription": "蘆洲區永安大橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000250"},
+            {"CCTVID": "C000251", "PositionLon": 121.42884, "PositionLat": 24.98072, "SurveillanceDescription": "板橋區城林橋(板橋端)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000251"},
+            {"CCTVID": "C000252", "PositionLon": 121.45507, "PositionLat": 25.12433, "SurveillanceDescription": "八里區關渡大橋(八里龍米路上方門架)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000252"},
+            {"CCTVID": "C000254", "PositionLon": 121.48147, "PositionLat": 25.03585, "SurveillanceDescription": "板橋區新北環快華江橋上方", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000254"},
+            {"CCTVID": "C000256", "PositionLon": 121.48676, "PositionLat": 25.06148, "SurveillanceDescription": "三重區台1高架與重陽路上方", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000256"},
+            {"CCTVID": "C000257", "PositionLon": 121.47969, "PositionLat": 25.04956, "SurveillanceDescription": "三重區重新橋(新莊端)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000257"},
+            {"CCTVID": "C000270", "PositionLon": 121.49335, "PositionLat": 25.00609, "SurveillanceDescription": "中和區橋和路、中山路2段332巷口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000270"},
+            {"CCTVID": "C000273", "PositionLon": 121.37616, "PositionLat": 24.94969, "SurveillanceDescription": "樹林區學府路、大義路口(三鶯二橋)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000273"},
+            {"CCTVID": "C000286", "PositionLon": 121.36592, "PositionLat": 24.91004, "SurveillanceDescription": "三峽區台3線、台7乙", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000286"},
+            {"CCTVID": "C000288", "PositionLon": 121.45961, "PositionLat": 25.14762, "SurveillanceDescription": "淡水區中正東路2段143巷", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000288"},
+            {"CCTVID": "C000290", "PositionLon": 121.47857, "PositionLat": 25.02389, "SurveillanceDescription": "板橋區華翠橋(三民路上方路南向燈桿)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000290"},
+            {"CCTVID": "C000291", "PositionLon": 121.46316, "PositionLat": 25.00939, "SurveillanceDescription": "板橋區民權路、民族路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000291"},
+            {"CCTVID": "C000293", "PositionLon": 121.46556, "PositionLat": 25.01453, "SurveillanceDescription": "板橋區縣民大道新站路口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000293"},
+            {"CCTVID": "C000294", "PositionLon": 121.46787, "PositionLat": 25.0162, "SurveillanceDescription": "板橋區縣民大道板新路口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000294"},
+            {"CCTVID": "C000296", "PositionLon": 121.45945, "PositionLat": 25.15145, "SurveillanceDescription": "淡水區中正東路2段105巷口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000296"},
+            {"CCTVID": "C000297", "PositionLon": 121.45937, "PositionLat": 25.15337, "SurveillanceDescription": "淡水區中正東路八勢路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000297"},
+            {"CCTVID": "C000298", "PositionLon": 121.45493, "PositionLat": 25.15949, "SurveillanceDescription": "淡水區中正東路坪頂路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000298"},
+            {"CCTVID": "C000299", "PositionLon": 121.45989, "PositionLat": 25.13773, "SurveillanceDescription": "淡水區民生路民權路口", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000299"},
+            {"CCTVID": "C000312", "PositionLon": 121.42817, "PositionLat": 25.17562, "SurveillanceDescription": "淡水區中正路1段8巷", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000312"},
+            {"CCTVID": "C000320", "PositionLon": 121.44688, "PositionLat": 24.99394, "SurveillanceDescription": "橋頭路(第十河川局門口)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000320"},
+            {"CCTVID": "C000330", "PositionLon": 121.62393, "PositionLat": 25.0549, "SurveillanceDescription": "汐止區北山大橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000330"},
+            {"CCTVID": "C000375", "PositionLon": 121.46424, "PositionLat": 25.01758, "SurveillanceDescription": "板橋區文化路漢生東路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000375"},
+            {"CCTVID": "C000377", "PositionLon": 121.41942, "PositionLat": 25.18308, "SurveillanceDescription": "淡水區中正路二段、50巷", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000377"},
+            {"CCTVID": "C000387", "PositionLon": 121.46004, "PositionLat": 25.01266, "SurveillanceDescription": "板橋區文化路與民權路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000387"},
+            {"CCTVID": "C000388", "PositionLon": 121.46188, "PositionLat": 25.01129, "SurveillanceDescription": "板橋區縣民大道與民權路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000388"},
+            {"CCTVID": "C000399", "PositionLon": 121.61934, "PositionLat": 25.06642, "SurveillanceDescription": "汐止區康寧街與汐湖二橋", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000399"},
+            {"CCTVID": "C000402", "PositionLon": 121.42781, "PositionLat": 25.18617, "SurveillanceDescription": "淡水區新民隧道-南下隧道內", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000402"},
+            {"CCTVID": "C000421", "PositionLon": 121.45627, "PositionLat": 25.16114, "SurveillanceDescription": "淡水區淡金路-坪頂路(遠端號誌桿)", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000421"},
+            {"CCTVID": "C000488", "PositionLon": 121.64334, "PositionLat": 25.07563, "SurveillanceDescription": "康寧街、國道新設匝道", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000488"}
         ];
 
-        // 過濾邏輯：保留淡水區 或者 包含高速/快速公路/橋樑關鍵字
         filteredCCTVList = rawCCTVs.filter(item => {
             const desc = item.SurveillanceDescription || "";
             const isTamsui = desc.includes("淡水");
@@ -476,7 +470,6 @@
             return isTamsui || isHighwayOrBridge;
         });
 
-        // 建立下拉選單選項
         let selectHtml = "";
         filteredCCTVList.forEach((st, idx) => {
             const badge = st.SurveillanceDescription.includes("淡水") ? "📍[淡水]" : "🛣️[公路/橋]";
@@ -489,7 +482,6 @@
             updateCCTVDisplay(0);
         }
 
-        // 在地圖上標註所有過濾後的 CCTV 點位
         renderCCTVMarkers();
     }
 
@@ -517,16 +509,10 @@
 
     function updateCCTVDisplay(index) {
         const station = filteredCCTVList[index] || filteredCCTVList[0];
-        const timestamp = new Date().getTime();
-        // 採用官方串流圖檔與智慧備援
-        const imgUrl = `https://td.ntpc.gov.tw/image/cctv/${station.CCTVID.replace('C0000', '')}.jpg?t=${timestamp}`;
-
-        document.getElementById('cctv-label').innerText = `${station.SurveillanceDescription} (${station.CCTVID})`;
-        const imgEl = document.getElementById('cctv-img');
-        imgEl.src = imgUrl;
-        imgEl.onerror = function() {
-            this.src = "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80";
-        };
+        
+        // 使用官方 ATIS 動態串流網址 (VideoStreamURL) 透過 iframe 載入，完美繞過圖片防盜鏈阻擋
+        const iframeEl = document.getElementById('cctv-iframe');
+        iframeEl.src = station.VideoStreamURL;
 
         if (map && station.PositionLat && station.PositionLon) {
             map.setView([station.PositionLat, station.PositionLon], 15);
@@ -707,8 +693,7 @@
         
         titleTag.innerText = `🎥 互動投影：交通即時監控 - ${station.SurveillanceDescription} (${station.CCTVID})`;
         content.dataset.type = 'cctv';
-        const imgEl = document.getElementById('cctv-img');
-        content.innerHTML = `<img src="${imgEl.src}" referrerpolicy="no-referrer" style="width:100%; height:100%; object-fit:contain; background:#000;" alt="CCTV投影">`;
+        content.innerHTML = `<iframe src="${station.VideoStreamURL}" style="width:100%; height:100%; border:none; background:#000;" frameborder="0"></iframe>`;
         box.style.display = 'block';
     }
 
@@ -784,7 +769,6 @@
     }
 
     function renderIncidentMarkers(data) {
-        // 清除舊圖標但保留 CCTV 標註點
         markersGroup.clearLayers();
         renderCCTVMarkers();
 

@@ -150,13 +150,13 @@
     </div>
 
     <div class="top-layout">
-        <!-- 左側面板：上(即時颱風路徑與風場追蹤) 下(雨量) -->
+        <!-- 左側面板：上(Windy 颶風追蹤器) 下(雨量) -->
         <div class="panel">
             <div class="sub-block">
-                <div class="panel-title">🌀 Windy 即時颱風路徑與風場追蹤器 <span style="font-size:8px; color:#00f2fe;">(點擊放大至中央)</span></div>
-                <div class="box-container" style="background:#000;" onclick="projectIframeToCenter('Windy 即時颱風路徑與風場追蹤器', 'https://embed.windy.com/embed2.5.0.html?lat=23.5&lon=125.5&zoom=5&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1')">
+                <div class="panel-title">🌀 Windy 颶風追蹤器與路徑預報 <span style="font-size:8px; color:#00f2fe;">(點擊放大至中央)</span></div>
+                <div class="box-container" style="background:#000;" onclick="projectIframeToCenter('Windy 颶風追蹤器與路徑預報', 'https://embed.windy.com/embed2.5.0.html?lat=23.5&lon=125.5&zoom=5&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1&hurricanes=true')">
                     <div class="iframe-click-overlay"></div>
-                    <iframe src="https://embed.windy.com/embed2.5.0.html?lat=23.5&lon=125.5&zoom=5&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none; pointer-events:none;" frameborder="0"></iframe>
+                    <iframe src="https://embed.windy.com/embed2.5.0.html?lat=23.5&lon=125.5&zoom=5&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1&hurricanes=true" style="width:100%; height:100%; border:none; pointer-events:none;" frameborder="0"></iframe>
                 </div>
             </div>
             <div class="sub-block">
@@ -293,10 +293,8 @@
     const CWA_API_KEY = "CWA-3CF372A5-0801-4819-ADE1-7DE3D1F3010B"; 
     const BASE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
 
-    // 嚴格過濾後的 CCTV 點位清單
     let filteredCCTVList = [];
 
-    // 精準對照淡水區主要路段座標
     const tamsuiLocations = [
         { key: "中山北路一段", lat: 25.1768, lng: 121.4435 },
         { key: "中山北路二段", lat: 25.1850, lng: 121.4422 },
@@ -328,7 +326,6 @@
         markersGroup = L.layerGroup().addTo(map);
     }
 
-    // 載入並執行嚴格過濾（排除指定行政區與新北環快，僅保留淡水與高速/快速公路與重要橋樑）
     function loadAndFilterCCTVs() {
         const rawCCTVs = [
             {"CCTVID": "C000002", "PositionLon": 121.46794, "PositionLat": 25.02261, "SurveillanceDescription": "板橋文化路1段民生路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000002"},
@@ -468,20 +465,11 @@
 
         filteredCCTVList = rawCCTVs.filter(item => {
             const desc = item.SurveillanceDescription || "";
-            
-            // 1. 若為淡水區，直接完整保留
             if (desc.includes("淡水")) return true;
-            
-            // 2. 嚴格檢查並排除使用者指定的行政區與新北環快
             for (let he of hardExcluded) {
                 if (desc.includes(he)) return false;
             }
-            
-            // 3. 其他非淡水區，僅保留明確的公路、橋樑、高速快速道路節點
-            const isHighway = trueHighwayKeywords.some(kw => desc.includes(kw));
-            if (isHighway) return true;
-            
-            return false;
+            return trueHighwayKeywords.some(kw => desc.includes(kw));
         });
 
         let selectHtml = "";
@@ -537,7 +525,6 @@
         }
     }
 
-    // 一鍵匯出 Excel 報表
     function exportToExcel() {
         if (!globalData || globalData.length === 0) {
             alert("目前無災情資料可供匯出！");

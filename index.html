@@ -150,13 +150,13 @@
     </div>
 
     <div class="top-layout">
-        <!-- 左側面板：上(衛星) 下(雨量) -->
+        <!-- 左側面板：上(即時颱風路徑與風場追蹤) 下(雨量) -->
         <div class="panel">
             <div class="sub-block">
-                <div class="panel-title">🌀 Windy 颱風追蹤器與衛星雲圖 <span style="font-size:8px; color:#00f2fe;">(點擊放大至中央)</span></div>
-                <div class="box-container" style="background:#000;" onclick="projectIframeToCenter('Windy 颱風追蹤器與衛星雲圖', 'https://embed.windy.com/embed2.5.0.html?lat=25.930&lon=125.298&zoom=6&level=surface&overlay=satellite&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1')">
+                <div class="panel-title">🌀 Windy 即時颱風路徑與風場追蹤器 <span style="font-size:8px; color:#00f2fe;">(點擊放大至中央)</span></div>
+                <div class="box-container" style="background:#000;" onclick="projectIframeToCenter('Windy 即時颱風路徑與風場追蹤器', 'https://embed.windy.com/embed2.5.0.html?lat=23.5&lon=125.5&zoom=5&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1')">
                     <div class="iframe-click-overlay"></div>
-                    <iframe src="https://embed.windy.com/embed2.5.0.html?lat=25.930&lon=125.298&zoom=6&level=surface&overlay=satellite&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none; pointer-events:none;" frameborder="0"></iframe>
+                    <iframe src="https://embed.windy.com/embed2.5.0.html?lat=23.5&lon=125.5&zoom=5&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" style="width:100%; height:100%; border:none; pointer-events:none;" frameborder="0"></iframe>
                 </div>
             </div>
             <div class="sub-block">
@@ -469,15 +469,15 @@
         filteredCCTVList = rawCCTVs.filter(item => {
             const desc = item.SurveillanceDescription || "";
             
-            // 1. 若為淡水區，直接保留
+            // 1. 若為淡水區，直接完整保留
             if (desc.includes("淡水")) return true;
             
-            // 2. 排除使用者指定的行政區與新北環快
+            // 2. 嚴格檢查並排除使用者指定的行政區與新北環快
             for (let he of hardExcluded) {
                 if (desc.includes(he)) return false;
             }
             
-            // 3. 其他非淡水區，僅保留高速/快速公路、橋樑、匝道、隧道等
+            // 3. 其他非淡水區，僅保留明確的公路、橋樑、高速快速道路節點
             const isHighway = trueHighwayKeywords.some(kw => desc.includes(kw));
             if (isHighway) return true;
             

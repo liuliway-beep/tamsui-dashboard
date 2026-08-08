@@ -200,13 +200,13 @@
             </div>
             <div class="sub-block">
                 <div class="panel-title">
-                    <span>🎥 交通即時監控 (淡水 & 高速快速公路)</span>
-                    <span style="font-size:8px; color:#00f2fe;" id="cctv-count-tag">[官方串流連線]</span>
+                    <span>🎥 交通即時監控 (淡水專屬 & 主要公路橋樑)</span>
+                    <span style="font-size:8px; color:#00f2fe;" id="cctv-count-tag">[已精準過濾]</span>
                 </div>
                 <div class="box-container" onclick="projectCCTVToCenter()">
                     <div class="iframe-click-overlay"></div>
                     
-                    <!-- 採用官方 ATIS 串流 iframe 確保 100% 播放成功 -->
+                    <!-- 官方 ATIS 串流 iframe -->
                     <iframe id="cctv-iframe" src="" style="width:100%; height:100%; border:none; pointer-events:none;" frameborder="0"></iframe>
 
                     <select class="cctv-select" id="cctv-dropdown" onclick="event.stopPropagation();" onchange="changeCCTVLocation(this.value)">
@@ -293,7 +293,7 @@
     const CWA_API_KEY = "CWA-3CF372A5-0801-4819-ADE1-7DE3D1F3010B"; 
     const BASE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1ok5xvwW-enVzGfgX4C3F63mx7PzTP5_UBmerbb4y13XC65MlqC8V1spvUNK_eiQZ-aEu745sxRKQ/pub?output=csv';
 
-    // 官方過濾後的 CCTV 點位清單（淡水區 + 高速快速公路/橋樑）
+    // 嚴格過濾後的 CCTV 點位清單
     let filteredCCTVList = [];
 
     // 精準對照淡水區主要路段座標
@@ -328,7 +328,7 @@
         markersGroup = L.layerGroup().addTo(map);
     }
 
-    // 載入並過濾官方 CCTV 資料 (僅保留淡水區與高速/快速公路/橋樑)
+    // 載入並執行嚴格過濾（排除指定行政區與新北環快，僅保留淡水與高速/快速公路與重要橋樑）
     function loadAndFilterCCTVs() {
         const rawCCTVs = [
             {"CCTVID": "C000002", "PositionLon": 121.46794, "PositionLat": 25.02261, "SurveillanceDescription": "板橋文化路1段民生路", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000002"},
@@ -463,11 +463,25 @@
             {"CCTVID": "C000488", "PositionLon": 121.64334, "PositionLat": 25.07563, "SurveillanceDescription": "康寧街、國道新設匝道", "VideoStreamURL": "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000488"}
         ];
 
+        const hardExcluded = ['三重', '三峽', '林口', '新店', '汐止', '新北環快', '永和', '石碇', '五股', '坪林', '泰山', '樹林', '新莊'];
+        const trueHighwayKeywords = ['國道', '國1', '國2', '國3', '國5', '台1', '台2', '台3', '台61', '台62', '台64', '台65', '高速公路', '快速公路', '高架', '環快', '交流道', '匝道', '隧道', '門架', '大橋', '光復橋', '華翠橋', '忠孝橋', '中興橋', '新海橋', '華中橋', '秀朗橋', '關渡大橋', '永安大橋', '成蘆大橋', '三鶯大橋', '重新橋', '浮洲橋', '南陽大橋', '北山大橋', '汐湖二橋', '柑園二橋', '大漢橋'];
+
         filteredCCTVList = rawCCTVs.filter(item => {
             const desc = item.SurveillanceDescription || "";
-            const isTamsui = desc.includes("淡水");
-            const isHighwayOrBridge = desc.includes("國") || desc.includes("台") || desc.includes("高架") || desc.includes("環快") || desc.includes("快速") || desc.includes("交流道") || desc.includes("匝道") || desc.includes("橋") || desc.includes("隧道") || desc.includes("門架");
-            return isTamsui || isHighwayOrBridge;
+            
+            // 1. 若為淡水區，直接保留
+            if (desc.includes("淡水")) return true;
+            
+            // 2. 排除使用者指定的行政區與新北環快
+            for (let he of hardExcluded) {
+                if (desc.includes(he)) return false;
+            }
+            
+            // 3. 其他非淡水區，僅保留高速/快速公路、橋樑、匝道、隧道等
+            const isHighway = trueHighwayKeywords.some(kw => desc.includes(kw));
+            if (isHighway) return true;
+            
+            return false;
         });
 
         let selectHtml = "";
@@ -509,8 +523,6 @@
 
     function updateCCTVDisplay(index) {
         const station = filteredCCTVList[index] || filteredCCTVList[0];
-        
-        // 使用官方 ATIS 動態串流網址 (VideoStreamURL) 透過 iframe 載入，完美繞過圖片防盜鏈阻擋
         const iframeEl = document.getElementById('cctv-iframe');
         iframeEl.src = station.VideoStreamURL;
 

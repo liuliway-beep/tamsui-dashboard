@@ -198,30 +198,35 @@
         .full-fit-img { 
             width: 100%; 
             height: 100%; 
-            object-fit: cover !important; 
-            display: block;
-        }
-
-        /* 關鍵修正：精準鎖定並放大【北台灣 / 淡水】區域 (座標原點改為 44% 16%) */
-        .north-taiwan-focus { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover;
-            transform: scale(3.2);
-            transform-origin: 44% 16%; 
+            object-fit: contain !important; 
             background-color: #000;
             display: block;
         }
 
-        /* 雷達動態效果 */
-        @keyframes radar-pulse {
-            0% { filter: brightness(1) contrast(1); transform: scale(3.2); }
-            50% { filter: brightness(1.25) contrast(1.15); transform: scale(3.25); }
-            100% { filter: brightness(1) contrast(1); transform: scale(3.2); }
+        /* 關鍵修正：精準鎖定並放大【北台灣 / 淡水】區域 (座標原點改為 48% 14%) */
+        .north-taiwan-focus { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover;
+            transform: scale(3.5);
+            transform-origin: 48% 14%; 
+            background-color: #000;
+            display: block;
         }
-        .radar-animated-effect {
-            animation: radar-pulse 3s infinite ease-in-out;
-            transform-origin: 44% 16%;
+
+        /* 雷達掃描光束動態效果 (模擬 Java 動圖) */
+        .radar-scanner-beam {
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: conic-gradient(from 0deg at 50% 50%, rgba(0, 242, 254, 0) 0deg, rgba(0, 242, 254, 0.2) 60deg, rgba(0, 242, 254, 0) 61deg);
+            animation: radar-spin 4s linear infinite;
+            pointer-events: none;
+            z-index: 10;
+        }
+        @keyframes radar-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         .radar-badge {
@@ -416,12 +421,12 @@
 
     <!-- 中間三欄配置 -->
     <div class="top-layout">
-        <!-- 左欄：頂部為氣象署官方颱風路徑與警戒圖，底部為雷達回波降雨動態圖(北台灣/淡水) -->
+        <!-- 左欄：頂部為氣象署官方颱風路徑與警戒圖，底部為北台灣/淡水雷達回波降雨動態圖 -->
         <div class="panel">
             <div class="sub-block">
                 <div class="panel-title">🌀 颱風路徑與北台灣警戒區</div>
                 <div class="box-container" onclick="projectToCenter('颱風路徑與北台灣警戒區', 'https://www.cwa.gov.tw/Data/typhoon/TY_NEWS.png', false)">
-                    <!-- 左上改用氣象署官方視覺化颱風路徑與警戒圖 -->
+                    <!-- 左上維持氣象署官方視覺化颱風路徑圖 -->
                     <img src="https://www.cwa.gov.tw/Data/typhoon/TY_NEWS.png" class="full-fit-img" alt="颱風路徑圖" onerror="this.src='https://www.cwa.gov.tw/Data/radar/CV1_3600.png'">
                 </div>
             </div>
@@ -429,11 +434,12 @@
             <div class="sub-block">
                 <div class="panel-title">📡 雷達回波降雨動態圖 (北台灣/淡水)</div>
                 <div class="box-container" onclick="projectToCenter('北台灣雷達回波降雨動態圖', document.getElementById('animated-radar-img').src, true)">
-                    <!-- 左下雷達回波圖精準聚焦至北台灣/淡水 -->
+                    <!-- 左下雷達回波圖精準聚焦至北台灣/淡水，並具備雷達光束旋轉動態 -->
                     <div style="width:100%; height:100%; overflow:hidden; position:relative;">
-                        <img id="animated-radar-img" src="https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png" class="north-taiwan-focus radar-animated-effect" alt="雷達回波圖">
+                        <img id="animated-radar-img" src="https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png" class="north-taiwan-focus" alt="雷達回波圖">
+                        <div class="radar-scanner-beam"></div>
                     </div>
-                    <div class="radar-badge" id="radar-status-badge">▶ 動態監控中 (Live Loop)</div>
+                    <div class="radar-badge" id="radar-status-badge">▶ 掃描動態中 (Live Loop)</div>
                 </div>
             </div>
         </div>
@@ -634,6 +640,7 @@
             content.innerHTML = `
                 <div style="width:100%; height:100%; overflow:hidden; position:relative; background:#000;">
                     <img src="${imgUrl}" class="north-taiwan-focus" alt="投影畫面">
+                    <div class="radar-scanner-beam"></div>
                 </div>
             `;
         } else {
@@ -800,7 +807,7 @@
             count++;
             radarImg.src = "https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png?t=" + new Date().getTime();
             if(badgeElement) {
-                badgeElement.innerText = `▶ 動態監控中 (Live Update #${count})`;
+                badgeElement.innerText = `▶ 動態掃描中 (Live Update #${count})`;
             }
         }, 5000); // 每 5 秒更新一次畫面
     }

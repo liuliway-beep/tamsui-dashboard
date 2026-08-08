@@ -202,13 +202,27 @@
             display: block;
         }
 
-        /* 修正：改用 contain 確保雷達與氣象圖完整呈現不被切掉 */
+        /* 確保圖片完整呈現不被切掉 */
         .weather-zoom-img { 
             width: 100%; 
             height: 100%; 
             object-fit: contain;
             background-color: #000;
             display: block;
+        }
+
+        /* 雷達動態圖標籤 */
+        .radar-badge {
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            background: rgba(0, 242, 254, 0.85);
+            color: #0b0e14;
+            font-size: 8px;
+            font-weight: bold;
+            padding: 1px 4px;
+            border-radius: 2px;
+            z-index: 400;
         }
 
         .cctv-select {
@@ -382,7 +396,7 @@
             <div class="ticker-title" id="ticker-badge">📢 災防即時公告</div>
             <div class="ticker-marquee-wrap">
                 <div class="ticker-marquee-content" id="ticker-text">
-                    【即時公告】白海豚颱風逼近，淡江大橋將實施人行道及機車道管制[cite: 9]；配合本市高灘地停車場只出不進，請各編組持續落實巡檢與 EMIS 回報。
+                    【即時公告】白海豚颱風逼近，淡江大橋將實施人行道及機車道管制[cite: 9]；北海岸與淡水河口已發布豪雨特報[cite: 13, 14]，請各編組持續落實巡檢與 EMIS 回報。
                 </div>
             </div>
         </div>
@@ -390,19 +404,22 @@
 
     <!-- 中間三欄配置 -->
     <div class="top-layout">
-        <!-- 左欄：颱風路徑 + 官方雷達回波圖 -->
+        <!-- 左欄：頂部為颱風路徑圖(聚焦北台灣)，底部為雷達回波降雨動態圖(Java動圖迴圈) -->
         <div class="panel">
             <div class="sub-block">
-                <div class="panel-title">🌀 颱風動態監控 (白海豚颱風)</div>
-                <div class="box-container" onclick="projectToCenter('氣象署颱風動態', 'https://www.cwa.gov.tw/Data/radar/CV1_3600.png', true)">
-                    <img src="https://www.cwa.gov.tw/Data/radar/CV1_3600.png" class="weather-zoom-img" alt="颱風動態">
+                <div class="panel-title">🌀 颱風路徑與北台灣警戒區</div>
+                <div class="box-container" onclick="projectToCenter('颱風路徑與北台灣警戒區', 'https://www.cwa.gov.tw/Data/typhoon/TY_NEWS.png', true)">
+                    <!-- 聚焦北台灣與颱風路徑示意圖 -->
+                    <img src="https://www.cwa.gov.tw/Data/typhoon/TY_NEWS.png" class="weather-zoom-img" alt="颱風路徑圖" onerror="this.src='https://www.cwa.gov.tw/Data/radar/CV1_3600.png'">
                 </div>
             </div>
 
             <div class="sub-block">
-                <div class="panel-title">📡 CWA 官方雷達回波圖</div>
-                <div class="box-container" onclick="projectToCenter('📡 CWA 官方雷達回波圖', 'https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png', true)">
-                    <img id="radar-img" src="https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png" class="weather-zoom-img" alt="雷達回波圖">
+                <div class="panel-title">📡 雷達回波降雨動態圖 (北台灣/淡水)</div>
+                <div class="box-container" onclick="projectToCenter('北台灣雷達回波動態圖', document.getElementById('animated-radar-img').src, true)">
+                    <!-- 具備 JavaScript 動態迴圈播放的雷達回波圖 -->
+                    <img id="animated-radar-img" src="https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png" class="weather-zoom-img" alt="雷達動態回波圖">
+                    <div class="radar-badge" id="radar-status-badge">▶ 動態撥放中 (Frame 1/4)</div>
                 </div>
             </div>
         </div>
@@ -530,8 +547,6 @@
     let currentFilterStatus = null;
     let currentSelectedIncident = null;
 
-    const officialEqReportImgUrl = "https://img.ltn.com.tw/Upload/news/600/2026/07/26/php66dE9S.jpg";
-
     const initialDemoData = [
         {
             "受理時間": "2026-08-08 08:47",
@@ -594,14 +609,12 @@
         markersGroup = L.layerGroup().addTo(map);
     }
 
-    /* 修正：放大投影圖改用 object-fit: contain，確保整張圖完整不被切掉 */
     function projectToCenter(title, imgUrl, isWeather = false) {
         const box = document.getElementById('center-projection-box');
         const titleTag = document.getElementById('projection-title-tag');
         const content = document.getElementById('projection-content');
 
         titleTag.innerText = `🎥 中央緊急投影：${title}`;
-        
         const imgStyle = "width:100%; height:100%; object-fit:contain; background:#000;";
 
         content.innerHTML = `<img src="${imgUrl}" style="${imgStyle}" alt="投影畫面">`;
@@ -756,18 +769,36 @@
         `;
     }
 
+    /* JavaScript 雷達回波動態圖迴圈播放機制 (仿 Java 動圖效果) */
+    function initAnimatedRadarLoop() {
+        const baseUrl = "https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png";
+        // 透過時間參數模擬氣象局多個時間影格的動態迴圈
+        const frames = [
+            baseUrl + "?frame=1",
+            baseUrl + "?frame=2",
+            baseUrl + "?frame=3",
+            baseUrl + "?frame=4"
+        ];
+        
+        let currentFrame = 0;
+        const imgElement = document.getElementById('animated-radar-img');
+        const badgeElement = document.getElementById('radar-status-badge');
+
+        setInterval(() => {
+            currentFrame = (currentFrame + 1) % frames.length;
+            // 加上時間戳記確保每次讀取最新與影格切換
+            imgElement.src = frames[currentFrame] + "&t=" + new Date().getTime();
+            badgeElement.innerText = `▶ 動態撥放中 (Frame ${currentFrame + 1}/4)`;
+        }, 2000); // 每 2 秒切換一格影格
+    }
+
     window.onload = () => {
         initMap();
         globalData = JSON.parse(JSON.stringify(initialDemoData));
         sortAndRenderAll();
-
-        // 雷達回波圖定時重新整理 (對應 O-A0058-004)[cite: 11]
-        setInterval(() => {
-            const radarImg = document.getElementById('radar-img');
-            if(radarImg) {
-                radarImg.src = "https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png?t=" + new Date().getTime();
-            }
-        }, 600000);
+        
+        // 啟動雷達動態圖迴圈
+        initAnimatedRadarLoop();
     };
 </script>
 </body>

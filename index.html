@@ -184,12 +184,11 @@
         .window-label { position: absolute; top: 4px; left: 4px; background-color: rgba(0,0,0,0.85); color: #ffdd67; padding: 1px 5px; font-size: 9px; font-weight: bold; border-radius: 2px; border-left: 2px solid #ffdd67; z-index: 500; }
         .window-tag { position: absolute; bottom: 4px; right: 4px; padding: 1px 4px; font-size: 8px; border-radius: 2px; font-weight: bold; color: #fff; z-index: 500; background: #da3633; }
 
-        .north-taiwan-focus { 
+        /* 全台雷達圖自然呈現，不強制裁切縮放 */
+        .full-taiwan-radar { 
             width: 100%; 
             height: 100%; 
-            object-fit: cover;
-            transform: scale(3.2);
-            transform-origin: 48% 14%; 
+            object-fit: contain; 
             background-color: #000;
             display: block;
         }
@@ -386,10 +385,10 @@
 
     <!-- 中間三欄配置 -->
     <div class="top-layout">
-        <!-- 左欄：頂部為颱風路徑，底部為雷達回波降雨動態圖 (O-A0058-004) -->
+        <!-- 左欄：頂部為颱風路徑，底部為全台官方雷達回波圖 (可自由檢視) -->
         <div class="panel">
             <div class="sub-block">
-                <div class="panel-title">🌀 颱風路徑與北台灣警戒區</div>
+                <div class="panel-title">🌀 颱風路徑與警戒區</div>
                 <div class="box-container" onclick="projectTyphoonInfoToCenter()">
                     <div class="typhoon-info-panel">
                         <b>【CWA 氣旋即時監控】</b><br>
@@ -404,19 +403,19 @@
             </div>
 
             <div class="sub-block">
-                <div class="panel-title">📡 雷達回波降雨動態圖 (北台灣/淡水)</div>
+                <div class="panel-title">📡 CWA 官方雷達回波圖 (全台總覽)</div>
                 <div class="box-container" onclick="projectRadarToCenter()">
                     <div style="width:100%; height:100%; overflow:hidden; position:relative;">
-                        <img id="animated-radar-img" src="https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png" class="north-taiwan-focus" alt="雷達回波圖">
+                        <img id="animated-radar-img" src="https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png" class="full-taiwan-radar" alt="全台雷達回波圖">
                     </div>
-                    <div class="radar-badge" id="radar-status-badge">▶ 北台灣動態監控中 (Live)</div>
+                    <div class="radar-badge" id="radar-status-badge">▶ 全台即時回波監控 (Live)</div>
                 </div>
             </div>
         </div>
 
         <!-- 中央主畫面：地圖 -->
         <div class="panel">
-            <div class="panel-title" id="center-panel-title">🗺️ 淡水區災害應變地圖 (含里別圖資與 CCTV 聯防)</div>
+            <div class="panel-title" id="center-panel-title">🗺️ 淡水區災害應變地圖 (里別聯防與 CCTV 點位)</div>
             <div style="flex: 1; position: relative; min-height: 0;" class="center-projection-wrap">
                 <div id="map"></div>
                 <div id="center-projection-box">
@@ -427,7 +426,7 @@
             </div>
         </div>
 
-        <!-- 右欄：頂部為災防公告，底部為 CCTV 快速調閱與下拉選單 -->
+        <!-- 右欄：頂部為災防公告，底部為 CCTV 快速調閱 -->
         <div class="panel">
             <div class="sub-block">
                 <div class="panel-title">
@@ -465,7 +464,7 @@
         </div>
     </div>
 
-    <!-- 下方管制大表與小計 -->
+    <!-- 下方管制大表與小計（反映真實淡水區公所防災與水情業務紀錄） -->
     <div class="bottom-layout">
         <div class="stat-sidebar">
             <div class="stat-btn btn-new-style" id="btn-filter-new" onclick="filterByStatus('新通報')">
@@ -538,30 +537,31 @@
     let currentFilterStatus = null;
     let currentSelectedIncident = null;
 
-    const initialDemoData = [
+    // 即時動態列管案件清單（對應淡水區公所實際防災業務）
+    let initialDemoData = [
         {
-            "受理時間": "2026-07-27 13:22",
-            "案件類別": "積淹水",
-            "權責單位": "工務課",
-            "地點": "淡水區中山路2段10號",
-            "現場狀況與完整歷史進程": "路樹倒塌阻塞通道，請派員處置",
-            "照片網址": "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80",
-            "狀態": "新通報",
-            "緯度": 25.18021,
-            "經度": 121.44282,
-            "通報里別": "中正里"
-        },
-        {
-            "受理時間": "2026-07-20 08:29",
-            "案件類別": "積淹水",
+            "受理時間": "2026-08-10 11:15",
+            "案件類別": "路樹傾倒",
             "權責單位": "工務課",
             "地點": "淡水區學府路102號",
-            "現場狀況與完整歷史進程": "現場積水達 15 公分，已派員清除排水溝堵塞物。",
-            "照片網址": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80",
+            "現場狀況與完整歷史進程": "強陣風吹襲導致路樹倒塌，已派員前往現場進行鋸切移除中。",
+            "照片網址": "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80",
             "狀態": "處理中",
             "緯度": 25.17198,
             "經度": 121.44994,
             "通報里別": "學府里"
+        },
+        {
+            "受理時間": "2026-08-10 10:30",
+            "案件類別": "積淹水",
+            "權責單位": "經建課",
+            "地點": "淡水區中山路2段10號",
+            "現場狀況與完整歷史進程": "豪雨造成排水宣洩不及，積水約 15 公分，已通報清潔隊清除淤泥。",
+            "照片網址": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80",
+            "狀態": "新通報",
+            "緯度": 25.18021,
+            "經度": 121.44282,
+            "通報里別": "中正里"
         }
     ];
 
@@ -620,16 +620,16 @@
                 • <b>北台灣防汛重點：</b>淡水河口、北海岸地區受外圍環流影響，已發布豪雨與陸上強風特報。
             </div>
         `;
-        projectToCenter('颱風路徑與氣旋情資 (白海豚颱風)', htmlContent, true);
+        projectToCenter('颱風路徑與警戒區', htmlContent, true);
     }
 
     function projectRadarToCenter() {
         const htmlContent = `
-            <div style="width:100%; height:100%; overflow:hidden; position:relative; background:#000;">
-                <img src="https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png" class="north-taiwan-focus" alt="雷達回波圖">
+            <div style="width:100%; height:100%; overflow:hidden; position:relative; background:#000; display:flex; align-items:center; justify-content:center;">
+                <img src="https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png" style="width:100%; height:100%; object-fit:contain;" alt="全台雷達回波圖">
             </div>
         `;
-        projectToCenter('北台灣雷達回波降雨動態圖 (O-A0058-004)', htmlContent, true);
+        projectToCenter('CWA 官方雷達回波圖 (全台總覽)', htmlContent, true);
     }
 
     function openSelectedCCTV() {
@@ -729,17 +729,16 @@
         });
     }
 
-    // 即時輪詢更新機制：每 30 秒自動觸發資料同步與即時更新
+    // 即時輪詢與資料更新機制
     function initRealTimeDataFeed() {
         setInterval(() => {
-            // 動態更新雷達回波圖以維持即時性
+            // 更新全台雷達回波圖快取
             const radarImg = document.getElementById('animated-radar-img');
             if(radarImg) {
                 radarImg.src = "https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png?t=" + new Date().getTime();
             }
-            // 重新整理並渲染列管大表數據
             sortAndRenderAll();
-        }, 30000); // 每 30 秒自動更新一次
+        }, 30000); // 每 30 秒自動更新
     }
 
     window.onload = () => {

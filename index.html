@@ -184,7 +184,6 @@
         .window-label { position: absolute; top: 4px; left: 4px; background-color: rgba(0,0,0,0.85); color: #ffdd67; padding: 1px 5px; font-size: 9px; font-weight: bold; border-radius: 2px; border-left: 2px solid #ffdd67; z-index: 500; }
         .window-tag { position: absolute; bottom: 4px; right: 4px; padding: 1px 4px; font-size: 8px; border-radius: 2px; font-weight: bold; color: #fff; z-index: 500; background: #da3633; }
 
-        /* 全台雷達圖自然呈現，不強制裁切縮放 */
         .full-taiwan-radar { 
             width: 100%; 
             height: 100%; 
@@ -385,7 +384,7 @@
 
     <!-- 中間三欄配置 -->
     <div class="top-layout">
-        <!-- 左欄：頂部為颱風路徑，底部為全台官方雷達回波圖 (可自由檢視) -->
+        <!-- 左欄 -->
         <div class="panel">
             <div class="sub-block">
                 <div class="panel-title">🌀 颱風路徑與警戒區</div>
@@ -405,7 +404,7 @@
             <div class="sub-block">
                 <div class="panel-title">📡 CWA 官方雷達回波圖 (全台總覽)</div>
                 <div class="box-container" onclick="projectRadarToCenter()">
-                    <div style="width:100%; height:100%; overflow:hidden; position:relative;">
+                    <div style="width:100%; height:100%; overflow:hidden; position:relative; background:#000; display:flex; align-items:center; justify-content:center;">
                         <img id="animated-radar-img" src="https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png" class="full-taiwan-radar" alt="全台雷達回波圖">
                     </div>
                     <div class="radar-badge" id="radar-status-badge">▶ 全台即時回波監控 (Live)</div>
@@ -426,7 +425,7 @@
             </div>
         </div>
 
-        <!-- 右欄：頂部為災防公告，底部為 CCTV 快速調閱 -->
+        <!-- 右欄：頂部為災防公告，底部為 CCTV 動態載入引擎 -->
         <div class="panel">
             <div class="sub-block">
                 <div class="panel-title">
@@ -448,23 +447,20 @@
                     <span style="color: #00f2fe; font-size: 8px; font-weight: bold;">(⚠️ TDX 快速連線)</span>
                 </div>
                 <div class="box-container" style="flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 10px;" onclick="openSelectedCCTV()">
-                    <div style="font-size: 11px; color: #ffdd67; font-weight: bold; margin-bottom: 6px;" id="cctv-card-title">📍 淡水區中正東路一段3巷口</div>
+                    <div style="font-size: 11px; color: #ffdd67; font-weight: bold; margin-bottom: 6px;" id="cctv-card-title">載入中...</div>
                     <div style="font-size: 9px; color: #8b949e; margin-bottom: 12px;">點擊下方或此卡片，即時開啟官方高畫質串流</div>
                     <button style="background: #00f2fe; color: #0b0e14; border: none; padding: 6px 12px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">🔗 開啟即時影像串流</button>
                     
+                    <!-- 選單將由程式根據 JSON 資料動態產生 -->
                     <select class="cctv-select" id="cctv-dropdown" onclick="event.stopPropagation();" onchange="updateCCTVSelection(this)">
-                        <option value="https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000174" data-label="淡水區中正東路一段3巷口 (C000174)">📍 [C000174] 中正東路一段3巷口</option>
-                        <option value="https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000176" data-label="淡水區中正路、中山路口 (C000176)">📍 [C000176] 中正路、中山路口</option>
-                        <option value="https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000178" data-label="淡水區中山路、文化路口 (C000178)">📍 [C000178] 中山路、文化路口</option>
-                        <option value="https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000402" data-label="淡水區新民隧道南下 (C000402)">📍 [C000402] 新民隧道南下</option>
-                        <option value="https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000421" data-label="淡水區淡金路坪頂路 (C000421)">📍 [C000421] 淡金路坪頂路</option>
+                        <!-- 動態填入區 -->
                     </select>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 下方管制大表與小計（反映真實淡水區公所防災與水情業務紀錄） -->
+    <!-- 下方管制大表與小計 -->
     <div class="bottom-layout">
         <div class="stat-sidebar">
             <div class="stat-btn btn-new-style" id="btn-filter-new" onclick="filterByStatus('新通報')">
@@ -535,10 +531,8 @@
     let globalData = [];
     let map, markersGroup;
     let currentFilterStatus = null;
-    let currentSelectedIncident = null;
 
-    // 即時動態列管案件清單（對應淡水區公所實際防災業務）
-    let initialDemoData = [
+    const initialDemoData = [
         {
             "受理時間": "2026-08-10 11:15",
             "案件類別": "路樹傾倒",
@@ -574,22 +568,47 @@
         }).addTo(map);
 
         markersGroup = L.layerGroup().addTo(map);
-        loadTamsuiCCTVMarkers();
     }
 
-    function loadTamsuiCCTVMarkers() {
-        const tamsuiCCTVs = [
+    // ==== 核心引擎：動態讀取 CCTV JSON 資料庫 ====
+    function loadDynamicCCTVs() {
+        // 這裡建立一個模擬 API 回傳的完整淡水 CCTV 陣列資料 (取代寫死的選項)
+        // 未來若架設後端，只要把陣列來源改成 fetch('cctv_data.json') 即可無縫接軌
+        const fullCCTVData = [
+            { id: "C000008", name: "淡水區民權路187巷", lat: 25.1385, lon: 121.4600, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000008" },
             { id: "C000174", name: "淡水區中正東路一段3巷口", lat: 25.16480, lon: 121.45050, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000174" },
             { id: "C000176", name: "淡水區中正路、中山路口", lat: 25.16912, lon: 121.44456, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000176" },
-            { id: "C000402", name: "淡水區新民隧道南下", lat: 25.18617, lon: 121.42781, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000402" }
+            { id: "C000178", name: "淡水區中山路、文化路口", lat: 25.17400, lon: 121.43900, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000178" },
+            { id: "C000252", name: "關渡大橋淡水端", lat: 25.1278, lon: 121.4633, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000252" },
+            { id: "C000402", name: "淡水區新民隧道南下", lat: 25.18617, lon: 121.42781, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000402" },
+            { id: "C000421", name: "淡水區淡金路、坪頂路口", lat: 25.1585, lon: 121.4580, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000421" },
+            { id: "C000180", name: "淡水區淡金路、北新路口", lat: 25.1780, lon: 121.4500, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000180" },
+            { id: "C000185", name: "淡水區沙崙路、新民街口", lat: 25.1850, lon: 121.4220, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000185" },
+            { id: "C000190", name: "淡水區民權路、民族路口", lat: 25.1350, lon: 121.4620, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000190" }
         ];
 
-        tamsuiCCTVs.forEach(cctv => {
+        const dropdown = document.getElementById('cctv-dropdown');
+        dropdown.innerHTML = ''; // 清空選項預備動態寫入
+
+        fullCCTVData.forEach((cctv, index) => {
+            // 1. 動態將資料庫裡的 CCTV 座標打在地圖上
             let marker = L.circleMarker([cctv.lat, cctv.lon], {
                 radius: 7, fillColor: "#00f2fe", color: "#fff", weight: 2, fillOpacity: 0.9
             }).addTo(map);
             marker.bindPopup(`<b>[CCTV 監控點] ${cctv.name}</b><br><a href="${cctv.url}" target="_blank">點擊在新視窗開啟串流</a>`);
+
+            // 2. 動態生成下拉選單的選項，不再寫死在 HTML 裡
+            let option = document.createElement('option');
+            option.value = cctv.url;
+            option.setAttribute('data-label', cctv.name);
+            option.innerText = `📍 [${cctv.id}] ${cctv.name.replace('淡水區', '')}`;
+            dropdown.appendChild(option);
         });
+
+        // 載入完成後預設選擇第一筆資料顯示
+        if (fullCCTVData.length > 0) {
+            document.getElementById('cctv-card-title').innerText = `📍 ${fullCCTVData[0].name}`;
+        }
     }
 
     function projectToCenter(title, contentHtml, isHtml = false) {
@@ -729,22 +748,24 @@
         });
     }
 
-    // 即時輪詢與資料更新機制
     function initRealTimeDataFeed() {
         setInterval(() => {
-            // 更新全台雷達回波圖快取
             const radarImg = document.getElementById('animated-radar-img');
             if(radarImg) {
                 radarImg.src = "https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png?t=" + new Date().getTime();
             }
             sortAndRenderAll();
-        }, 30000); // 每 30 秒自動更新
+        }, 30000); 
     }
 
     window.onload = () => {
         initMap();
         globalData = JSON.parse(JSON.stringify(initialDemoData));
         sortAndRenderAll();
+        
+        // 觸發自動載入 JSON 監視器資料庫引擎
+        loadDynamicCCTVs();
+        
         initRealTimeDataFeed();
     };
 </script>

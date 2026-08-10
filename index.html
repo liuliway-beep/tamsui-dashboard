@@ -169,7 +169,6 @@
             border-color: #00f2fe;
         }
 
-        /* 颱風情資面板樣式 */
         .typhoon-info-panel {
             padding: 8px;
             font-size: 10px;
@@ -185,15 +184,6 @@
         .window-label { position: absolute; top: 4px; left: 4px; background-color: rgba(0,0,0,0.85); color: #ffdd67; padding: 1px 5px; font-size: 9px; font-weight: bold; border-radius: 2px; border-left: 2px solid #ffdd67; z-index: 500; }
         .window-tag { position: absolute; bottom: 4px; right: 4px; padding: 1px 4px; font-size: 8px; border-radius: 2px; font-weight: bold; color: #fff; z-index: 500; background: #da3633; }
 
-        .full-fit-iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            display: block;
-            background: #000;
-        }
-
-        /* 北台灣聚焦縮放樣式 */
         .north-taiwan-focus { 
             width: 100%; 
             height: 100%; 
@@ -388,7 +378,7 @@
             <div class="ticker-title" id="ticker-badge">📢 災防即時公告</div>
             <div class="ticker-marquee-wrap">
                 <div class="ticker-marquee-content" id="ticker-text">
-                    【即時公告】白海豚颱風逼近，淡江大橋將實施人行道及機車道管制[cite: 9]；北海岸與淡水河口已發布豪雨特報[cite: 13, 14]，請各編組持續落實巡檢與 EMIS 回報。
+                    【即時公告】白海豚颱風逼近，淡江大橋將實施人行道及機車道管制；北海岸與淡水河口已發布豪雨特報，請各編組持續落實巡檢與 EMIS 回報。
                 </div>
             </div>
         </div>
@@ -396,19 +386,19 @@
 
     <!-- 中間三欄配置 -->
     <div class="top-layout">
-        <!-- 左欄：頂部為氣旋/颱風路徑結構化數據(W-C0034-005)，底部為北台灣/淡水雷達回波降雨動態圖(O-A0058-004) -->
+        <!-- 左欄：頂部為颱風路徑，底部為雷達回波降雨動態圖 (O-A0058-004) -->
         <div class="panel">
             <div class="sub-block">
-                <div class="panel-title">🌀 颱風路徑與氣旋情資 (白海豚颱風)</div>
+                <div class="panel-title">🌀 颱風路徑與北台灣警戒區</div>
                 <div class="box-container" onclick="projectTyphoonInfoToCenter()">
                     <div class="typhoon-info-panel">
                         <b>【CWA 氣旋即時監控】</b><br>
-                        • <b>颱風名稱：</b>白海豚 (DOLPHIN / 輕颱)[cite: 15]<br>
-                        • <b>中心位置：</b>東經 124.8° / 北緯 27.0°[cite: 15]<br>
-                        • <b>近中心最大風速：</b>35 m/s (陣風 45 m/s)[cite: 15]<br>
-                        • <b>中心氣壓：</b>962 hPa[cite: 15]<br>
-                        • <b>移動方向：</b>每小時 16 公里向西北西轉西進行[cite: 15]<br>
-                        • <b>北台灣影響：</b>北海岸與淡水河口豪雨特報[cite: 13, 14]
+                        • <b>颱風名稱：</b>白海豚 (DOLPHIN / 輕颱)<br>
+                        • <b>中心位置：</b>東經 124.8° / 北緯 27.0°<br>
+                        • <b>近中心最大風速：</b>35 m/s (陣風 45 m/s)<br>
+                        • <b>中心氣壓：</b>962 hPa<br>
+                        • <b>移動方向：</b>每小時 16 公里向西北西轉西進行<br>
+                        • <b>北台灣影響：</b>北海岸與淡水河口豪雨特報
                     </div>
                 </div>
             </div>
@@ -426,7 +416,7 @@
 
         <!-- 中央主畫面：地圖 -->
         <div class="panel">
-            <div class="panel-title" id="center-panel-title">🗺️ 淡水區災害應變地圖 (含里別圖資)</div>
+            <div class="panel-title" id="center-panel-title">🗺️ 淡水區災害應變地圖 (含里別圖資與 CCTV 聯防)</div>
             <div style="flex: 1; position: relative; min-height: 0;" class="center-projection-wrap">
                 <div id="map"></div>
                 <div id="center-projection-box">
@@ -437,18 +427,18 @@
             </div>
         </div>
 
-        <!-- 右欄：頂部改為即時災防公告與颱風警報欄(包含地震與氣象特報)，底部為 CCTV 巡邏監控 -->
+        <!-- 右欄：頂部為災防公告，底部為 CCTV 快速調閱與下拉選單 -->
         <div class="panel">
             <div class="sub-block">
                 <div class="panel-title">
                     <span>🚨 即時災防公告與颱風警報欄</span>
                     <span style="color: #ff4d4d; font-size: 8px; font-weight: bold;">[氣象/地震/公告]</span>
                 </div>
-                <div class="box-container" style="background:#0d1117; padding:8px; overflow-y:auto; cursor:default;" id="hazards-news-box">
+                <div class="box-container" style="background:#0d1117; padding:8px; overflow-y:auto; cursor:default;">
                     <div style="font-size:10px; color:#c9d1d9; line-height:1.4;">
-                        • <b>[氣象特報]</b> 新北市與北海岸地區發布豪雨特報及陸上強風特報[cite: 13, 14]。<br>
-                        • <b>[災防公告]</b> 白海豚颱風逼近，淡江大橋實施人行道及機車道管制[cite: 9]。<br>
-                        • <b>[地震速報]</b> 新北市雙溪區規模 5.6 有感地震，淡水區最大震度 3 級[cite: 1, 2]。
+                        • <b>[氣象特報]</b> 新北市與北海岸地區發布豪雨特報及陸上強風特報。<br>
+                        • <b>[災防公告]</b> 白海豚颱風逼近，淡江大橋實施人行道及機車道管制。<br>
+                        • <b>[地震速報]</b> 新北市雙溪區規模 5.6 有感地震，淡水區最大震度 3 級。
                     </div>
                 </div>
             </div>
@@ -456,20 +446,19 @@
             <div class="sub-block">
                 <div class="panel-title">
                     <span>🎥 轄區 CCTV 巡邏監控</span>
-                    <span style="color: #00f2fe; font-size: 8px; font-weight: bold;">(⚠️ 模擬/影像備援)</span>
+                    <span style="color: #00f2fe; font-size: 8px; font-weight: bold;">(⚠️ TDX 快速連線)</span>
                 </div>
-                <div class="box-container" onclick="projectCCTVToCenter()">
-                    <div class="window-label" id="cctv-label">淡水民權路187巷 (C000008)[cite: 3, 4]</div>
-                    <div class="window-tag">即時監控</div>
+                <div class="box-container" style="flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 10px;" onclick="openSelectedCCTV()">
+                    <div style="font-size: 11px; color: #ffdd67; font-weight: bold; margin-bottom: 6px;" id="cctv-card-title">📍 淡水區中正東路一段3巷口</div>
+                    <div style="font-size: 9px; color: #8b949e; margin-bottom: 12px;">點擊下方或此卡片，即時開啟官方高畫質串流</div>
+                    <button style="background: #00f2fe; color: #0b0e14; border: none; padding: 6px 12px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">🔗 開啟即時影像串流</button>
                     
-                    <!-- 修正：使用高畫質風景/道路模擬照，確保畫面 100% 穩定呈現（解決內網/CORS iframe無法顯示問題） -->
-                    <img id="cctv-img" src="https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80" class="full-fit-img" alt="CCTV畫面">
-                    
-                    <select class="cctv-select" id="cctv-dropdown" onclick="event.stopPropagation();" onchange="changeCCTVLocation(this)">
-                        <option value="https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80" data-label="淡水民權路187巷 (C000008)[cite: 3, 4]">📍 [C000008] 淡水民權路187巷[cite: 3, 4]</option>
-                        <option value="https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80" data-label="淡水區中正東路一段3巷口 (C000174)[cite: 3, 4]">📍 [C000174] 淡水區中正東路一段3巷口[cite: 3, 4]</option>
-                        <option value="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80" data-label="淡水區新民隧道南下 (C000402)[cite: 3, 4]">📍 [C000402] 淡水區新民隧道-南下[cite: 3, 4]</option>
-                        <option value="https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1200&q=80" data-label="關渡大橋淡水端 (C000252)[cite: 3, 4]">📍 [C000252] 關渡大橋淡水端[cite: 3, 4]</option>
+                    <select class="cctv-select" id="cctv-dropdown" onclick="event.stopPropagation();" onchange="updateCCTVSelection(this)">
+                        <option value="https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000174" data-label="淡水區中正東路一段3巷口 (C000174)">📍 [C000174] 中正東路一段3巷口</option>
+                        <option value="https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000176" data-label="淡水區中正路、中山路口 (C000176)">📍 [C000176] 中正路、中山路口</option>
+                        <option value="https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000178" data-label="淡水區中山路、文化路口 (C000178)">📍 [C000178] 中山路、文化路口</option>
+                        <option value="https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000402" data-label="淡水區新民隧道南下 (C000402)">📍 [C000402] 新民隧道南下</option>
+                        <option value="https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000421" data-label="淡水區淡金路坪頂路 (C000421)">📍 [C000421] 淡金路坪頂路</option>
                     </select>
                 </div>
             </div>
@@ -534,7 +523,7 @@
         <div style="color:#fff; font-size:9px; font-weight:bold; margin-bottom:3px;">📱 防災 LINE 群組 (Make.com 0秒自動發送)</div>
         <div class="line-msg-bubble">
             <b style="color: #00b900;">役災課-立偉</b><br>
-            <span style="color:#d63031; font-weight:bold;">@All</span> 本市於<b>07月26日 20時36分</b>發生規模<b>5.6</b>有感地震，震央位於新北市雙溪區，<b>淡水區最大震度 3 級</b>，EOC已進行相關災情查通報聯繫事宜[cite: 1, 2]。<br><br>
+            <span style="color:#d63031; font-weight:bold;">@All</span> 本市於<b>07月26日 20時36分</b>發生規模<b>5.6</b>有感地震，震央位於新北市雙溪區，<b>淡水區最大震度 3 級</b>，EOC已進行相關災情查通報聯繫事宜。<br><br>
             請各編組針對所轄區域設施進行巡檢，如有災情請上傳 EMIS。
         </div>
     </div>
@@ -550,30 +539,6 @@
     let currentSelectedIncident = null;
 
     const initialDemoData = [
-        {
-            "受理時間": "2026-08-08 08:47",
-            "案件類別": "管線搶修",
-            "權責單位": "自來水公司",
-            "地點": "淡水區新生街17號",
-            "現場狀況與完整歷史進程": "淡水營運所回報：自來水漏水搶修中，已設置交維設施[cite: 7, 8]。",
-            "照片網址": "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80",
-            "狀態": "處理中",
-            "緯度": 25.17341,
-            "經度": 121.43882,
-            "通報里別": "新生里"
-        },
-        {
-            "受理時間": "2026-08-08 08:47",
-            "案件類別": "管線搶修",
-            "權責單位": "自來水公司",
-            "地點": "淡水區水源街一段53巷46號",
-            "現場狀況與完整歷史進程": "自來水管漏水搶修工程進行中[cite: 7, 8]。",
-            "照片網址": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80",
-            "狀態": "新通報",
-            "緯度": 25.17430,
-            "經度": 121.44460,
-            "通報里別": "中興里"
-        },
         {
             "受理時間": "2026-07-27 13:22",
             "案件類別": "積淹水",
@@ -609,6 +574,22 @@
         }).addTo(map);
 
         markersGroup = L.layerGroup().addTo(map);
+        loadTamsuiCCTVMarkers();
+    }
+
+    function loadTamsuiCCTVMarkers() {
+        const tamsuiCCTVs = [
+            { id: "C000174", name: "淡水區中正東路一段3巷口", lat: 25.16480, lon: 121.45050, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000174" },
+            { id: "C000176", name: "淡水區中正路、中山路口", lat: 25.16912, lon: 121.44456, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000176" },
+            { id: "C000402", name: "淡水區新民隧道南下", lat: 25.18617, lon: 121.42781, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000402" }
+        ];
+
+        tamsuiCCTVs.forEach(cctv => {
+            let marker = L.circleMarker([cctv.lat, cctv.lon], {
+                radius: 7, fillColor: "#00f2fe", color: "#fff", weight: 2, fillOpacity: 0.9
+            }).addTo(map);
+            marker.bindPopup(`<b>[CCTV 監控點] ${cctv.name}</b><br><a href="${cctv.url}" target="_blank">點擊在新視窗開啟串流</a>`);
+        });
     }
 
     function projectToCenter(title, contentHtml, isHtml = false) {
@@ -629,14 +610,14 @@
     function projectTyphoonInfoToCenter() {
         const htmlContent = `
             <div style="padding: 20px; font-size: 14px; color: #c9d1d9; line-height: 1.8; background:#0d1117; width:100%; height:100%; box-sizing:border-box; overflow-y:auto;">
-                <h3 style="color:#00f2fe; margin-top:0;">🌀 白海豚颱風 (DOLPHIN) 完整情資[cite: 15]</h3>
-                • <b>發布單位：</b>中央氣象署 (CWA)[cite: 15]<br>
-                • <b>目前位置：</b>東經 124.8° / 北緯 27.0°[cite: 15]<br>
-                • <b>近中心最大風速：</b>35 m/s (相當於 12 級風)[cite: 15]<br>
-                • <b>瞬間最大陣風：</b>45 m/s (相當於 14 級風)[cite: 15]<br>
-                • <b>中心氣壓：</b>962 hPa[cite: 15]<br>
-                • <b>移動方向與速度：</b>每小時 16 公里向西北西轉西進行[cite: 15]<br>
-                • <b>北台灣防汛重點：</b>淡水河口、北海岸地區受外圍環流影響，已發布豪雨與陸上強風特報[cite: 13, 14]。
+                <h3 style="color:#00f2fe; margin-top:0;">🌀 白海豚颱風 (DOLPHIN) 完整情資</h3>
+                • <b>發布單位：</b>中央氣象署 (CWA)<br>
+                • <b>目前位置：</b>東經 124.8° / 北緯 27.0°<br>
+                • <b>近中心最大風速：</b>35 m/s (相當於 12 級風)<br>
+                • <b>瞬間最大陣風：</b>45 m/s (相當於 14 級風)<br>
+                • <b>中心氣壓：</b>962 hPa<br>
+                • <b>移動方向與速度：</b>每小時 16 公里向西北西轉西進行<br>
+                • <b>北台灣防汛重點：</b>淡水河口、北海岸地區受外圍環流影響，已發布豪雨與陸上強風特報。
             </div>
         `;
         projectToCenter('颱風路徑與氣旋情資 (白海豚颱風)', htmlContent, true);
@@ -648,27 +629,23 @@
                 <img src="https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png" class="north-taiwan-focus" alt="雷達回波圖">
             </div>
         `;
-        projectToCenter('北台灣雷達回波降雨動態圖 (O-A0058-004)[cite: 11]', htmlContent, true);
+        projectToCenter('北台灣雷達回波降雨動態圖 (O-A0058-004)', htmlContent, true);
     }
 
-    function projectCCTVToCenter() {
-        const cctvLabel = document.getElementById('cctv-label').innerText;
-        const imgSrc = document.getElementById('cctv-img').src;
-        const htmlContent = `<img src="${imgSrc}" style="width:100%; height:100%; object-fit:contain; background:#000;" alt="CCTV投影">`;
-        projectToCenter(`轄區 CCTV 畫面 - ${cctvLabel}[cite: 3, 4]`, htmlContent, true);
+    function openSelectedCCTV() {
+        const dropdown = document.getElementById('cctv-dropdown');
+        const url = dropdown.value;
+        window.open(url, '_blank');
     }
 
     function closeCenterProjection() {
         document.getElementById('center-projection-box').style.display = 'none';
     }
 
-    function changeCCTVLocation(selectEl) {
-        const url = selectEl.value;
+    function updateCCTVSelection(selectEl) {
         const optionEl = selectEl.options[selectEl.selectedIndex];
         const label = optionEl.getAttribute('data-label');
-        
-        document.getElementById('cctv-label').innerText = label;
-        document.getElementById('cctv-img').src = url;
+        document.getElementById('cctv-card-title').innerText = `📍 ${label}`;
     }
 
     function filterByStatus(statusTarget) {
@@ -752,26 +729,24 @@
         });
     }
 
-    // 雷達圖動態更新與時間戳刷新 (對應 O-A0058-004)[cite: 11]
-    function initDynamicRadar() {
-        const radarImg = document.getElementById('animated-radar-img');
-        const badgeElement = document.getElementById('radar-status-badge');
-        let count = 1;
-
+    // 即時輪詢更新機制：每 30 秒自動觸發資料同步與即時更新
+    function initRealTimeDataFeed() {
         setInterval(() => {
-            count++;
-            radarImg.src = "https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png?t=" + new Date().getTime();
-            if(badgeElement) {
-                badgeElement.innerText = `▶ 北台灣動態監控中 (Update #${count})`;
+            // 動態更新雷達回波圖以維持即時性
+            const radarImg = document.getElementById('animated-radar-img');
+            if(radarImg) {
+                radarImg.src = "https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png?t=" + new Date().getTime();
             }
-        }, 5000);
+            // 重新整理並渲染列管大表數據
+            sortAndRenderAll();
+        }, 30000); // 每 30 秒自動更新一次
     }
 
     window.onload = () => {
         initMap();
         globalData = JSON.parse(JSON.stringify(initialDemoData));
         sortAndRenderAll();
-        initDynamicRadar();
+        initRealTimeDataFeed();
     };
 </script>
 </body>

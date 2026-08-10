@@ -150,6 +150,7 @@
             justify-content: space-between; 
             align-items: center; 
             height: 16px;
+            z-index: 10;
         }
         
         .box-container { 
@@ -328,42 +329,6 @@
         .badge-done { background-color: rgba(46,213,115,0.2); color: #2ed573; border: 1px solid #2ed573; }
         tr.selected { background-color: rgba(0, 242, 254, 0.15) !important; border-left: 3px solid #00f2fe; }
 
-        .toast-alert {
-            position: fixed;
-            top: 45px;
-            right: 15px;
-            width: 320px;
-            background: #161b22;
-            border: 2px solid #ff4d4d;
-            border-radius: 6px;
-            box-shadow: 0 4px 25px rgba(255, 77, 77, 0.7);
-            z-index: 9999;
-            padding: 10px;
-            display: none;
-            animation: slideInRight 0.4s ease;
-        }
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        .toast-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #30363d; padding-bottom: 4px; margin-bottom: 6px; color: #ff4d4d; font-weight: bold; font-size: 11px; }
-        .toast-close { background: transparent; border: none; color: #8b949e; cursor: pointer; font-size: 12px; }
-
-        .line-preview-box {
-            background-color: #7294c2;
-            border-radius: 4px;
-            padding: 8px;
-            margin-top: 6px;
-            font-size: 10px;
-        }
-        .line-msg-bubble {
-            background: #ffffff;
-            color: #000;
-            padding: 8px;
-            border-radius: 6px;
-            line-height: 1.4;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-        }
     </style>
 </head>
 <body>
@@ -425,7 +390,7 @@
             </div>
         </div>
 
-        <!-- 右欄：頂部為災防公告，底部為 CCTV 動態載入引擎 -->
+        <!-- 右欄：頂部為災防公告，底部為 CCTV 快速調閱與真實縮圖切換 -->
         <div class="panel">
             <div class="sub-block">
                 <div class="panel-title">
@@ -444,16 +409,26 @@
             <div class="sub-block">
                 <div class="panel-title">
                     <span>🎥 轄區 CCTV 巡邏監控</span>
-                    <span style="color: #00f2fe; font-size: 8px; font-weight: bold;">(⚠️ TDX 快速連線)</span>
+                    <span style="color: #00f2fe; font-size: 8px; font-weight: bold;">(⚠️ 點擊開啟官方串流)</span>
                 </div>
-                <div class="box-container" style="flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 10px;" onclick="openSelectedCCTV()">
-                    <div style="font-size: 11px; color: #ffdd67; font-weight: bold; margin-bottom: 6px;" id="cctv-card-title">載入中...</div>
-                    <div style="font-size: 9px; color: #8b949e; margin-bottom: 12px;">點擊下方或此卡片，即時開啟官方高畫質串流</div>
-                    <button style="background: #00f2fe; color: #0b0e14; border: none; padding: 6px 12px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">🔗 開啟即時影像串流</button>
+                <!-- 透過 onClick 觸發開新視窗觀看串流 -->
+                <div class="box-container" onclick="openSelectedCCTV()">
                     
-                    <!-- 選單將由程式根據 JSON 資料動態產生 -->
+                    <!-- 底層：運用 CSS 裁切您上傳的拼圖檔案 -->
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; overflow: hidden; opacity: 0.65;">
+                        <img id="cctv-img" src="image_7d6037.jpg" style="position: absolute; width: 400%; height: 300%; top: 0%; left: 0%; object-fit: fill; transition: all 0.3s ease;" alt="CCTV縮圖">
+                    </div>
+
+                    <!-- 上層：UI 面板與選單 -->
+                    <div style="position: relative; z-index: 2; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; width: 100%; height: 100%; padding: 10px; box-sizing: border-box;">
+                        <div style="font-size: 11px; color: #fff; font-weight: bold; margin-bottom: 6px; text-shadow: 1px 1px 3px #000;" id="cctv-card-title">載入中...</div>
+                        <div style="font-size: 9px; color: #ffdd67; margin-bottom: 12px; font-weight: bold; text-shadow: 1px 1px 3px #000;">點擊此區域，即時開啟官方高畫質串流</div>
+                        <button style="background: #00f2fe; color: #0b0e14; border: none; padding: 4px 10px; border-radius: 3px; font-size: 10px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5);">🔗 進入 TDX 即時影像系統</button>
+                    </div>
+                    
+                    <!-- 動態選單 -->
                     <select class="cctv-select" id="cctv-dropdown" onclick="event.stopPropagation();" onchange="updateCCTVSelection(this)">
-                        <!-- 動態填入區 -->
+                        <!-- 由程式動態填入，帶入矩陣裁切座標 -->
                     </select>
                 </div>
             </div>
@@ -506,24 +481,6 @@
     </div>
 </div>
 
-<!-- 地震告警彈窗 -->
-<div id="earthquake-toast" class="toast-alert">
-    <div class="toast-header">
-        <span>🚨 地震速報與 LINE 自動通報</span>
-        <button class="toast-close" onclick="closeToast()">✕</button>
-    </div>
-    <div id="toast-body" style="font-size: 10px; color: #c9d1d9; line-height: 1.3;"></div>
-    
-    <div class="line-preview-box">
-        <div style="color:#fff; font-size:9px; font-weight:bold; margin-bottom:3px;">📱 防災 LINE 群組 (Make.com 0秒自動發送)</div>
-        <div class="line-msg-bubble">
-            <b style="color: #00b900;">役災課-立偉</b><br>
-            <span style="color:#d63031; font-weight:bold;">@All</span> 本市於<b>07月26日 20時36分</b>發生規模<b>5.6</b>有感地震，震央位於新北市雙溪區，<b>淡水區最大震度 3 級</b>，EOC已進行相關災情查通報聯繫事宜。<br><br>
-            請各編組針對所轄區域設施進行巡檢，如有災情請上傳 EMIS。
-        </div>
-    </div>
-</div>
-
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -561,54 +518,69 @@
 
     function initMap() {
         map = L.map('map').setView([25.1720, 121.4450], 13);
-
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; OpenStreetMap',
             maxZoom: 19
         }).addTo(map);
-
         markersGroup = L.layerGroup().addTo(map);
     }
 
-    // ==== 核心引擎：動態讀取 CCTV JSON 資料庫 ====
+    // ==== 核心：動態讀取 CCTV JSON 資料庫，並帶入截圖裁切座標 ====
     function loadDynamicCCTVs() {
-        // 這裡建立一個模擬 API 回傳的完整淡水 CCTV 陣列資料 (取代寫死的選項)
-        // 未來若架設後端，只要把陣列來源改成 fetch('cctv_data.json') 即可無縫接軌
+        // 利用您上傳的拼圖影像 (4行 x 3列 的結構)，精準對位各個路口的縮圖
         const fullCCTVData = [
-            { id: "C000008", name: "淡水區民權路187巷", lat: 25.1385, lon: 121.4600, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000008" },
-            { id: "C000174", name: "淡水區中正東路一段3巷口", lat: 25.16480, lon: 121.45050, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000174" },
-            { id: "C000176", name: "淡水區中正路、中山路口", lat: 25.16912, lon: 121.44456, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000176" },
-            { id: "C000178", name: "淡水區中山路、文化路口", lat: 25.17400, lon: 121.43900, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000178" },
-            { id: "C000252", name: "關渡大橋淡水端", lat: 25.1278, lon: 121.4633, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000252" },
-            { id: "C000402", name: "淡水區新民隧道南下", lat: 25.18617, lon: 121.42781, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000402" },
-            { id: "C000421", name: "淡水區淡金路、坪頂路口", lat: 25.1585, lon: 121.4580, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000421" },
-            { id: "C000180", name: "淡水區淡金路、北新路口", lat: 25.1780, lon: 121.4500, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000180" },
-            { id: "C000185", name: "淡水區沙崙路、新民街口", lat: 25.1850, lon: 121.4220, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000185" },
-            { id: "C000190", name: "淡水區民權路、民族路口", lat: 25.1350, lon: 121.4620, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000190" }
+            { id: "C000008", name: "淡水區民權路、187巷前", lat: 25.1385, lon: 121.4600, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000008", thumb: "image_7d6037.jpg", tX: "0%", tY: "0%" },
+            { id: "C000174", name: "淡水區中正東路一段3巷口", lat: 25.16480, lon: 121.45050, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000174", thumb: "image_7d6037.jpg", tX: "0%", tY: "-100%" },
+            { id: "C000176", name: "淡水區中正路、中山路口", lat: 25.16912, lon: 121.44456, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000176", thumb: "image_7d6037.jpg", tX: "-100%", tY: "-100%" },
+            { id: "C000402", name: "淡水區新民隧道南下", lat: 25.18617, lon: 121.42781, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000402", thumb: "image_7d5fe0.jpg", tX: "-100%", tY: "-100%" },
+            { id: "C000421", name: "淡水區中正路1段8巷", lat: 25.1780, lon: 121.4250, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000421", thumb: "image_7d5fe0.jpg", tX: "-100%", tY: "0%" }
         ];
 
         const dropdown = document.getElementById('cctv-dropdown');
-        dropdown.innerHTML = ''; // 清空選項預備動態寫入
+        dropdown.innerHTML = ''; 
 
-        fullCCTVData.forEach((cctv, index) => {
-            // 1. 動態將資料庫裡的 CCTV 座標打在地圖上
+        fullCCTVData.forEach((cctv) => {
             let marker = L.circleMarker([cctv.lat, cctv.lon], {
                 radius: 7, fillColor: "#00f2fe", color: "#fff", weight: 2, fillOpacity: 0.9
             }).addTo(map);
-            marker.bindPopup(`<b>[CCTV 監控點] ${cctv.name}</b><br><a href="${cctv.url}" target="_blank">點擊在新視窗開啟串流</a>`);
+            marker.bindPopup(`<b>[CCTV 監控點] ${cctv.name}</b><br><a href="${cctv.url}" target="_blank">點擊開啟高畫質串流</a>`);
 
-            // 2. 動態生成下拉選單的選項，不再寫死在 HTML 裡
             let option = document.createElement('option');
             option.value = cctv.url;
             option.setAttribute('data-label', cctv.name);
+            option.setAttribute('data-thumb', cctv.thumb);
+            option.setAttribute('data-tx', cctv.tX);
+            option.setAttribute('data-ty', cctv.tY);
             option.innerText = `📍 [${cctv.id}] ${cctv.name.replace('淡水區', '')}`;
             dropdown.appendChild(option);
         });
 
-        // 載入完成後預設選擇第一筆資料顯示
+        // 預設選擇第一筆資料顯示
         if (fullCCTVData.length > 0) {
-            document.getElementById('cctv-card-title').innerText = `📍 ${fullCCTVData[0].name}`;
+            updateCCTVSelection(dropdown);
         }
+    }
+
+    function updateCCTVSelection(selectEl) {
+        const optionEl = selectEl.options[selectEl.selectedIndex];
+        const label = optionEl.getAttribute('data-label');
+        const thumb = optionEl.getAttribute('data-thumb');
+        const tX = optionEl.getAttribute('data-tx');
+        const tY = optionEl.getAttribute('data-ty');
+
+        document.getElementById('cctv-card-title').innerText = `📍 ${label}`;
+        
+        // 套用真實縮圖裁切邏輯
+        const imgEl = document.getElementById('cctv-img');
+        imgEl.src = thumb;
+        imgEl.style.top = tY;
+        imgEl.style.left = tX;
+    }
+
+    function openSelectedCCTV() {
+        const dropdown = document.getElementById('cctv-dropdown');
+        const url = dropdown.value;
+        window.open(url, '_blank');
     }
 
     function projectToCenter(title, contentHtml, isHtml = false) {
@@ -651,20 +623,8 @@
         projectToCenter('CWA 官方雷達回波圖 (全台總覽)', htmlContent, true);
     }
 
-    function openSelectedCCTV() {
-        const dropdown = document.getElementById('cctv-dropdown');
-        const url = dropdown.value;
-        window.open(url, '_blank');
-    }
-
     function closeCenterProjection() {
         document.getElementById('center-projection-box').style.display = 'none';
-    }
-
-    function updateCCTVSelection(selectEl) {
-        const optionEl = selectEl.options[selectEl.selectedIndex];
-        const label = optionEl.getAttribute('data-label');
-        document.getElementById('cctv-card-title').innerText = `📍 ${label}`;
     }
 
     function filterByStatus(statusTarget) {
@@ -762,10 +722,7 @@
         initMap();
         globalData = JSON.parse(JSON.stringify(initialDemoData));
         sortAndRenderAll();
-        
-        // 觸發自動載入 JSON 監視器資料庫引擎
         loadDynamicCCTVs();
-        
         initRealTimeDataFeed();
     };
 </script>

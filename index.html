@@ -6,6 +6,8 @@
     <title>新北市淡水區災害應變智慧戰情中心</title>
     <!-- 載入 Leaflet 地圖套件 CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- 載入 SheetJS 以支援 Excel 報表匯出 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         html, body { 
             background-color: #0b0e14; 
@@ -65,16 +67,6 @@
             position: relative;
             box-sizing: border-box;
         }
-        .ticker.emergency {
-            background-color: rgba(255, 77, 77, 0.15);
-            border: 1px solid #ff4d4d;
-            animation: pulse-border 1.5s infinite;
-        }
-        @keyframes pulse-border {
-            0% { border-color: rgba(255, 77, 77, 0.3); box-shadow: 0 0 5px rgba(255, 77, 77, 0.2); }
-            50% { border-color: rgba(255, 77, 77, 1); box-shadow: 0 0 15px rgba(255, 77, 77, 0.6); }
-            100% { border-color: rgba(255, 77, 77, 0.3); box-shadow: 0 0 5px rgba(255, 77, 77, 0.2); }
-        }
         .ticker-title { 
             background-color: #00f2fe; 
             color: #0b0e14; 
@@ -85,7 +77,6 @@
             flex-shrink: 0; 
             z-index: 10;
         }
-        .ticker.emergency .ticker-title { background-color: #ff4d4d; color: #fff; }
 
         .ticker-marquee-wrap {
             flex: 1;
@@ -169,9 +160,6 @@
         .box-container:hover {
             border-color: #00f2fe;
         }
-
-        .window-label { position: absolute; top: 4px; left: 4px; background-color: rgba(0,0,0,0.85); color: #ffdd67; padding: 1px 5px; font-size: 9px; font-weight: bold; border-radius: 2px; border-left: 2px solid #ffdd67; z-index: 500; }
-        .window-tag { position: absolute; bottom: 4px; right: 4px; padding: 1px 4px; font-size: 8px; border-radius: 2px; font-weight: bold; color: #fff; z-index: 500; background: #da3633; }
 
         .full-fit-img { 
             width: 100%; 
@@ -305,6 +293,39 @@
         .stat-checkbox { width: 10px; height: 10px; border: 1px solid currentColor; display: flex; align-items: center; justify-content: center; font-size: 8px; }
         .stat-btn-num { font-size: 14px; font-weight: 900; }
 
+        /* 表格區與匯出按鈕的容器 */
+        .table-area-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 0;
+        }
+
+        .table-tools {
+            display: flex;
+            justify-content: flex-end;
+            padding: 0 4px;
+        }
+
+        .btn-export {
+            background-color: #1f6b3e; /* Excel 綠色 */
+            color: #fff;
+            border: 1px solid #144929;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .btn-export:hover {
+            background-color: #26854d;
+        }
+
         .table-wrap { flex: 1; overflow-y: auto; border: 1px solid #30363d; border-radius: 4px; }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 10px; }
         th, td { padding: 4px 6px; border-bottom: 1px solid #30363d; line-height: 1.2; vertical-align: middle; }
@@ -342,8 +363,8 @@
             <div class="sub-block">
                 <div class="panel-title">🌀 颱風路徑與警戒區</div>
                 <div class="box-container" onclick="projectTyphoonMapToCenter()">
-                    <!-- 正確恢復為颱風路徑與警戒圖 (不再是文字面板) -->
-                    <img id="typhoon-img" src="https://www.cwa.gov.tw/Data/typhoon/TY_NEWS.png" class="full-fit-img" style="background:#000;" alt="颱風路徑與警戒區" onerror="this.src='https://www.cwa.gov.tw/Data/radar/CV1_3600.png'">
+                    <!-- 確認為全版圖片呈現 -->
+                    <img id="typhoon-img" src="https://www.cwa.gov.tw/Data/typhoon/TY_NEWS.png" class="full-fit-img" alt="颱風路徑與警戒區">
                 </div>
             </div>
 
@@ -351,8 +372,7 @@
                 <div class="panel-title">📡 CWA 官方雷達回波圖 (全台總覽)</div>
                 <div class="box-container" onclick="projectRadarToCenter()">
                     <div style="width:100%; height:100%; overflow:hidden; position:relative; background:#000; display:flex; align-items:center; justify-content:center;">
-                        <!-- 全台雷達圖 -->
-                        <img id="animated-radar-img" src="https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png" class="full-taiwan-radar" alt="全台雷達回波圖">
+                        <img id="animated-radar-img" src="https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png" class="full-fit-img" alt="全台雷達回波圖">
                     </div>
                     <div class="radar-badge" id="radar-status-badge">▶ 全台即時回波監控 (Live)</div>
                 </div>
@@ -372,7 +392,7 @@
             </div>
         </div>
 
-        <!-- 右欄：頂部為災防公告，底部為 CCTV 快速調閱與真實縮圖切換 -->
+        <!-- 右欄 -->
         <div class="panel">
             <div class="sub-block">
                 <div class="panel-title">
@@ -395,22 +415,20 @@
                 </div>
                 <div class="box-container" onclick="openSelectedCCTV()">
                     
-                    <!-- 底層：使用 CSS Sprite 技術完美裁切您的 12 宮格圖片 -->
-                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; overflow: hidden; opacity: 0.65;">
-                        <!-- background-size: 400% 300% 代表 4行3列的排版 -->
-                        <div id="cctv-img-sprite" style="width: 100%; height: 100%; background-image: url('image_7d6037.jpg'); background-size: 400% 300%; background-position: 0% 0%; transition: all 0.3s ease;"></div>
+                    <!-- 底層：使用 CSS Sprite 自動裁切。需確保您資料夾內擁有 image_7d6037.jpg 等圖 -->
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; opacity: 0.65;">
+                        <div id="cctv-sprite-bg" style="width: 100%; height: 100%; background-image: url('image_7d6037.jpg'); background-size: 400% 300%; background-position: 0% 0%; transition: background-position 0.3s ease;"></div>
                     </div>
 
-                    <!-- 上層：UI 面板與選單 -->
+                    <!-- 上層：UI 面板 -->
                     <div style="position: relative; z-index: 2; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; width: 100%; height: 100%; padding: 10px; box-sizing: border-box;">
                         <div style="font-size: 11px; color: #fff; font-weight: bold; margin-bottom: 6px; text-shadow: 1px 1px 3px #000;" id="cctv-card-title">載入中...</div>
                         <div style="font-size: 9px; color: #ffdd67; margin-bottom: 12px; font-weight: bold; text-shadow: 1px 1px 3px #000;">點擊此區域，即時開啟官方高畫質串流</div>
                         <button style="background: #00f2fe; color: #0b0e14; border: none; padding: 4px 10px; border-radius: 3px; font-size: 10px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5);">🔗 進入 TDX 即時影像系統</button>
                     </div>
                     
-                    <!-- 動態選單 -->
                     <select class="cctv-select" id="cctv-dropdown" onclick="event.stopPropagation();" onchange="updateCCTVSelection(this)">
-                        <!-- 由程式動態填入，帶入對應圖片與 XY 座標 -->
+                        <!-- 由程式動態填入 -->
                     </select>
                 </div>
             </div>
@@ -419,46 +437,45 @@
 
     <!-- 下方管制大表與小計 -->
     <div class="bottom-layout">
+        <!-- 左側狀態列 -->
         <div class="stat-sidebar">
             <div class="stat-btn btn-new-style" id="btn-filter-new" onclick="filterByStatus('新通報')">
-                <div class="stat-btn-left">
-                    <div class="stat-checkbox" id="chk-new">🚨</div>
-                    <span>新通報</span>
-                </div>
+                <div class="stat-btn-left"><div class="stat-checkbox">🚨</div><span>新通報</span></div>
                 <div class="stat-btn-num" id="cnt-new">0件</div>
             </div>
 
             <div class="stat-btn btn-ing-style" id="btn-filter-ing" onclick="filterByStatus('處理中')">
-                <div class="stat-btn-left">
-                    <div class="stat-checkbox" id="chk-ing">⏳</div>
-                    <span>處理中</span>
-                </div>
+                <div class="stat-btn-left"><div class="stat-checkbox">⏳</div><span>處理中</span></div>
                 <div class="stat-btn-num" id="cnt-ing">0件</div>
             </div>
 
             <div class="stat-btn btn-done-style" id="btn-filter-done" onclick="filterByStatus('已結案')">
-                <div class="stat-btn-left">
-                    <div class="stat-checkbox" id="chk-done">✔</div>
-                    <span>已結案</span>
-                </div>
+                <div class="stat-btn-left"><div class="stat-checkbox">✔</div><span>已結案</span></div>
                 <div class="stat-btn-num" id="cnt-done">0件</div>
             </div>
         </div>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 14%">⏱️ 受理時間</th>
-                        <th style="width: 11%">案件類別</th>
-                        <th style="width: 10%">權責單位</th>
-                        <th style="width: 15%">地點</th>
-                        <th style="width: 42%">現場狀況與完整歷史進程</th>
-                        <th style="width: 8%">狀態</th>
-                    </tr>
-                </thead>
-                <tbody id="table-body"></tbody>
-            </table>
+        <!-- 右側表格區塊：包含上方的一鍵輸出按鈕 -->
+        <div class="table-area-wrapper">
+            <div class="table-tools">
+                <!-- 修復後的一鍵輸出按鈕，位置移到表格上方右側 -->
+                <button class="btn-export" onclick="exportToExcel()">📥 一鍵輸出列管案件</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 14%">⏱️ 受理時間</th>
+                            <th style="width: 11%">案件類別</th>
+                            <th style="width: 10%">權責單位</th>
+                            <th style="width: 15%">地點</th>
+                            <th style="width: 42%">現場狀況與完整歷史進程</th>
+                            <th style="width: 8%">狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -471,28 +488,49 @@
     let map, markersGroup;
     let currentFilterStatus = null;
 
+    // 匯入真實淡水區最新災情資料
     const initialDemoData = [
         {
-            "受理時間": "2026-08-10 11:15",
+            "受理時間": "2026-08-09 11:07",
             "案件類別": "路樹傾倒",
-            "權責單位": "工務課",
+            "權責單位": "區公所/消防局",
             "地點": "淡水區學府路102號",
+            "現場狀況": "強風造成路樹倒塌及電線垂落",
+            "處理情形": "1.已派員前往現場進行鋸切移除中。\n2.現場實施單線雙向交管。",
             "現場狀況與完整歷史進程": "強陣風吹襲導致路樹倒塌，已派員前往現場進行鋸切移除中。",
+            "預計完成時間": "2026-08-11 12:00",
             "狀態": "處理中",
             "緯度": 25.17198,
             "經度": 121.44994,
             "通報里別": "學府里"
         },
         {
-            "受理時間": "2026-08-10 10:30",
-            "案件類別": "積淹水",
-            "權責單位": "經建課",
-            "地點": "淡水區中山路2段10號",
-            "現場狀況與完整歷史進程": "豪雨造成排水宣洩不及，積水約 15 公分，已通報清潔隊清除淤泥。",
-            "狀態": "新通報",
-            "緯度": 25.18021,
-            "經度": 121.44282,
-            "通報里別": "中正里"
+            "受理時間": "2026-08-09 15:30",
+            "案件類別": "建物受損",
+            "權責單位": "區公所",
+            "地點": "淡水區中山北路三段",
+            "現場狀況": "疑似龍捲風現象造成住戶房屋鐵皮掉落",
+            "處理情形": "1.已拉起封鎖線。\n2.區公所已完成現場障礙排除及相關處理。",
+            "現場狀況與完整歷史進程": "疑似受龍捲風影響，4戶住戶鐵皮掉落，公所已派員前往現場清除及排除掉落鐵皮。",
+            "預計完成時間": "2026-08-10 18:00",
+            "狀態": "處理中",
+            "緯度": 25.1862,
+            "經度": 121.4435,
+            "通報里別": "埤島里"
+        },
+        {
+            "受理時間": "2026-08-04 06:54",
+            "案件類別": "管線搶修",
+            "權責單位": "台灣自來水公司",
+            "地點": "淡水區水源街一段",
+            "現場狀況": "管線分段測試，降壓區域",
+            "處理情形": "管線測試作業進行中。",
+            "現場狀況與完整歷史進程": "管線分段測試，影響仁愛街、博愛街、學府路、水源街一段、鄧公路。",
+            "預計完成時間": "2026-08-04 18:00",
+            "狀態": "已結案",
+            "緯度": 25.17430,
+            "經度": 121.44460,
+            "通報里別": "鄧公里"
         }
     ];
 
@@ -505,17 +543,14 @@
         markersGroup = L.layerGroup().addTo(map);
     }
 
-    // ==== 核心：動態讀取 CCTV JSON，並帶入您的拼圖裁切座標 ====
+    // ==== 動態讀取 CCTV JSON ====
     function loadDynamicCCTVs() {
-        // 利用您上傳的 4x3 拼圖檔案精準對位
-        // tX 對應水平位置 (0%, 33.333%, 66.666%, 100%)
-        // tY 對應垂直位置 (0%, 50%, 100%)
         const fullCCTVData = [
-            { id: "C000008", name: "淡水區民權路、187巷前", lat: 25.1385, lon: 121.4600, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000008", thumb: "image_7d6037.jpg", tX: "0%", tY: "0%" },
-            { id: "C000174", name: "淡水區中正東路一段3巷口", lat: 25.16480, lon: 121.45050, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000174", thumb: "image_7d6037.jpg", tX: "100%", tY: "0%" },
-            { id: "C000176", name: "淡水區中正路、中山路口", lat: 25.16912, lon: 121.44456, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000176", thumb: "image_7d6037.jpg", tX: "33.333%", tY: "50%" },
-            { id: "C000402", name: "淡水區新民隧道南下", lat: 25.18617, lon: 121.42781, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000402", thumb: "image_7d5fe0.jpg", tX: "33.333%", tY: "50%" },
-            { id: "C000421", name: "淡水區中正路1段8巷", lat: 25.1780, lon: 121.4250, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000421", thumb: "image_7d5fe0.jpg", tX: "33.333%", tY: "0%" }
+            { id: "C000008", name: "淡水區民權路、187巷前", lat: 25.1385, lon: 121.4600, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000008", bgImg: "image_7d6037.jpg", tX: "0%", tY: "0%" },
+            { id: "C000174", name: "淡水區中正東路一段3巷口", lat: 25.16480, lon: 121.45050, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000174", bgImg: "image_7d6037.jpg", tX: "100%", tY: "0%" },
+            { id: "C000176", name: "淡水區中正路、中山路口", lat: 25.16912, lon: 121.44456, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000176", bgImg: "image_7d6037.jpg", tX: "33.33%", tY: "50%" },
+            { id: "C000402", name: "淡水區新民隧道南下", lat: 25.18617, lon: 121.42781, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000402", bgImg: "image_7d5fe0.jpg", tX: "33.33%", tY: "50%" },
+            { id: "C000421", name: "淡水區中正路1段8巷", lat: 25.1780, lon: 121.4250, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000421", bgImg: "image_7d5fe0.jpg", tX: "33.33%", tY: "0%" }
         ];
 
         const dropdown = document.getElementById('cctv-dropdown');
@@ -530,7 +565,7 @@
             let option = document.createElement('option');
             option.value = cctv.url;
             option.setAttribute('data-label', cctv.name);
-            option.setAttribute('data-thumb', cctv.thumb);
+            option.setAttribute('data-bg', cctv.bgImg);
             option.setAttribute('data-tx', cctv.tX);
             option.setAttribute('data-ty', cctv.tY);
             option.innerText = `📍 [${cctv.id}] ${cctv.name.replace('淡水區', '')}`;
@@ -545,15 +580,14 @@
     function updateCCTVSelection(selectEl) {
         const optionEl = selectEl.options[selectEl.selectedIndex];
         const label = optionEl.getAttribute('data-label');
-        const thumb = optionEl.getAttribute('data-thumb');
+        const bgImg = optionEl.getAttribute('data-bg');
         const tX = optionEl.getAttribute('data-tx');
         const tY = optionEl.getAttribute('data-ty');
 
         document.getElementById('cctv-card-title').innerText = `📍 ${label}`;
         
-        // 套用真實縮圖裁切邏輯
-        const spriteDiv = document.getElementById('cctv-img-sprite');
-        spriteDiv.style.backgroundImage = `url('${thumb}')`;
+        const spriteDiv = document.getElementById('cctv-sprite-bg');
+        spriteDiv.style.backgroundImage = `url('${bgImg}')`;
         spriteDiv.style.backgroundPosition = `${tX} ${tY}`;
     }
 
@@ -632,6 +666,25 @@
         renderMapMarkers(displayData);
     }
 
+    // ==== 核心：點擊表格列，地圖連動飛行並開啟包含詳細資訊的 Popup ====
+    function selectIncident(index) {
+        let list = window.displayDataGlobal || globalData;
+        document.querySelectorAll('tr').forEach(r => r.classList.remove('selected'));
+        const row = document.getElementById(`row-${index}`);
+        if(row) row.classList.add('selected');
+
+        const item = list[index];
+        if(!item) return;
+
+        if (item._marker) {
+            // 地圖飛行到該點
+            map.flyTo(item._marker.getLatLng(), 16, { animate: true, duration: 1.2 });
+            setTimeout(() => {
+                item._marker.openPopup();
+            }, 300);
+        }
+    }
+
     function renderStatsAndTable(data) {
         let tableHtml = "";
 
@@ -642,7 +695,7 @@
             else if (item["狀態"] === "已結案") { statusClass = "badge-done"; }
 
             tableHtml += `
-                <tr id="row-${index}">
+                <tr id="row-${index}" style="cursor:pointer;" onclick="selectIncident(${index})">
                     <td style="color:#00f2fe; font-weight:bold;">${item["受理時間"]}</td>
                     <td>${item["案件類別"]}</td>
                     <td>${item["權責單位"]}</td>
@@ -653,6 +706,7 @@
             `;
         });
 
+        window.displayDataGlobal = data;
         document.getElementById('table-body').innerHTML = tableHtml;
     }
 
@@ -660,21 +714,87 @@
         markersGroup.clearLayers();
 
         data.forEach((item, index) => {
-            let lat = parseFloat(item["緯度"]) || 25.1720;
-            let lng = parseFloat(item["經度"]) || 121.4450;
-            let latlng = [ lat, lng ];
+            let lat = parseFloat(item["緯度"]);
+            let lng = parseFloat(item["經度"]);
+            let color = item["狀態"] === "處理中" ? "#ff9f43" : item["狀態"] === "已結案" ? "#2ed573" : "#ff4d4d";
 
-            let color = "#ff4d4d";
-            if (item["狀態"] === "處理中") color = "#ff9f43";
-            if (item["狀態"] === "已結案") color = "#2ed573";
-
-            const marker = L.circleMarker(latlng, {
+            const marker = L.circleMarker([lat, lng], {
                 radius: 8, fillColor: color, color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.95
             });
 
-            marker.bindPopup(`<b>${item["案件類別"]}</b><br>${item["地點"]}<br>里別：${item["通報里別"] || '淡水區'}<br>狀態：${item["狀態"]}`);
+            // 豐富 Popup 內容，顯示詳細處理情形
+            const popupContent = `
+                <div style="font-size: 12px; line-height: 1.4;">
+                    <b style="color: ${color}; font-size: 14px;">[${item["狀態"]}] ${item["案件類別"]}</b><br>
+                    <b>地點：</b>${item["地點"]} (${item["通報里別"]})<br>
+                    <hr style="margin: 4px 0; border: 0; border-top: 1px solid #ccc;">
+                    <b>現場狀況：</b>${item["現場狀況"]}<br>
+                    <b>處理情形：</b><br><span style="white-space: pre-line;">${item["處理情形"]}</span>
+                </div>
+            `;
+            marker.bindPopup(popupContent);
+            
+            item._marker = marker;
             markersGroup.addLayer(marker);
         });
+    }
+
+    // ==== 核心：一鍵輸出檔案，完全符合列管案件登打格式.xlsx 規範 ====
+    function exportToExcel() {
+        const ws_name = "所有案件";
+        const now = new Date();
+        // 格式化為 YYYY-MM-DD HH:mm
+        const timeStr = now.getFullYear() + "-" + 
+                        String(now.getMonth() + 1).padStart(2, '0') + "-" + 
+                        String(now.getDate()).padStart(2, '0') + " " + 
+                        String(now.getHours()).padStart(2, '0') + ":" + 
+                        String(now.getMinutes()).padStart(2, '0');
+        
+        let countIng = 0;
+        let countDone = 0;
+        globalData.forEach(item => {
+            if (item["狀態"] === "處理中" || item["狀態"] === "新通報") countIng++;
+            else if (item["狀態"] === "已結案") countDone++;
+        });
+
+        // 依據您上傳檔案的「三層表頭」格式構建
+        const ws_data = [
+            ["1141019強降雨專案案件管制一覽表", "", "", "", "", "", "", "", "列印時間：" + timeStr],
+            ["案件統計時間: 截至 " + timeStr + " 目前共 " + globalData.length + " 案 已結案:" + countDone + " 處理中:" + countIng, "", "", "", "", "", "", "", ""],
+            ["項次", "受理時間", "案件類別", "權責單位", "地點", "現場狀況", "處理情形(無法執行原因)", "預計完成時間", "狀態"]
+        ];
+
+        // 填入資料
+        globalData.forEach((item, index) => {
+            ws_data.push([
+                index + 1,
+                item["受理時間"] || "",
+                item["案件類別"] || "",
+                item["權責單位"] || "",
+                item["地點"] || "",
+                item["現場狀況"] || item["現場狀況與完整歷史進程"] || "",
+                item["處理情形"] || "",
+                item["預計完成時間"] || "",
+                item["狀態"] || ""
+            ]);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(ws_data);
+        
+        // 處理跨欄置中
+        if(!ws['!merges']) ws['!merges'] = [];
+        ws['!merges'].push({ s: {r:0, c:0}, e: {r:0, c:7} });
+        ws['!merges'].push({ s: {r:1, c:0}, e: {r:1, c:8} });
+        
+        // 簡單設定直欄寬度
+        ws['!cols'] = [
+            {wch: 5}, {wch: 16}, {wch: 10}, {wch: 15}, {wch: 20}, {wch: 30}, {wch: 40}, {wch: 12}, {wch: 8}
+        ];
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, ws_name);
+        
+        XLSX.writeFile(wb, "列管案件管制一覽表.xlsx");
     }
 
     function initRealTimeDataFeed() {
@@ -683,8 +803,7 @@
             if(radarImg) {
                 radarImg.src = "https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0058-004.png?t=" + new Date().getTime();
             }
-            sortAndRenderAll();
-        }, 30000); 
+        }, 600000); 
     }
 
     window.onload = () => {

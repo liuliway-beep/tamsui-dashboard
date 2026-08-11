@@ -20,7 +20,7 @@
         }
         .wrapper { display: flex; flex-direction: column; height: 100vh; padding: 6px; box-sizing: border-box; gap: 6px; }
         
-        /* 上方區域（占整體高度 11%） */
+        /* 上方區域 */
         .header-section {
             height: 11vh;
             display: flex;
@@ -328,7 +328,6 @@
         .badge-ing { background-color: rgba(255,159,67,0.2); color: #ff9f43; border: 1px solid #ff9f43; }
         .badge-done { background-color: rgba(46,213,115,0.2); color: #2ed573; border: 1px solid #2ed573; }
         tr.selected { background-color: rgba(0, 242, 254, 0.15) !important; border-left: 3px solid #00f2fe; }
-
     </style>
 </head>
 <body>
@@ -411,12 +410,11 @@
                     <span>🎥 轄區 CCTV 巡邏監控</span>
                     <span style="color: #00f2fe; font-size: 8px; font-weight: bold;">(⚠️ 點擊開啟官方串流)</span>
                 </div>
-                <!-- 透過 onClick 觸發開新視窗觀看串流 -->
                 <div class="box-container" onclick="openSelectedCCTV()">
                     
-                    <!-- 底層：運用 CSS 裁切您上傳的拼圖檔案 -->
+                    <!-- 底層：使用穩定的線上縮圖，避免依賴本地檔案造成破圖 -->
                     <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; overflow: hidden; opacity: 0.65;">
-                        <img id="cctv-img" src="image_7d6037.jpg" style="position: absolute; width: 400%; height: 300%; top: 0%; left: 0%; object-fit: fill; transition: all 0.3s ease;" alt="CCTV縮圖">
+                        <img id="cctv-img" src="https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=800&q=80" style="width: 100%; height: 100%; object-fit: cover; transition: all 0.3s ease;" alt="CCTV縮圖">
                     </div>
 
                     <!-- 上層：UI 面板與選單 -->
@@ -428,7 +426,7 @@
                     
                     <!-- 動態選單 -->
                     <select class="cctv-select" id="cctv-dropdown" onclick="event.stopPropagation();" onchange="updateCCTVSelection(this)">
-                        <!-- 由程式動態填入，帶入矩陣裁切座標 -->
+                        <!-- 由程式動態填入 -->
                     </select>
                 </div>
             </div>
@@ -496,7 +494,6 @@
             "權責單位": "工務課",
             "地點": "淡水區學府路102號",
             "現場狀況與完整歷史進程": "強陣風吹襲導致路樹倒塌，已派員前往現場進行鋸切移除中。",
-            "照片網址": "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=1200&q=80",
             "狀態": "處理中",
             "緯度": 25.17198,
             "經度": 121.44994,
@@ -508,7 +505,6 @@
             "權責單位": "經建課",
             "地點": "淡水區中山路2段10號",
             "現場狀況與完整歷史進程": "豪雨造成排水宣洩不及，積水約 15 公分，已通報清潔隊清除淤泥。",
-            "照片網址": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=1200&q=80",
             "狀態": "新通報",
             "緯度": 25.18021,
             "經度": 121.44282,
@@ -525,15 +521,14 @@
         markersGroup = L.layerGroup().addTo(map);
     }
 
-    // ==== 核心：動態讀取 CCTV JSON 資料庫，並帶入截圖裁切座標 ====
+    // 動態載入真實資料
     function loadDynamicCCTVs() {
-        // 利用您上傳的拼圖影像 (4行 x 3列 的結構)，精準對位各個路口的縮圖
         const fullCCTVData = [
-            { id: "C000008", name: "淡水區民權路、187巷前", lat: 25.1385, lon: 121.4600, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000008", thumb: "image_7d6037.jpg", tX: "0%", tY: "0%" },
-            { id: "C000174", name: "淡水區中正東路一段3巷口", lat: 25.16480, lon: 121.45050, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000174", thumb: "image_7d6037.jpg", tX: "0%", tY: "-100%" },
-            { id: "C000176", name: "淡水區中正路、中山路口", lat: 25.16912, lon: 121.44456, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000176", thumb: "image_7d6037.jpg", tX: "-100%", tY: "-100%" },
-            { id: "C000402", name: "淡水區新民隧道南下", lat: 25.18617, lon: 121.42781, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000402", thumb: "image_7d5fe0.jpg", tX: "-100%", tY: "-100%" },
-            { id: "C000421", name: "淡水區中正路1段8巷", lat: 25.1780, lon: 121.4250, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000421", thumb: "image_7d5fe0.jpg", tX: "-100%", tY: "0%" }
+            { id: "C000008", name: "淡水區民權路、187巷前", lat: 25.1385, lon: 121.4600, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000008", thumb: "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=800&q=80" },
+            { id: "C000174", name: "淡水區中正東路一段3巷口", lat: 25.16480, lon: 121.45050, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000174", thumb: "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=800&q=80" },
+            { id: "C000176", name: "淡水區中正路、中山路口", lat: 25.16912, lon: 121.44456, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000176", thumb: "https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=800&q=80" },
+            { id: "C000402", name: "淡水區新民隧道南下", lat: 25.18617, lon: 121.42781, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000402", thumb: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80" },
+            { id: "C000421", name: "淡水區中正路1段8巷", lat: 25.1780, lon: 121.4250, url: "https://atis.ntpc.gov.tw/ATIS/ShowFrame4CCTV/C000421", thumb: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?auto=format&fit=crop&w=800&q=80" }
         ];
 
         const dropdown = document.getElementById('cctv-dropdown');
@@ -549,13 +544,10 @@
             option.value = cctv.url;
             option.setAttribute('data-label', cctv.name);
             option.setAttribute('data-thumb', cctv.thumb);
-            option.setAttribute('data-tx', cctv.tX);
-            option.setAttribute('data-ty', cctv.tY);
             option.innerText = `📍 [${cctv.id}] ${cctv.name.replace('淡水區', '')}`;
             dropdown.appendChild(option);
         });
 
-        // 預設選擇第一筆資料顯示
         if (fullCCTVData.length > 0) {
             updateCCTVSelection(dropdown);
         }
@@ -565,16 +557,11 @@
         const optionEl = selectEl.options[selectEl.selectedIndex];
         const label = optionEl.getAttribute('data-label');
         const thumb = optionEl.getAttribute('data-thumb');
-        const tX = optionEl.getAttribute('data-tx');
-        const tY = optionEl.getAttribute('data-ty');
 
         document.getElementById('cctv-card-title').innerText = `📍 ${label}`;
         
-        // 套用真實縮圖裁切邏輯
         const imgEl = document.getElementById('cctv-img');
         imgEl.src = thumb;
-        imgEl.style.top = tY;
-        imgEl.style.left = tX;
     }
 
     function openSelectedCCTV() {
